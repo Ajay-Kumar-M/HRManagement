@@ -1,0 +1,18 @@
+package com.example.hrmanagement.data
+
+data class AttendanceData(
+    val date: Long = 0L,
+    var checkInTime: Long = 0L,
+    var checkOutTime: Long = 0L,
+    var checkInLocation: String = "",
+    var checkOutLocation: String = "",
+    val checkInNote: String = "",
+    val checkOutNote: String = "",
+    val emailId: String = "",
+    var status: String = "",
+    var totalHours: Float = 0.0f,
+    val friendlyDateValue: Int = 0,
+    val friendlyMonthValue: Int = 0,
+    val friendlyYearValue: Int = 0,
+    var leaveType: String = ""
+)

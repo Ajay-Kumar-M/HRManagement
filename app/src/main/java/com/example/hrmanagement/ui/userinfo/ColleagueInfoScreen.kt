@@ -1,0 +1,481 @@
+package com.example.hrmanagement.ui.userinfo
+
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBox
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.MailOutline
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PrimaryScrollableTabRow
+import androidx.compose.material3.Tab
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import coil.compose.AsyncImage
+import com.example.hrmanagement.R
+import kotlinx.serialization.json.Json
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
+import androidx.core.net.toUri
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.example.hrmanagement.component.CircularProgressIndicatorComposable
+import com.example.hrmanagement.data.UserLoginData
+
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
+@Composable
+fun ColleagueInfoScreen(
+    modifier: Modifier,
+    navController: NavController,
+    colleagueEmailId: String,
+    viewModel: ColleagueInfoScreenViewModel = viewModel()
+) {
+    val departmentDetails = viewModel.liveDepartmentDetails.collectAsStateWithLifecycle()
+    val liveColleagueDetails = viewModel.liveColleagueDetails.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val tabs = listOf("Profile", "Team")
+    var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
+    val isViewLoading = viewModel.isViewLoading.collectAsStateWithLifecycle()
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_START -> {
+//                    viewModel.getLeaveTrackerDetails()
+//                    viewModel.getGoals()
+//                    viewModel.getAttendanceDetails()
+                }
+                else -> {}
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
+    LazyColumn(
+        modifier = modifier.fillMaxSize() //.verticalScroll(rememberScrollState())
+    ) {
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Box(
+                    modifier = Modifier
+                        .height(300.dp)
+                        .background(Color.Red)
+                        .fillMaxWidth())
+                {
+                    AsyncImage(
+                        model = if(liveColleagueDetails.value.imageUrl.isBlank()) {
+                            R.drawable.account_circle_24
+                        } else {
+                            liveColleagueDetails.value.imageUrl
+                        },
+                        contentDescription = "Profile Icon",
+                        modifier = Modifier.matchParentSize(),
+                        contentScale = ContentScale.FillBounds
+                    )
+                    IconButton(
+                        onClick = { navController.popBackStack() },
+                        colors = IconButtonDefaults.iconButtonColors(
+                            containerColor = Color.White, // Your desired background color
+                            contentColor = Color.Black          // Icon color
+                        ),
+                        modifier = Modifier.size(60.dp)
+                            .padding(15.dp)// Custom size
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Favorite"
+                        )
+                    }
+                    IconButton(
+                        onClick = {
+                            val sendIntent = Intent().apply {
+                                action = Intent.ACTION_SEND
+                                putExtra(Intent.EXTRA_TEXT,
+                                    liveColleagueDetails.value.profileUrl
+                                )
+                                type = "text/plain"
+                            }
+                            val shareIntent = Intent.createChooser(sendIntent, "Share URL via")
+                            try {
+                                context.startActivity(shareIntent)
+                            } catch (e: Exception) {
+                                // Handle exception if no email client is installed
+                                e.printStackTrace()
+                            }
+                        },
+                        colors = IconButtonDefaults.iconButtonColors(
+                            containerColor = Color.White,
+                            contentColor = Color.Black
+                        ),
+                        modifier = Modifier.size(60.dp)
+                            .padding(15.dp)
+                            .align(Alignment.TopEnd)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Share,
+                            contentDescription = "Share Profile"
+                        )
+                    }
+//                    Text(
+//                        text = userSignInStatus.value,
+//                        style = TextStyle(
+//                            fontWeight = FontWeight.Bold,
+//                            fontFamily = FontFamily.Default
+//                        ),
+//                        color = Color.Black,
+//                        modifier = Modifier
+//                            .background(
+//                                color = Color.White,
+//                                shape = RoundedCornerShape(10.dp)
+//                            )
+//                            .padding(10.dp)
+//                            .align(Alignment.BottomCenter)
+//                    )
+                }
+            }
+        }
+
+        stickyHeader(
+            contentType = "sticky"
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth()
+                    .background(Color.White),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = liveColleagueDetails.value.username,
+                    style = TextStyle(
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily.Default
+                    ),
+                    color = Color.Black,
+                    modifier = Modifier
+                        .background(
+                            color = Color.White,
+                            shape = RoundedCornerShape(10.dp)
+                        )
+                        .padding(10.dp)
+                        .align(Alignment.CenterHorizontally)
+                )
+                Text(
+                    text = liveColleagueDetails.value.email,
+                    style = TextStyle(
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily.Default
+                    ),
+                    color = Color.Black,
+                    modifier = Modifier
+                        .background(
+                            color = Color.White,
+                            shape = RoundedCornerShape(10.dp)
+                        )
+                        .padding(10.dp)
+                        .align(Alignment.CenterHorizontally)
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth()
+                        .background(Color.White),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.MailOutline,
+                        contentDescription = "Send Mail",
+                        modifier = Modifier.padding(15.dp,5.dp,15.dp,5.dp)
+                            .clickable{
+                                val intent = Intent(Intent.ACTION_SENDTO).apply {
+                                    data = "mailto:${liveColleagueDetails.value.email}".toUri()
+//                                    putExtra(Intent.EXTRA_SUBJECT, subject)
+//                                    putExtra(Intent.EXTRA_TEXT, body)
+                                }
+                                try {
+                                    context.startActivity(Intent.createChooser(intent, "Send Email"))
+                                } catch (e: Exception) {
+                                    // Handle exception if no email client is installed
+                                    e.printStackTrace()
+                                }
+                            }
+                    )
+                    Image(
+                        painter = painterResource(R.drawable.chat_24dp),
+                        contentDescription = "Chat",
+                        modifier = Modifier.padding(15.dp,5.dp,15.dp,5.dp)
+                            .clickable{
+
+                            }
+                    )
+//                    Icon(
+//                        imageVector = Icons.Default.Search,
+//                        contentDescription = "Search",
+//                        modifier = Modifier.padding(5.dp)
+//                            .clickable{
+//
+//                            }
+//                    )
+
+                }
+                PrimaryScrollableTabRow(
+                    selectedTabIndex = selectedTabIndex,
+                    edgePadding = 3.dp
+                ) {
+
+                    tabs.forEachIndexed { index, title ->
+                        Tab(
+                            selected = selectedTabIndex == index,
+                            onClick = {
+                                selectedTabIndex = index
+                                viewModel.getColleagueDepartmentMembers(liveColleagueDetails.value.departmentName)
+                                      },
+                            text = { Text(title) }
+                        )
+                    }
+                }
+            }
+        }
+        if (isViewLoading.value){
+            item {
+                CircularProgressIndicatorComposable()
+            }
+        } else {
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp)
+                ) {
+                    when (selectedTabIndex) {
+                        0 -> {
+//                            Column {
+//                                Text("About", style = MaterialTheme.typography.titleLarge)
+//                                Text(
+//                                    "Designation",
+//                                    style = MaterialTheme.typography.titleMedium,
+//                                    modifier = Modifier.padding(0.dp, 10.dp, 0.dp, 0.dp)
+//                                )
+//                                Text("Employee", style = MaterialTheme.typography.titleSmall)
+//                                Text(
+//                                    "Employee ID",
+//                                    style = MaterialTheme.typography.titleMedium,
+//                                    modifier = Modifier.padding(0.dp, 10.dp, 0.dp, 0.dp)
+//                                )
+//                                Text(
+//                                    colleagueData.emp_Id,
+//                                    style = MaterialTheme.typography.titleSmall
+//                                )
+//                                Text(
+//                                    "Department",
+//                                    style = MaterialTheme.typography.titleMedium,
+//                                    modifier = Modifier.padding(0.dp, 10.dp, 0.dp, 0.dp)
+//                                )
+//                                Text("Department Name", style = MaterialTheme.typography.titleSmall)
+//                                Text(
+//                                    "Mobile Number",
+//                                    style = MaterialTheme.typography.titleMedium,
+//                                    modifier = Modifier.padding(0.dp, 10.dp, 0.dp, 0.dp)
+//                                )
+//                                Text(
+//                                    colleagueData.mobileNumber,
+//                                    style = MaterialTheme.typography.titleSmall
+//                                )
+//                                Text(
+//                                    "Seating Location",
+//                                    style = MaterialTheme.typography.titleMedium,
+//                                    modifier = Modifier.padding(0.dp, 10.dp, 0.dp, 0.dp)
+//                                )
+//                                Text("Block", style = MaterialTheme.typography.titleSmall)
+//                            }
+
+                            Column {
+                                Text("About",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold)
+                                Spacer(modifier = Modifier.height(20.dp))
+                                Text(
+                                    "Designation",
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                Spacer(modifier = Modifier.height(5.dp))
+                                Text("Employee", style = MaterialTheme.typography.titleSmall)
+                                Spacer(modifier = Modifier.height(15.dp))
+
+                                Text(
+                                    "Employee ID",
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                Spacer(modifier = Modifier.height(5.dp))
+                                Text(
+                                    liveColleagueDetails.value.emp_Id,
+                                    style = MaterialTheme.typography.titleSmall
+                                )
+                                Spacer(modifier = Modifier.height(15.dp))
+
+                                Text(
+                                    "Department",
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                Spacer(modifier = Modifier.height(5.dp))
+                                Text("Department Name", style = MaterialTheme.typography.titleSmall)
+                                Spacer(modifier = Modifier.height(15.dp))
+
+                                Text(
+                                    "Mobile Number",
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                Spacer(modifier = Modifier.height(5.dp))
+                                Text(
+                                    liveColleagueDetails.value.mobileNumber,
+                                    style = MaterialTheme.typography.titleSmall
+                                )
+                                Spacer(modifier = Modifier.height(15.dp))
+
+                                Text(
+                                    "Seating Location",
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                Spacer(modifier = Modifier.height(5.dp))
+                                Text("Block 1", style = MaterialTheme.typography.titleSmall)
+                                Spacer(modifier = Modifier.height(15.dp))
+
+                                getAllFieldsAndValues(liveColleagueDetails.value).forEach { value ->
+                                    if (value.first != "token") {
+                                        Text(
+                                            value.first,
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
+                                        Spacer(modifier = Modifier.height(5.dp))
+                                        Text(
+                                            "${value.second ?: ""}",
+                                            style = MaterialTheme.typography.titleSmall
+                                        )
+                                        Spacer(modifier = Modifier.height(15.dp))
+                                    }
+                                }
+                            }
+                        }
+
+                        1 -> {
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("Team Name", style = MaterialTheme.typography.titleMedium)
+                                    Text(
+                                        modifier = Modifier
+                                            .padding(5.dp)
+                                            .drawBehind {
+                                                drawCircle(
+                                                    color = Color.White,
+                                                    radius = this.size.minDimension
+                                                )
+                                            },
+                                        textAlign = TextAlign.End,
+                                        color = Color.Black,
+                                        text = "${departmentDetails.value?.size() ?: 0}",
+                                        fontSize = 18.sp
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(10.dp))
+                                departmentDetails.value?.forEach { person ->
+                                    val teamMemberInfo = person.toObject(UserLoginData::class.java)
+                                    Row(
+                                        modifier = Modifier.clickable{
+                                            val userJson = Json.encodeToString(person)
+                                            val encodedUserJson = URLEncoder.encode(userJson, StandardCharsets.UTF_8.toString())
+                                            navController.navigate("ColleagueInfoScreen/${encodedUserJson}")
+                                        }
+                                    ) {
+                                        AsyncImage(
+                                            model = if (teamMemberInfo.imageUrl.isBlank()) {
+                                                Icons.Filled.AccountCircle
+                                            } else {
+                                                teamMemberInfo.imageUrl
+                                            },
+                                            contentDescription = null,
+                                            contentScale = ContentScale.Crop,
+                                            modifier = Modifier
+                                                .size(40.dp)
+                                                .clip(CircleShape)
+                                        )
+                                        Column (modifier = Modifier.padding(30.dp,0.dp,5.dp,20.dp)){
+                                            Text(
+                                                teamMemberInfo.username,
+                                                style = MaterialTheme.typography.bodyMedium
+                                            )
+                                            Row {
+                                                Icon(
+                                                    imageVector = Icons.Default.AccountBox,
+                                                    contentDescription = "ID"
+                                                )
+                                                Text(
+                                                    teamMemberInfo.emp_Id,
+                                                    style = MaterialTheme.typography.bodyMedium
+                                                )
+                                            }
+
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

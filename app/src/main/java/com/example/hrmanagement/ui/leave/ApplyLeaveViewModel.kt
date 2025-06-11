@@ -1,0 +1,172 @@
+package com.example.hrmanagement.ui.leave
+
+import android.util.Log
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
+import com.example.hrmanagement.data.LeaveTrackerData
+import com.example.hrmanagement.ui.userinfo.getPropertyValue
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
+import kotlin.time.Duration.Companion.milliseconds
+
+class ApplyLeaveViewModel(): ViewModel() {
+
+    var year: Int = 0
+    var _isViewLoading: MutableStateFlow<Boolean> = MutableStateFlow(false)
+    val isViewLoading = _isViewLoading.asStateFlow()
+    var _fromDate: MutableStateFlow<Long> = MutableStateFlow(0)
+    val fromDate = _fromDate.asStateFlow()
+    var _toDate: MutableStateFlow<Long> = MutableStateFlow(0)
+    val toDate = _toDate.asStateFlow()
+    var _leaveTypeSelected: MutableStateFlow<String> = MutableStateFlow("Select Leave Type from Dropdown")
+    val leaveTypeSelected = _leaveTypeSelected.asStateFlow()
+    var _leaveReason: MutableStateFlow<String> = MutableStateFlow("")
+    val leaveReason = _leaveReason.asStateFlow()
+    private val _toastEvent = MutableSharedFlow<String>(replay = 0)
+    val toastEvent = _toastEvent.asSharedFlow()
+    val leaveTypeDataClassMap: Map<String, String> = mapOf(
+        Pair("Casual Leave","casualLeaveBalance"),
+        Pair("Sick Leave","sickLeaveBalance"),
+        Pair("On Duty","onDutyLeaveBalance"),
+        Pair("Optional Holidays","optionalLeaveBalance"),
+        Pair("Comp Off","compOffLeaveBalance"))
+
+    init {
+        year = Calendar.getInstance().get(Calendar.YEAR)
+        _fromDate.value = Calendar.getInstance().timeInMillis
+        _toDate.value = fromDate.value
+    }
+
+    fun addAnnualLeaveDataResponseListener(response: String){
+        if(response == "Success"){
+            Log.d("ApplyLeaveViewModel","addAnnualLeaveDataResponseListener record added $response")
+            clearAllUiFields()
+            if (isViewLoading.value==true) {
+                toggleIsViewLoading()
+            }
+            triggerToast("Record Created")
+        } else {
+            //handle errors
+            if (isViewLoading.value==true) {
+                toggleIsViewLoading()
+            }
+            triggerToast("Error occurred. Try again!")
+        }
+    }
+
+    fun addAnnualLeaveData(leaveTrackerData: LeaveTrackerData) {
+        toggleIsViewLoading()
+        appDataManager.getFirebaseLeaveTrackerData(year, leaveTrackerData.emailId,::processLeaveRequest)
+    }
+
+    fun processLeaveRequest(responseLeaveTrackerData: LeaveTrackerData, response: String) {
+        val durationDiff = toDate.value.minus(fromDate.value)
+        val differenceInDays = durationDiff.milliseconds.inWholeDays.toInt() + 1
+        val selectedLeaveTypeDataClass = leaveTypeDataClassMap.getValue(leaveTypeSelected.value)
+        val processedLeaveDaysRemaining = (getPropertyValue(
+            responseLeaveTrackerData,
+            selectedLeaveTypeDataClass
+        ).toString().toInt())-differenceInDays
+        if (processedLeaveDaysRemaining>=0){
+            val fromSelectedDate = SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault()).format(Date(fromDate.value))?: ""
+            val toSelectedDate = SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault()).format(Date(toDate.value))?: ""
+            val dateOfRequest = SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault()).format(Date(Calendar.getInstance().timeInMillis))?: ""
+            val employeeId = responseLeaveTrackerData.employeeID
+            responseLeaveTrackerData.lastLeaveId = responseLeaveTrackerData.lastLeaveId+1
+            when(selectedLeaveTypeDataClass) {
+                "casualLeaveBalance" -> { responseLeaveTrackerData.casualLeaveBalance = processedLeaveDaysRemaining }
+                "sickLeaveBalance" -> { responseLeaveTrackerData.sickLeaveBalance = processedLeaveDaysRemaining }
+                "onDutyLeaveBalance" -> { responseLeaveTrackerData.onDutyLeaveBalance = processedLeaveDaysRemaining }
+                "optionalLeaveBalance" -> { responseLeaveTrackerData.optionalLeaveBalance = processedLeaveDaysRemaining }
+                "compOffLeaveBalance" -> { responseLeaveTrackerData.compOffLeaveBalance = processedLeaveDaysRemaining }
+            }
+            responseLeaveTrackerData.annualLeaveData.put(
+                "${employeeId}_${responseLeaveTrackerData.lastLeaveId}",
+                mapOf(
+                    Pair("Leave ID","${responseLeaveTrackerData.lastLeaveId}"),
+                    Pair("Leave Type",leaveTypeSelected.value),
+                    Pair("Number Of Days","$differenceInDays"),
+                    Pair("Start Date",fromSelectedDate),
+                    Pair("End Date",toSelectedDate),
+                    Pair("Status","Pending"),
+                    Pair("Email",responseLeaveTrackerData.emailId),
+                    Pair("Employee ID","$employeeId"),
+                    Pair("Employee Name",responseLeaveTrackerData.annualLeaveData.values.first().getValue("Employee Name")),
+                    Pair("Team Email Id",responseLeaveTrackerData.annualLeaveData.values.first().getValue("Team Email Id")),
+                    Pair("Date Of Request",dateOfRequest),
+                    Pair("Reason For Leave", leaveReason.value)
+                )
+            )
+            appDataManager.addLeaveTrackerData(responseLeaveTrackerData, year, ::addAnnualLeaveDataResponseListener)
+        } else {
+            triggerToast("You don't have enough Balance Days from ${leaveTypeSelected.value}")
+            Log.d("ApplyLeaveViewModel","You don't have enough Balance Days from ${leaveTypeSelected.value}")
+            if (isViewLoading.value==true)
+                toggleIsViewLoading()
+        }
+    }
+
+    fun onFromDateSelected(timestamp: Long?){
+        _fromDate.value = timestamp ?: 0
+    }
+
+    fun onToDateSelected(timestamp: Long?){
+        _toDate.value = timestamp ?: 0
+    }
+
+    fun onLeaveTypeSelected(leaveType: String){
+        _leaveTypeSelected.value = leaveType
+    }
+
+    fun onLeaveReasonUpdated(updatedleaveReason: String){
+        _leaveReason.value = updatedleaveReason
+    }
+
+    fun toggleIsViewLoading(){
+        _isViewLoading.value = !_isViewLoading.value
+    }
+
+    fun triggerToast(message: String) {
+        viewModelScope.launch {
+            _toastEvent.emit(message)
+        }
+    }
+
+    fun clearAllUiFields() {
+        onLeaveReasonUpdated("")
+        onLeaveTypeSelected("Select Leave Type from Dropdown")
+        onFromDateSelected(Calendar.getInstance().timeInMillis)
+        onToDateSelected(Calendar.getInstance().timeInMillis)
+    }
+}
+
+
+/*
+val employeeId = leaveTrackerData.employeeID
+        leaveTrackerData.lastLeaveId = leaveTrackerData.lastLeaveId+1
+        leaveTrackerData.annualLeaveData.put(
+            "${employeeId}_${leaveTrackerData.lastLeaveId}",
+                mapOf(
+                    Pair("Leave ID","${leaveTrackerData.lastLeaveId}"),
+                    Pair("Leave Type","Casual Leave"),
+                    Pair("Number Of Days","1"),
+                    Pair("Start Date","23-May-2025"),
+                    Pair("End Date","23-MAy-2025"),
+                    Pair("Status","Pending"),
+                    Pair("Email","ajay.kumar0495@gmail.com"),
+                    Pair("Employee ID","1001"),
+                    Pair("Employee Name","Ajay Kumar M"),
+                    Pair("Team Email Id","team@gmail.com"),
+                    Pair("Date Of Request","20-May-2025"),
+                    Pair("Reason For Leave","Reason")
+                )
+        )
+ */

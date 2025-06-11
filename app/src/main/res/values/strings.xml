@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">HR Management</string>
+    <string name="default_web_client_id" translatable="false">708345322965-glp3k6vivakkql1trukclkjkbp327mbn.apps.googleusercontent.com</string>
+    <string name="gcm_defaultSenderId" translatable="false">708345322965</string>
+    <string name="google_api_key" translatable="false">AIzaSyCtlh2pdxmIm_hQ65XzoZ7-NRQyQ4sCfhI</string>
+    <string name="google_app_id" translatable="false">1:708345322965:android:bc0ee06a784ded3585b15c</string>
+<!--    <string name="google_crash_reporting_api_key" translatable="false">AIzaSyANIvglmuuVY-TDVYt3Cy0GgsBWb1u1Vig</string>-->
+    <string name="google_storage_bucket" translatable="false">hrmanagement-63c6d.firebasestorage.app</string>
+    <string name="project_id" translatable="false">hrmanagement-63c6d</string>
+</resources>

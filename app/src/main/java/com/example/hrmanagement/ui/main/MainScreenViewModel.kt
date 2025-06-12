@@ -36,6 +36,8 @@ class MainScreenViewModel: ViewModel(),DefaultLifecycleObserver {
             initialValue = null
         )
     var userEmailUiState: String?
+    private var _liveLeaveTrackerDetails: MutableStateFlow<LeaveTrackerData> = MutableStateFlow(LeaveTrackerData())
+    val liveLeaveTrackerDetails = _liveLeaveTrackerDetails.asStateFlow()
     private var _liveUserDetails: MutableStateFlow<UserLoginData> = MutableStateFlow(UserLoginData())
     val liveUserDetails = _liveUserDetails.asStateFlow()
     private var _userAttendanceData: MutableStateFlow<AttendanceData> = MutableStateFlow(AttendanceData())
@@ -44,19 +46,27 @@ class MainScreenViewModel: ViewModel(),DefaultLifecycleObserver {
     val quickLinksLimitedData = _quickLinksLimitedData.asStateFlow()
     private var _announcementsLimitedData: MutableStateFlow<QuerySnapshot?> = MutableStateFlow(null)
     val announcementsLimitedData = _announcementsLimitedData.asStateFlow()
+    private var _holidaysData: MutableStateFlow<QuerySnapshot?> = MutableStateFlow(null)
+    val holidaysData = _holidaysData.asStateFlow()
     private var _isViewLoading: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val isViewLoading = _isViewLoading.asStateFlow()
+    private var _addTaskShowBottomSheet: MutableStateFlow<Boolean> = MutableStateFlow(false)
+    val addTaskShowBottomSheet = _addTaskShowBottomSheet.asStateFlow()
     private var numberOfFeatchProcess: Int = 0
+    private var calendarYear: Int = 0
 
     init {
         toggleIsViewLoading()
         runBlocking {
             userEmailUiState = appPreferenceDataStore.emailFlow.firstOrNull()
         }
+        calendarYear = Calendar.getInstance().get(Calendar.YEAR);
         fetchUserDetails()
         fetchUserSignInStatus()
         fetchLimitedQuickLinks()
         fetchLimitedAnnouncements()
+        getLeaveTrackerDetails()
+        getHolidayDetails()
         if (!userEmailUiState.isNullOrBlank()){
             appDataManager.listenForUserSignInStatusUpdates(userEmailUiState!!)
         }
@@ -205,6 +215,50 @@ class MainScreenViewModel: ViewModel(),DefaultLifecycleObserver {
         }
         if ((isViewLoading.value==true)&&(numberOfFeatchProcess==0))
             toggleIsViewLoading()
+    }
+
+    fun getLeaveTrackerDetails(){
+        if ((userEmailUiState!=null)&&((userEmailUiState?.isNotBlank())==true)) {
+            if (isViewLoading.value==false) toggleIsViewLoading()
+            numberOfFeatchProcess++
+            appDataManager.getFirebaseLeaveTrackerData(calendarYear, userEmailUiState!!,::updateLeaveTrackerData)
+        }
+    }
+
+    fun updateLeaveTrackerData(leaveTrackerData: LeaveTrackerData?, response: String){
+        Log.d("MainScreenViewModel","updateLeaveTrackerData called $leaveTrackerData")
+        numberOfFeatchProcess--
+        if((response == "Success")&&(leaveTrackerData!=null)){
+            _liveLeaveTrackerDetails.value = leaveTrackerData
+        } else {
+            //handle errors
+            TODO()
+        }
+        if ((isViewLoading.value==true)&&(numberOfFeatchProcess==0))
+            toggleIsViewLoading()
+    }
+
+    fun getHolidayDetails(){
+        if (isViewLoading.value==false) toggleIsViewLoading()
+        numberOfFeatchProcess++
+        appDataManager.getHolidays(::updateHolidayData)
+    }
+
+    fun updateHolidayData(holidays: QuerySnapshot?, response: String){
+        Log.d("MainScreenViewModel","updateHolidayData called $holidays")
+        numberOfFeatchProcess--
+        if((response == "Success")&&(holidays!=null)){
+            _holidaysData.value = holidays
+        } else {
+            //handle errors
+            TODO()
+        }
+        if ((isViewLoading.value==true)&&(numberOfFeatchProcess==0))
+            toggleIsViewLoading()
+    }
+
+    fun toggleAddTaskShowBottomSheet(){
+        _addTaskShowBottomSheet.value = !_addTaskShowBottomSheet.value
     }
 
     fun toggleIsViewLoading(){

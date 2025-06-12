@@ -67,6 +67,7 @@ fun ApplyLeaveScreen(
     modifier: Modifier,
     navController: NavController,
     leaveTrackerData: LeaveTrackerData,
+    leaveType: String,
     viewModel: ApplyLeaveViewModel = viewModel()
 ) {
     val leaveTypes = listOf("Casual Leave", "Sick Leave", "On Duty", "Optional Holidays", "Comp Off")
@@ -314,6 +315,18 @@ fun ApplyLeaveScreen(
                         }
                     }
                 }
+                Text(
+                    "Total",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(20.dp, 15.dp, 5.dp, 2.dp),
+                    fontWeight = FontWeight.Bold
+                )
+                val durationDiff = toDateViewModel.value.minus(fromDateViewModel.value)
+                Text(
+                    "${(durationDiff.milliseconds.inWholeDays.toInt()).plus(1)} Day(s)",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(20.dp, 2.dp, 5.dp, 15.dp),
+                )
                 Row {
                     Text(
                         "Leave Type",

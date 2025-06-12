@@ -1,6 +1,7 @@
 package com.example.hrmanagement.ui.leave
 
 import android.util.Log
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
@@ -17,7 +18,9 @@ import java.util.Date
 import java.util.Locale
 import kotlin.time.Duration.Companion.milliseconds
 
-class ApplyLeaveViewModel(): ViewModel() {
+class ApplyLeaveViewModel(
+    savedStateHandle: SavedStateHandle
+): ViewModel() {
 
     var year: Int = 0
     var _isViewLoading: MutableStateFlow<Boolean> = MutableStateFlow(false)
@@ -38,11 +41,22 @@ class ApplyLeaveViewModel(): ViewModel() {
         Pair("On Duty","onDutyLeaveBalance"),
         Pair("Optional Holidays","optionalLeaveBalance"),
         Pair("Comp Off","compOffLeaveBalance"))
+    var leaveType: String = checkNotNull(savedStateHandle["leaveType"])
 
     init {
         year = Calendar.getInstance().get(Calendar.YEAR)
-        _fromDate.value = Calendar.getInstance().timeInMillis
+        val startOfTheDay = Calendar.getInstance()
+        startOfTheDay.apply {
+            set(Calendar.HOUR_OF_DAY, 0)  // Set hour to midnight
+            set(Calendar.MINUTE, 0)       // Set minutes to 0
+            set(Calendar.SECOND, 0)       // Set seconds to 0
+            set(Calendar.MILLISECOND, 0)  // Set milliseconds to 0
+        }
+        _fromDate.value = startOfTheDay.timeInMillis
         _toDate.value = fromDate.value
+        if (leaveType != "All"){
+            onLeaveTypeSelected(leaveType)
+        }
     }
 
     fun addAnnualLeaveDataResponseListener(response: String){

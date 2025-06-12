@@ -146,7 +146,7 @@ fun UserInfoScreen(
                                 val annualLeaveDataMap = Json.encodeToString(leaveTrackerData.value)
                                 val encodedLeaveJson =
                                     URLEncoder.encode(annualLeaveDataMap, StandardCharsets.UTF_8.toString())
-                                navController.navigate("ApplyLeaveScreen/${encodedLeaveJson}")
+                                navController.navigate("ApplyLeaveScreen/${encodedLeaveJson}/All")
                             }
                             3 -> {
 

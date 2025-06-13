@@ -1,5 +1,6 @@
 package com.example.hrmanagement.ui.main
 
+import android.R.attr.text
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -23,6 +24,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.input.InputTransformation
+import androidx.compose.foundation.text.input.TextFieldBuffer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -61,6 +63,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -95,19 +98,14 @@ fun StatusScreen(
     val isViewLoading = viewModel.isViewLoading.collectAsStateWithLifecycle()
     val isSuccessDialogVisible = viewModel.isSuccessDialogVisible.collectAsStateWithLifecycle()
     val statusData = viewModel.statusData.collectAsStateWithLifecycle()
+    val dollorMapData = viewModel.dollorMapData.collectAsStateWithLifecycle()
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
-//    var textFieldValue by remember { mutableStateOf(TextFieldValue()) }
     var expanded by remember { mutableStateOf(false) }
     var cursorOffset by remember { mutableStateOf(Offset.Zero) }
     var cursorHeight by remember { mutableStateOf(0f) }
     val navigateFeed = remember { mutableStateOf(false) }
     val density = LocalDensity.current
-    val initialMap = mapOf<Int, String>(
-        Pair(0,"Ajay"),
-        Pair(1,"Ajay1"),
-        Pair(2,"Ajay2"),
-    )
 
     if (navigateFeed.value && !isSuccessDialogVisible.value) {
         LaunchedEffect(Unit) {
@@ -197,30 +195,6 @@ fun StatusScreen(
                         .fillMaxSize(),
                 ) {
                     Spacer(Modifier.height(10.dp))
-//                    TextField(
-//                        value = statusData.value,
-//                        onValueChange =
-//                            {
-//                                viewModel.onStatusChange(it)
-//                                val lastWord = it.trim().split(" ").last()
-//                                if (lastWord.startsWith("@")) {
-//                                    val searchString = lastWord.substringAfter("@")
-//                                    if (searchString.isNotBlank()){
-//                                        Log.d("StatusScreen","searchstring not blank $searchString")
-//                                        viewModel.filterUsers(searchString)
-//                                    }
-//                                } else{
-//                                    if (filteredUsersData.value.isNotEmpty())
-//                                    viewModel.clearFilteredUserData()
-//                                }
-//                            },
-//                        label = { Text("Enter your status") },
-//                        minLines = 5,
-//                        placeholder = { Text("Type @ to mention someone") },
-//                        modifier = Modifier
-//                            .fillMaxWidth()
-//                            .focusRequester(focusRequester)
-//                    )
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -228,13 +202,65 @@ fun StatusScreen(
                             .background(Color(0xFFE0E0E0))
                             .padding(5.dp)
                     ) {
+//                        var textState by remember { mutableStateOf(statusData.value.text) }
+//                        var indexMap by remember { mutableStateOf(dollorMapData.value.toMutableMap()) }
+                        // Find all $ positions
+                        fun getDollarIndices(text: String): List<Int> =
+                            text.indices.filter { text[it] == '$' }
+
+                        // Visual transformation: Replace $ with mapped unit visually
+                        val visualTransformation = VisualTransformation { text ->
+                            val builder = AnnotatedString.Builder()
+                            var lastIndex = 0
+                            var offset = 0
+                            val dollarIndices = getDollarIndices(text.text)
+                            dollarIndices.forEachIndexed { i, idx ->
+                                builder.append(text.text.substring(lastIndex, idx))
+                                val mapped = dollorMapData.value[idx]
+                                if (mapped != null) {
+                                    builder.pushStringAnnotation(tag = "unit", annotation = mapped)
+                                    builder.withStyle(
+                                        SpanStyle(color = Color.Blue,
+                                        fontWeight = FontWeight.Bold)
+                                    ) {
+                                        builder.append(mapped)
+                                    }
+                                    builder.pop()
+                                    offset += mapped.length - 1
+                                } else {
+                                    builder.append("$")
+                                }
+                                lastIndex = idx + 1
+                            }
+                            builder.append(text.text.substring(lastIndex))
+                            println("statusscreen builder 2 - ${builder.toAnnotatedString()}")
+                            TransformedText(builder.toAnnotatedString(), DollarReplacementOffsetMapping(text.text,dollorMapData.value))
+                        }
+
+                        fun handleValueChange(newValue: TextFieldValue) {
+//                            val oldText = textState
+                            val newText = newValue.text
+                            // Detect which mapped unit was removed by comparing old and new text
+                            val removedIndices = dollorMapData.value.keys.filter { it >= newText.length || newText[it] != '$' }
+                            removedIndices.forEach { viewModel.removeDollorMap(it) }
+//                            textState = newText
+                        }
+
+
+
                         BasicTextField(
-                            value = statusData.value,//textFieldValue,
+                            visualTransformation = visualTransformation,
+                            value = statusData.value,
+//                                TextFieldValue(
+//                                text = statusData.value.text,
+//                                selection = TextRange(textState.length) // Cursor at end
+//                            ), //TextFieldValue(textState) , //statusData.value,//textFieldValue,
                             textStyle = TextStyle(
-                                fontSize = 20.sp,
+                                fontSize = 16.sp,
                                 color = Color.Black
                             ),
                             onValueChange = { changedText ->
+                                handleValueChange(changedText)
                                 viewModel.onStatusChange(changedText)
                                 val cursorOffsetNew = changedText.selection.start
                                 val lines = changedText.text.lines()
@@ -268,51 +294,12 @@ fun StatusScreen(
                                 cursorOffset = cursorRect.bottomLeft
                                 cursorHeight = cursorRect.height
                             },
-//                            decorationBox = { innerTextField ->
-//                                val text = statusData.value.text
-//                                val annotatedString = buildAnnotatedString {
-//                                    var currentIndex = 0
-//                                    val regex = Regex("#(.*?)#") // to identify emailid ###([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+)")
-//                                    regex.findAll(text).forEach { result ->
-//                                        ("regex range - ${result.range}")
-//                                        val range = result.range
-//                                        // Add text before the match
-//                                        append(text.substring(currentIndex, range.first))
-//                                        println("text substring - ${text.substring(currentIndex, range.first)}")
-//                                        // Add the matched text in blue
-//                                        withStyle(SpanStyle(
-//                                            color = Color.Blue,
-//                                            fontWeight = FontWeight.Bold
-//                                        )) {
-//                                            append(" ${result.value} ")
-////                                            println(result.value.drop(3))
-////                                            append(allUsersData.value.firstOrNull {
-////                                                it.email == result.value.drop(3)
-////                                            }?.username ?: "null")
-//                                        }
-//                                        currentIndex = range.last + 1
-//                                    }
-//                                    // Add remaining text
-//                                    if (currentIndex < text.length) {
-//                                        append(text.substring(currentIndex))
-//                                    }
-//                                }
-//                                println("annoted string - $annotatedString")
-////                                Box {
-//                                    Text(
-//                                        text = annotatedString,
-//                                        style = TextStyle(fontSize = 20.sp)
-//                                    )
-//                                    innerTextField()
-////                                }
-//                            }
                         )
                         if (statusData.value.text.isEmpty()) {
                             Text(
                                 text = "Type @ to mention someone",
-                                style = TextStyle(fontSize = 16.sp),
                                 modifier = Modifier.align(Alignment.TopStart),
-                                fontSize = 20.sp
+                                fontSize = 16.sp
                             )
                         }
                     }
@@ -427,6 +414,41 @@ fun StatusScreen(
 
         }
         Spacer(Modifier.height(20.dp))
+    }
+}
+
+class DollarReplacementOffsetMapping(
+    private val original: String,
+    private val replacementMap: Map<Int, String>
+) : OffsetMapping {
+    // Precompute the positions and lengths
+    private val replacements = replacementMap.entries.sortedBy { it.key }
+
+    override fun originalToTransformed(offset: Int): Int {
+        var transformedOffset = offset
+        for ((index, replacement) in replacements) {
+            if (index < offset) {
+                // Each replacement adds (replacement.length - 1) chars
+                transformedOffset += replacement.length - 1
+            } else {
+                break
+            }
+        }
+        return transformedOffset
+    }
+
+    override fun transformedToOriginal(offset: Int): Int {
+        var originalOffset = offset
+        for ((index, replacement) in replacements) {
+            val transformedIndex = index + (replacement.length - 1) * replacements.count { it.key < index }
+            if (transformedIndex < offset) {
+                originalOffset -= replacement.length - 1
+            } else {
+                break
+            }
+        }
+        // Clamp to valid range
+        return originalOffset.coerceIn(0, original.length)
     }
 }
 
@@ -588,7 +610,7 @@ fun MultiLineTextFieldWithCursorDropdown() {
             DropdownMenuItem(
                 text =
                     {
-                            Text("userData1")
+                        Text("userData1")
 
                         Spacer(modifier = Modifier.height(10.dp))
                     },
@@ -601,7 +623,7 @@ fun MultiLineTextFieldWithCursorDropdown() {
             DropdownMenuItem(
                 text =
                     {
-                            Text("userData2")
+                        Text("userData2")
 
                         Spacer(modifier = Modifier.height(10.dp))
                     },
@@ -615,8 +637,80 @@ fun MultiLineTextFieldWithCursorDropdown() {
     }
 }
 
-
 /*
+
+                        val inputTransformation = object : InputTransformation {
+                            override fun TextFieldBuffer.transformInput() {
+                                // Your logic here, using only 'this' (the buffer)
+
+                            }
+                        }
+
+//                    TextField(
+//                        value = statusData.value,
+//                        onValueChange =
+//                            {
+//                                viewModel.onStatusChange(it)
+//                                val lastWord = it.trim().split(" ").last()
+//                                if (lastWord.startsWith("@")) {
+//                                    val searchString = lastWord.substringAfter("@")
+//                                    if (searchString.isNotBlank()){
+//                                        Log.d("StatusScreen","searchstring not blank $searchString")
+//                                        viewModel.filterUsers(searchString)
+//                                    }
+//                                } else{
+//                                    if (filteredUsersData.value.isNotEmpty())
+//                                    viewModel.clearFilteredUserData()
+//                                }
+//                            },
+//                        label = { Text("Enter your status") },
+//                        minLines = 5,
+//                        placeholder = { Text("Type @ to mention someone") },
+//                        modifier = Modifier
+//                            .fillMaxWidth()
+//                            .focusRequester(focusRequester)
+//                    )
+
+
+//                            decorationBox = { innerTextField ->
+//                                val text = statusData.value.text
+//                                val annotatedString = buildAnnotatedString {
+//                                    var currentIndex = 0
+//                                    val regex = Regex("#(.*?)#") // to identify emailid ###([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+)")
+//                                    regex.findAll(text).forEach { result ->
+//                                        ("regex range - ${result.range}")
+//                                        val range = result.range
+//                                        // Add text before the match
+//                                        append(text.substring(currentIndex, range.first))
+//                                        println("text substring - ${text.substring(currentIndex, range.first)}")
+//                                        // Add the matched text in blue
+//                                        withStyle(SpanStyle(
+//                                            color = Color.Blue,
+//                                            fontWeight = FontWeight.Bold
+//                                        )) {
+//                                            append(" ${result.value} ")
+////                                            println(result.value.drop(3))
+////                                            append(allUsersData.value.firstOrNull {
+////                                                it.email == result.value.drop(3)
+////                                            }?.username ?: "null")
+//                                        }
+//                                        currentIndex = range.last + 1
+//                                    }
+//                                    // Add remaining text
+//                                    if (currentIndex < text.length) {
+//                                        append(text.substring(currentIndex))
+//                                    }
+//                                }
+//                                println("annoted string - $annotatedString")
+////                                Box {
+//                                    Text(
+//                                        text = annotatedString,
+//                                        style = TextStyle(fontSize = 20.sp)
+//                                    )
+//                                    innerTextField()
+////                                }
+//                            }
+
 
 //                                println(value.text)
 //                                val lastLine = value.text.lines().lastOrNull() ?: ""

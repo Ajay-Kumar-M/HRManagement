@@ -61,6 +61,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -134,15 +135,14 @@ fun MainScreen(
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     var fabClicks by remember { mutableIntStateOf(0) }
+
     val userImageUri = viewModel.userImageUriUiState.collectAsStateWithLifecycle()
-    val userAttendanceData = viewModel.userAttendanceData.collectAsStateWithLifecycle()
     val isViewLoading = viewModel.isViewLoading.collectAsStateWithLifecycle()
     val liveUserDetails: State<UserLoginData> = viewModel.liveUserDetails.collectAsStateWithLifecycle()
     var selectedItem by remember { mutableIntStateOf(1) }
     val items = listOf("Services", "Home", "", "Approvals", "More")
     val selectedIcons = listOf(ImageVector.vectorResource(id = R.drawable.apps),Icons.Filled.Home,Icons.Filled.AddCircle, Icons.Rounded.CheckCircle, Icons.Rounded.MoreVert)
     val unselectedIcons = listOf(ImageVector.vectorResource(id = R.drawable.drag_indicator),Icons.Outlined.Home,Icons.Outlined.AddCircle, Icons.Outlined.CheckCircle, Icons.Outlined.MoreVert)
-    var elapsedSigninTime by remember { mutableStateOf(0L) }
     val addTaskShowBottomSheet = viewModel.addTaskShowBottomSheet.collectAsStateWithLifecycle()
 
     Scaffold(
@@ -190,8 +190,8 @@ fun MainScreen(
                             IconButton(
                                 onClick = {  },
                                 colors = IconButtonDefaults.iconButtonColors(
-                                    containerColor = Color(0xFFF2F2F2), // Your desired background color
-                                    contentColor = Color.Black          // Icon color
+                                    containerColor = Color(0xFFF2F2F2),
+                                    contentColor = Color.Black
                                 ),
                                 modifier = Modifier
                                     .size(40.dp)
@@ -204,8 +204,8 @@ fun MainScreen(
                             IconButton(
                                 onClick = {  },
                                 colors = IconButtonDefaults.iconButtonColors(
-                                    containerColor = Color(0xFFF2F2F2), // Your desired background color
-                                    contentColor = Color.Black          // Icon color
+                                    containerColor = Color(0xFFF2F2F2),
+                                    contentColor = Color.Black
                                 ),
                                 modifier = Modifier
                                     .size(40.dp)
@@ -297,6 +297,7 @@ fun MainScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     outerPadding: PaddingValues,
@@ -305,6 +306,7 @@ fun HomeScreen(
 ) {
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
+    val isPullDownRefreshing = remember { mutableStateOf(false) }
     val quickLinksData = viewModel.quickLinksLimitedData.collectAsStateWithLifecycle()
     val leaveTrackerDetails = viewModel.liveLeaveTrackerDetails.collectAsStateWithLifecycle()
     val announcementsLimitedData = viewModel.announcementsLimitedData.collectAsStateWithLifecycle()
@@ -323,131 +325,54 @@ fun HomeScreen(
         Pair("On DutyBooked","onDutyLeaveBooked"),
         Pair("On DutyBalance","onDutyLeaveBalance"))
 
-    Column(
-        modifier = Modifier
-            .verticalScroll(rememberScrollState())
-            .fillMaxWidth()
-            .padding(outerPadding),
-//            .weight(weight = 1f, fill = false),
-        horizontalAlignment = Alignment.CenterHorizontally
+    PullToRefreshBox(
+        isRefreshing = isPullDownRefreshing.value,
+        onRefresh = {
+            viewModel.fetchUserSignInStatus()
+            viewModel.fetchLimitedQuickLinks()
+            viewModel.fetchLimitedAnnouncements()
+            viewModel.getLeaveTrackerDetails()
+            viewModel.getHolidayDetails()
+        },
+        modifier = Modifier.fillMaxSize()
     ) {
-        Spacer(Modifier.height(20.dp))
-        SignInStatus(viewModel)
-        Spacer(Modifier.height(20.dp))
         Column(
             modifier = Modifier
-                .clip(shape = RoundedCornerShape(15.dp))
-                .fillMaxWidth(0.8f)
-                .height(200.dp)
-                .background(Color.White)
                 .verticalScroll(rememberScrollState())
-                .padding(10.dp)
+                .fillMaxWidth()
+                .padding(outerPadding),
+//            .weight(weight = 1f, fill = false),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Row(
-                modifier = Modifier.padding(10.dp)
+            Spacer(Modifier.height(20.dp))
+            SignInStatus(viewModel)
+            Spacer(Modifier.height(20.dp))
+            Column(
+                modifier = Modifier
+                    .clip(shape = RoundedCornerShape(15.dp))
+                    .fillMaxWidth(0.8f)
+                    .height(200.dp)
+                    .background(Color.White)
+                    .verticalScroll(rememberScrollState())
+                    .padding(10.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Outlined.FavoriteBorder, //ImageVector.vectorResource(R.drawable.clock_24dp),
-                    contentDescription = "Favorites",
-                    tint = Color(0xFFADD8E6)
-                )
-                Spacer(Modifier.width(10.dp))
-                Text(
-                    text = "Favorites",
-                    style = MaterialTheme.typography.titleLarge
-                )
-            }
-            Spacer(Modifier.height(10.dp))
-            if (false) {
-
-            } else {
-                Column(
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.fillMaxSize()
+                Row(
+                    modifier = Modifier.padding(10.dp)
                 ) {
+                    Icon(
+                        imageVector = Icons.Outlined.FavoriteBorder, //ImageVector.vectorResource(R.drawable.clock_24dp),
+                        contentDescription = "Favorites",
+                        tint = Color(0xFFADD8E6)
+                    )
+                    Spacer(Modifier.width(10.dp))
                     Text(
-                        text = "No Data Found",
-                        style = MaterialTheme.typography.bodyMedium
+                        text = "Favorites",
+                        style = MaterialTheme.typography.titleLarge
                     )
                 }
-            }
-        }
-        Spacer(Modifier.height(20.dp))
-        Column(
-            modifier = Modifier
-                .clip(shape = RoundedCornerShape(15.dp))
-                .fillMaxWidth(0.8f)
-                .height(250.dp)
-                .background(Color.White)
-//                                .verticalScroll(rememberScrollState())
-                .padding(10.dp)
-        ) {
-            Row(
-                modifier = Modifier.padding(10.dp)
-            ) {
-                Icon(
-                    imageVector = ImageVector.vectorResource(R.drawable.link_header_icon),
-                    contentDescription = "Quick Links",
-                    tint = Color.Unspecified,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(Modifier.width(10.dp))
-                Text(
-                    text = "Quick Links",
-                    style = MaterialTheme.typography.titleLarge
-                )
-            }
-            Spacer(Modifier.height(5.dp))
-            quickLinksData.value?.let {
-                if (it.size() > 0) {
-                    it.forEach { quickLink ->
-                        val linkData = quickLink.toObject(LinkData::class.java)
-                        Row (
-                            modifier = Modifier.padding(10.dp)
-                        ){
-                            Icon(
-                                imageVector = ImageVector.vectorResource(R.drawable.link),
-                                contentDescription = "Links",
-                                tint = Color.Unspecified,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(Modifier.width(10.dp))
-                            Text(
-                                buildAnnotatedString {
-                                    withLink(
-                                        LinkAnnotation.Url(
-                                            url = linkData.linkurl,
-                                            styles = TextLinkStyles(style = SpanStyle(color = Color.Blue))
-                                        )
-                                    ) {
-                                        append(linkData.linkname.trimToLength(20))
-                                    }
-                                }
-                            )
-                        }
-                    }
-                    Spacer(Modifier.width(20.dp))
-                    Button(
-                        onClick = {
-                            quickLinksData.value?.let {
-                                navController.navigate("QuickLinksScreen")
-                            }
-                        },
-                        modifier = Modifier
-                            .align(Alignment.CenterHorizontally),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFFADD8E6)
-                        ),
-                    ) {
-                        Text(
-                            text = "View More",
-                            style = MaterialTheme.typography.titleSmall,
-                            color = Color.Black,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    Spacer(Modifier.width(10.dp))
+                Spacer(Modifier.height(10.dp))
+                if (false) {
+
                 } else {
                     Column(
                         verticalArrangement = Arrangement.Center,
@@ -461,292 +386,388 @@ fun HomeScreen(
                     }
                 }
             }
-        }
-        Spacer(Modifier.height(20.dp))
-        Column(
-            modifier = Modifier
-                .clip(shape = RoundedCornerShape(15.dp))
-                .fillMaxWidth(0.8f)
-                .height(370.dp)
-                .background(Color.White)
+            Spacer(Modifier.height(20.dp))
+            Column(
+                modifier = Modifier
+                    .clip(shape = RoundedCornerShape(15.dp))
+                    .fillMaxWidth(0.8f)
+                    .height(250.dp)
+                    .background(Color.White)
 //                                .verticalScroll(rememberScrollState())
-                .padding(10.dp)
-        ) {
-            Row(
-                modifier = Modifier.padding(10.dp)
+                    .padding(10.dp)
             ) {
-                Icon(
-                    imageVector = ImageVector.vectorResource(R.drawable.mic),
-                    contentDescription = "Announcements",
-                    tint = Color.Unspecified,
-                    modifier = Modifier.size(30.dp)
-                )
-                Spacer(Modifier.width(10.dp))
-                Text(
-                    text = "Announcements",
-                    style = MaterialTheme.typography.titleLarge
-                )
-            }
-            Spacer(Modifier.height(5.dp))
-            announcementsLimitedData.value?.let {
-                if (it.size() > 0) {
-                    it.forEach { announcement ->
-                        val announcementData = announcement.toObject(AnnouncementList::class.java)
-                        Log.d("MainScreen","announcementData $announcementData")
-                        Row (
-                            modifier = Modifier.padding(10.dp)
-                                .clickable{
-                                    navController.navigate("AnnouncementDetailScreen/${announcementData.announcementID}")
-                                },
-                            verticalAlignment = Alignment.CenterVertically
-                        ){
-                            AsyncImage(
-                                model = if(announcementData.reporterProfileImageUrl.isBlank()) {
-                                    R.drawable.account_circle_24
-                                } else {
-                                    announcementData.reporterProfileImageUrl
-                                },
-                                contentDescription = "Reporter Profile Icon",
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(16.dp)) // Rounded corners
-                                    .size(40.dp)
-                            )
-                            Spacer(Modifier.width(10.dp))
-                            Column {
-                                Text(
-                                    text = announcementData.title.trimToLength(20),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = Color.Black,
-                                    fontWeight = FontWeight.Bold
+                Row(
+                    modifier = Modifier.padding(10.dp)
+                ) {
+                    Icon(
+                        imageVector = ImageVector.vectorResource(R.drawable.link_header_icon),
+                        contentDescription = "Quick Links",
+                        tint = Color.Unspecified,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    Text(
+                        text = "Quick Links",
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                }
+                Spacer(Modifier.height(5.dp))
+                quickLinksData.value?.let {
+                    if (it.size() > 0) {
+                        it.forEach { quickLink ->
+                            val linkData = quickLink.toObject(LinkData::class.java)
+                            Row (
+                                modifier = Modifier.padding(10.dp)
+                            ){
+                                Icon(
+                                    imageVector = ImageVector.vectorResource(R.drawable.link),
+                                    contentDescription = "Links",
+                                    tint = Color.Unspecified,
+                                    modifier = Modifier.size(20.dp)
                                 )
-                                Spacer(Modifier.height(2.dp))
+                                Spacer(Modifier.width(10.dp))
                                 Text(
-                                    text = formatTimestamp(announcementData.date),
-                                    style = MaterialTheme.typography.bodySmall
-                                )
-                                Spacer(Modifier.height(2.dp))
-                                Text(
-                                    text = announcementData.category,
-                                    style = MaterialTheme.typography.bodySmall
+                                    buildAnnotatedString {
+                                        withLink(
+                                            LinkAnnotation.Url(
+                                                url = linkData.linkurl,
+                                                styles = TextLinkStyles(style = SpanStyle(color = Color.Blue))
+                                            )
+                                        ) {
+                                            append(linkData.linkname.trimToLength(20))
+                                        }
+                                    }
                                 )
                             }
                         }
                         Spacer(Modifier.width(20.dp))
-                    }
-                    Spacer(Modifier.width(30.dp))
-                    Button(
-                        onClick = {
-                            quickLinksData.value?.let {
-                                navController.navigate("AnnouncementsScreen")
-                            }
-                        },
-                        modifier = Modifier
-                            .align(Alignment.CenterHorizontally),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFFADD8E6)
-                        ),
-                    ) {
-                        Text(
-                            text = "View More",
-                            style = MaterialTheme.typography.titleSmall,
-                            color = Color.Black,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    Spacer(Modifier.width(10.dp))
-                } else {
-                    Column(
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        Text(
-                            text = "No Data Found",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
+                        Button(
+                            onClick = {
+                                quickLinksData.value?.let {
+                                    navController.navigate("QuickLinksScreen")
+                                }
+                            },
+                            modifier = Modifier
+                                .align(Alignment.CenterHorizontally),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFADD8E6)
+                            ),
+                        ) {
+                            Text(
+                                text = "View More",
+                                style = MaterialTheme.typography.titleSmall,
+                                color = Color.Black,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Spacer(Modifier.width(10.dp))
+                    } else {
+                        Column(
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            Text(
+                                text = "No Data Found",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
                     }
                 }
             }
-        }
-        Spacer(Modifier.height(20.dp))
-        Column(
-            modifier = Modifier
-                .clip(shape = RoundedCornerShape(15.dp))
-                .fillMaxWidth(0.8f)
-                .height(310.dp)
-                .background(Color.White)
-                .padding(10.dp)
-        ) {
-            Row(
-                modifier = Modifier.padding(10.dp)
+            Spacer(Modifier.height(20.dp))
+            Column(
+                modifier = Modifier
+                    .clip(shape = RoundedCornerShape(15.dp))
+                    .fillMaxWidth(0.8f)
+                    .height(370.dp)
+                    .background(Color.White)
+//                                .verticalScroll(rememberScrollState())
+                    .padding(10.dp)
             ) {
-                Icon(
-                    imageVector = ImageVector.vectorResource(R.drawable.report),
-                    contentDescription = "Leave Report",
-                    tint = Color.Unspecified,
-                    modifier = Modifier.size(30.dp)
-                )
-                Spacer(Modifier.width(10.dp))
-                Text(
-                    text = "Leave Report",
-                    style = MaterialTheme.typography.titleLarge
-                )
-            }
-            Spacer(Modifier.height(5.dp))
-            leaveTypes.forEach { leaveType ->
-                Row (
+                Row(
                     modifier = Modifier.padding(10.dp)
-                        .clickable{
-                            val annualLeaveDataMap = Json.encodeToString(leaveTrackerDetails.value)
-                            val encodedLeaveJson =
-                                URLEncoder.encode(annualLeaveDataMap, StandardCharsets.UTF_8.toString())
-                            navController.navigate("ApplyLeaveScreen/${encodedLeaveJson}/${leaveType}")
-                        },
-                    verticalAlignment = Alignment.CenterVertically
-                ){
+                ) {
                     Icon(
-                        imageVector = leaveTypeIcons.getValue(leaveType),
-                        contentDescription = "Leave type icon",
-                        modifier = Modifier.size(25.dp),
+                        imageVector = ImageVector.vectorResource(R.drawable.mic),
+                        contentDescription = "Announcements",
                         tint = Color.Unspecified,
+                        modifier = Modifier.size(30.dp)
                     )
                     Spacer(Modifier.width(10.dp))
-                    Column {
-                        Text(
-                            text = leaveType,
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        Text(
-                            text = "Taken : ${getPropertyValue(leaveTrackerDetails.value,leaveTypeDataClassMap.getValue("${leaveType}Booked"))} Day(s) | Balance : ${getPropertyValue(leaveTrackerDetails.value,leaveTypeDataClassMap.getValue("${leaveType}Balance"))} Day(s)",
-                            style = MaterialTheme.typography.bodySmall
-                        )
+                    Text(
+                        text = "Announcements",
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                }
+                Spacer(Modifier.height(5.dp))
+                announcementsLimitedData.value?.let {
+                    if (it.size() > 0) {
+                        it.forEach { announcement ->
+                            val announcementData = announcement.toObject(AnnouncementList::class.java)
+                            Log.d("MainScreen","announcementData $announcementData")
+                            Row (
+                                modifier = Modifier
+                                    .padding(10.dp)
+                                    .clickable {
+                                        navController.navigate("AnnouncementDetailScreen/${announcementData.announcementID}")
+                                    },
+                                verticalAlignment = Alignment.CenterVertically
+                            ){
+                                AsyncImage(
+                                    model = if(announcementData.reporterProfileImageUrl.isBlank()) {
+                                        R.drawable.account_circle_24
+                                    } else {
+                                        announcementData.reporterProfileImageUrl
+                                    },
+                                    contentDescription = "Reporter Profile Icon",
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(16.dp)) // Rounded corners
+                                        .size(40.dp)
+                                )
+                                Spacer(Modifier.width(10.dp))
+                                Column {
+                                    Text(
+                                        text = announcementData.title.trimToLength(20),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = Color.Black,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Spacer(Modifier.height(2.dp))
+                                    Text(
+                                        text = formatTimestamp(announcementData.date),
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                    Spacer(Modifier.height(2.dp))
+                                    Text(
+                                        text = announcementData.category,
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+                            }
+                            Spacer(Modifier.width(20.dp))
+                        }
+                        Spacer(Modifier.width(30.dp))
+                        Button(
+                            onClick = {
+                                quickLinksData.value?.let {
+                                    navController.navigate("AnnouncementsScreen")
+                                }
+                            },
+                            modifier = Modifier
+                                .align(Alignment.CenterHorizontally),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFADD8E6)
+                            ),
+                        ) {
+                            Text(
+                                text = "View More",
+                                style = MaterialTheme.typography.titleSmall,
+                                color = Color.Black,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Spacer(Modifier.width(10.dp))
+                    } else {
+                        Column(
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            Text(
+                                text = "No Data Found",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
                     }
                 }
-                Spacer(modifier = Modifier.width(20.dp))
             }
-            Spacer(Modifier.width(30.dp))
-            Button(
-                onClick = {
-                    quickLinksData.value?.let {
-                        navController.navigate("LeaveReportScreen/${liveUserDetails.value.email}")
-                    }
-                },
+            Spacer(Modifier.height(20.dp))
+            Column(
                 modifier = Modifier
-                    .align(Alignment.CenterHorizontally),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFADD8E6)
-                ),
+                    .clip(shape = RoundedCornerShape(15.dp))
+                    .fillMaxWidth(0.8f)
+                    .height(310.dp)
+                    .background(Color.White)
+                    .padding(10.dp)
             ) {
-                Text(
-                    text = "View More",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = Color.Black,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-        Spacer(Modifier.height(20.dp))
-        Column(
-            modifier = Modifier
-                .clip(shape = RoundedCornerShape(15.dp))
-                .fillMaxWidth(0.8f)
-                .height(310.dp)
-                .background(Color.White)
-                .padding(10.dp)
-        ) {
-            Row(
-                modifier = Modifier.padding(10.dp)
-            ) {
-                Icon(
-                    imageVector = ImageVector.vectorResource(R.drawable.umbrella),
-                    contentDescription = "Holidays",
-                    tint = Color.Unspecified,
-                    modifier = Modifier.size(30.dp)
-                )
-                Spacer(Modifier.width(10.dp))
-                Text(
-                    text = "Upcoming Holidays",
-                    style = MaterialTheme.typography.titleLarge
-                )
-            }
-            Spacer(Modifier.height(5.dp))
-            holidaysData.value?.take(3)?.forEach { holiday ->
-                val holidayData = holiday.toObject(HolidayData::class.java)
-                Row (
-                    modifier = Modifier.padding(10.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ){
-                    Box(
-                        modifier = Modifier.size(35.dp)
-                            .background(Color(0xFF0096FF), shape = CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            holidayData.initial,
-                            color = Color.White,
-                            fontSize = 15.sp
-                        )
-                    }
-                    Spacer(Modifier.width(15.dp))
-                    Column {
-                        Text(
-                            text = holidayData.name,
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        Text(
-                            text = holidayFormatTimestamp(holidayData.date),
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
+                Row(
+                    modifier = Modifier.padding(10.dp)
+                ) {
+                    Icon(
+                        imageVector = ImageVector.vectorResource(R.drawable.report),
+                        contentDescription = "Leave Report",
+                        tint = Color.Unspecified,
+                        modifier = Modifier.size(30.dp)
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    Text(
+                        text = "Leave Report",
+                        style = MaterialTheme.typography.titleLarge
+                    )
                 }
-                Spacer(modifier = Modifier.width(20.dp))
-            }
-            Spacer(Modifier.width(30.dp))
-            Button(
-                onClick = {
-                    quickLinksData.value?.let {
-                        navController.navigate("UpcomingHolidaysScreen")
+                Spacer(Modifier.height(5.dp))
+                leaveTypes.forEach { leaveType ->
+                    Row (
+                        modifier = Modifier
+                            .padding(10.dp)
+                            .clickable {
+                                val annualLeaveDataMap = Json.encodeToString(leaveTrackerDetails.value)
+                                val encodedLeaveJson =
+                                    URLEncoder.encode(
+                                        annualLeaveDataMap,
+                                        StandardCharsets.UTF_8.toString()
+                                    )
+                                navController.navigate("ApplyLeaveScreen/${encodedLeaveJson}/${leaveType}")
+                            },
+                        verticalAlignment = Alignment.CenterVertically
+                    ){
+                        Icon(
+                            imageVector = leaveTypeIcons.getValue(leaveType),
+                            contentDescription = "Leave type icon",
+                            modifier = Modifier.size(25.dp),
+                            tint = Color.Unspecified,
+                        )
+                        Spacer(Modifier.width(10.dp))
+                        Column {
+                            Text(
+                                text = leaveType,
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Text(
+                                text = "Taken : ${getPropertyValue(leaveTrackerDetails.value,leaveTypeDataClassMap.getValue("${leaveType}Booked"))} Day(s) | Balance : ${getPropertyValue(leaveTrackerDetails.value,leaveTypeDataClassMap.getValue("${leaveType}Balance"))} Day(s)",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
                     }
-                },
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFADD8E6)
-                ),
-            ) {
-                Text(
-                    text = "View More",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = Color.Black,
-                    fontWeight = FontWeight.Bold
-                )
+                    Spacer(modifier = Modifier.width(20.dp))
+                }
+                Spacer(Modifier.width(30.dp))
+                Button(
+                    onClick = {
+                        quickLinksData.value?.let {
+                            navController.navigate("LeaveReportScreen/${liveUserDetails.value.email}")
+                        }
+                    },
+                    modifier = Modifier
+                        .align(Alignment.CenterHorizontally),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFADD8E6)
+                    ),
+                ) {
+                    Text(
+                        text = "View More",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = Color.Black,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
-        }
-        Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(20.dp))
+            Column(
+                modifier = Modifier
+                    .clip(shape = RoundedCornerShape(15.dp))
+                    .fillMaxWidth(0.8f)
+                    .height(310.dp)
+                    .background(Color.White)
+                    .padding(10.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(10.dp)
+                ) {
+                    Icon(
+                        imageVector = ImageVector.vectorResource(R.drawable.umbrella),
+                        contentDescription = "Holidays",
+                        tint = Color.Unspecified,
+                        modifier = Modifier.size(30.dp)
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    Text(
+                        text = "Upcoming Holidays",
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                }
+                Spacer(Modifier.height(5.dp))
+                holidaysData.value?.take(3)?.forEach { holiday ->
+                    val holidayData = holiday.toObject(HolidayData::class.java)
+                    Row (
+                        modifier = Modifier.padding(10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ){
+                        Box(
+                            modifier = Modifier
+                                .size(35.dp)
+                                .background(Color(0xFF0096FF), shape = CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                holidayData.initial,
+                                color = Color.White,
+                                fontSize = 15.sp
+                            )
+                        }
+                        Spacer(Modifier.width(15.dp))
+                        Column {
+                            Text(
+                                text = holidayData.name,
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Text(
+                                text = holidayFormatTimestamp(holidayData.date),
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(20.dp))
+                }
+                Spacer(Modifier.width(30.dp))
+                Button(
+                    onClick = {
+                        quickLinksData.value?.let {
+                            navController.navigate("UpcomingHolidaysScreen")
+                        }
+                    },
+                    modifier = Modifier
+                        .align(Alignment.CenterHorizontally),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFADD8E6)
+                    ),
+                ) {
+                    Text(
+                        text = "View More",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = Color.Black,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+            Spacer(Modifier.height(20.dp))
 
-        Column(
-            modifier = Modifier
-                .clip(shape = RoundedCornerShape(15.dp))
-                .fillMaxWidth()
-                .background(Color.White)
-                .height(100.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Spacer(Modifier.height(16.dp))
+            Column(
+                modifier = Modifier
+                    .clip(shape = RoundedCornerShape(15.dp))
+                    .fillMaxWidth()
+                    .background(Color.White)
+                    .height(100.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Spacer(Modifier.height(16.dp))
 
-            ClickableText(
-                text = AnnotatedString("Show Snackbar"),
-                onClick = {
-                    //viewModel.toggleIsViewLoading()
-                    viewModel.addUserToDB()
+                ClickableText(
+                    text = AnnotatedString("Show Snackbar"),
+                    onClick = {
+                        //viewModel.toggleIsViewLoading()
+                        viewModel.addUserToDB()
 //                            viewModel.logoutCurrentUser()
-                    scope.launch {
-                        snackbarHostState.showSnackbar("Custom Snackbar!")
+                        scope.launch {
+                            snackbarHostState.showSnackbar("Custom Snackbar!")
+                        }
                     }
-                }
-            )
+                )
+            }
         }
     }
+
 }
 
 @Composable
@@ -973,7 +994,8 @@ fun AddTaskShowModalSheet(
                     }
                 ) {
                     Box(
-                        modifier = Modifier.size(40.dp)
+                        modifier = Modifier
+                            .size(40.dp)
                             .background(Color(0xFFFF7F50), shape = RoundedCornerShape(15.dp)),
                         contentAlignment = Alignment.Center
                     ) {
@@ -1036,7 +1058,8 @@ fun AddTaskShowModalSheet(
             }
             Spacer(modifier = Modifier.height(10.dp))
             Row (
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
                     .padding(10.dp),
                 horizontalArrangement = Arrangement.Center
             ){
@@ -1044,8 +1067,9 @@ fun AddTaskShowModalSheet(
                     imageVector = ImageVector.vectorResource(R.drawable.cancel_24dp),
                     contentDescription = "Cancel",
                     tint = Color.Unspecified,
-                    modifier = Modifier.size(40.dp)
-                        .clickable{
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clickable {
                             viewModel.toggleAddTaskShowBottomSheet()
                         }
                 )

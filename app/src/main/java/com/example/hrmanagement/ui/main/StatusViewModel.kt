@@ -25,8 +25,11 @@ class StatusViewModel: ViewModel() {
     val allUsersData = _allUsersData.asStateFlow()
     private var _filteredUsersData: MutableStateFlow<MutableList<UserLoginData>> = MutableStateFlow(mutableListOf(UserLoginData()))
     val filteredUsersData = _filteredUsersData.asStateFlow()
-    private var _statusData: MutableStateFlow<TextFieldValue> = MutableStateFlow(TextFieldValue())
+    private var _statusData: MutableStateFlow<TextFieldValue> = MutableStateFlow(TextFieldValue(""))
     val statusData = _statusData.asStateFlow()
+    private var _dollorEmailMapData = mutableMapOf<Int,String>()
+    private var _dollorMapData: MutableStateFlow<MutableMap<Int,String>> = MutableStateFlow(mutableMapOf())
+    val dollorMapData = _dollorMapData.asStateFlow()
     private var numberOfFeatchProcess: Int = 0
     private var searchStringData: String = ""
 
@@ -45,6 +48,22 @@ class StatusViewModel: ViewModel() {
     fun updateFeedMetadata(feedMetadata: FeedMetadata?, response: String){
         if((response == "Success")&&(feedMetadata!=null)){
             Log.d("StatusViewModel","updateUserDetails called $feedMetadata")
+            val builder = StringBuilder()
+            var current = 0
+            val sortedReplacements = _dollorEmailMapData.toSortedMap()
+            for ((index, replacement) in sortedReplacements) {
+                builder.append(statusData.value.text.substring(current, index))
+                builder.append(replacement)
+                current = index + 1
+            }
+            if (current < statusData.value.text.length) {
+                builder.append(statusData.value.text.substring(current))
+            }
+            val result = builder.toString()
+//            var stringWithEmail = statusData.value.text
+//            _dollorEmailMapData.entries.sortedByDescending { it.key }.forEach { (index, email) ->
+//                stringWithEmail = stringWithEmail.replaceRange(index, index + 1, email)
+//            }
             val feedData = FeedData(
                 (feedMetadata.lastFeedId+1).toString(),
                 feedMetadata.username,
@@ -53,7 +72,7 @@ class StatusViewModel: ViewModel() {
                 "You have posted a message",
                 Calendar.getInstance().timeInMillis,
                 "userstatus",
-                statusData.value.text,
+                builder.toString(),
                 true,
                 true,
                 0,0,0,0,
@@ -132,7 +151,8 @@ class StatusViewModel: ViewModel() {
         println("onMentionSelection ${user.username}")
         // Example: Replace "@old" with "@new"
         val oldText = statusData.value.text
-        val newText = oldText.replace("@${searchStringData}", "${user.username}") // Replace as needed
+        addDollorMap(oldText.indexOf("@${searchStringData}"), user.username, user.email)
+        val newText = oldText.replace("@${searchStringData}", "$") // Replace as needed
         val newSelection = TextRange(newText.length) // Or set cursor as needed
 
         val newValue = statusData.value.copy(
@@ -140,6 +160,16 @@ class StatusViewModel: ViewModel() {
             selection = newSelection
         )
         onStatusChange(newValue)
+    }
+
+    fun removeDollorMap(index: Int) {
+        _dollorMapData.value.remove(index)
+        _dollorEmailMapData.remove(index)
+    }
+
+    fun addDollorMap(index: Int, username: String, email: String) {
+        _dollorMapData.value.put(index,username)
+        _dollorEmailMapData.put(index, email)
     }
 
     fun onStatusChange(newText: TextFieldValue) {

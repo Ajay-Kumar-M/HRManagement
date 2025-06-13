@@ -313,9 +313,9 @@ class AppDataManager {
             }
     }
 
-    fun getFirebaseLeaveTrackerData(year: Int,emaailId: String,successResponse: (LeaveTrackerData, String) -> Unit){
+    fun getFirebaseLeaveTrackerData(year: Int,emailId: String,successResponse: (LeaveTrackerData, String) -> Unit){
         var resultData: LeaveTrackerData? = LeaveTrackerData()
-        val docRef = firestoreDB.collection("leavetrackers").document("$emaailId$year")
+        val docRef = firestoreDB.collection("leavetrackers").document("$emailId$year")
         docRef.get()
             .addOnSuccessListener { document ->
                 if (document != null) {

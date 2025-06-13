@@ -256,7 +256,7 @@ fun MainScreen(
                         )
                     }
                 }
-                if (addTaskShowBottomSheet.value) AddTaskShowModalSheet(navController,viewModel)
+                if (addTaskShowBottomSheet.value) AddTaskShowModalSheet(liveUserDetails.value,navController,viewModel)
             }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
@@ -943,6 +943,7 @@ fun Long.toHms(): Triple<Long,Long,Long> {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddTaskShowModalSheet(
+    liveUserDetails: UserLoginData,
     navController: NavController,
     viewModel: MainScreenViewModel
 ){
@@ -990,7 +991,13 @@ fun AddTaskShowModalSheet(
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.clickable{
-                        viewModel.toggleAddTaskShowBottomSheet()
+                        coroutineScope.launch {
+                            sheetState.hide()
+                            viewModel.toggleAddTaskShowBottomSheet()
+                            if (!sheetState.isVisible) {
+                                navController.navigate("ApplyCompOffScreen/${liveUserDetails.email}")
+                            }
+                        }
                     }
                 ) {
                     Box(

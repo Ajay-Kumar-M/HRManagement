@@ -14,6 +14,7 @@ import com.example.hrmanagement.ui.announcement.AnnouncementDetailScreen
 import com.example.hrmanagement.ui.announcement.AnnouncementsFilterScreen
 import com.example.hrmanagement.ui.announcement.AnnouncementsScreen
 import com.example.hrmanagement.ui.holiday.UpcomingHolidaysScreen
+import com.example.hrmanagement.ui.leave.ApplyCompOffScreen
 import com.example.hrmanagement.ui.main.MainScreen
 import com.example.hrmanagement.ui.quickLink.QuickLinksScreen
 import com.example.hrmanagement.ui.signin.FlashScreen
@@ -122,6 +123,15 @@ fun AppNavigation(modifier: Modifier = Modifier) {
 
         composable(route = "UpcomingHolidaysScreen") {
             UpcomingHolidaysScreen(modifier,navController)
+        }
+
+        composable(
+            route = "ApplyCompOffScreen/{userEmailId}",
+            arguments = listOf(navArgument("userEmailId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val userEmailId = backStackEntry.arguments?.getString("userEmailId")
+            if (userEmailId != null)
+                ApplyCompOffScreen(modifier,navController, userEmailId)
         }
 
         composable(

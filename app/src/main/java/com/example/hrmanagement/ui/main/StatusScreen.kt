@@ -1,6 +1,7 @@
 package com.example.hrmanagement.ui.main
 
 import android.R.attr.text
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -106,6 +107,7 @@ fun StatusScreen(
     var cursorHeight by remember { mutableStateOf(0f) }
     val navigateFeed = remember { mutableStateOf(false) }
     val density = LocalDensity.current
+    var showExitDialog by remember { mutableStateOf(false) }
 
     if (navigateFeed.value && !isSuccessDialogVisible.value) {
         LaunchedEffect(Unit) {
@@ -114,10 +116,13 @@ fun StatusScreen(
         }
     }
 
-//                LaunchedEffect(Unit) {
-//                    delay(1000)
-//                    focusRequester.requestFocus()
-//                }
+    BackHandler(enabled = true) {
+        if (statusData.value.text.isEmpty()){
+            navController.popBackStack()
+        } else {
+            showExitDialog = true
+        }
+    }
 
     Scaffold(
         modifier = Modifier.padding(5.dp),
@@ -136,7 +141,11 @@ fun StatusScreen(
                 ) {
                     IconButton(
                         onClick = {
-                            navController.popBackStack()
+                            if (statusData.value.text.isEmpty()){
+                                navController.popBackStack()
+                            } else {
+                                showExitDialog = true
+                            }
                         },
                         colors = IconButtonDefaults.iconButtonColors(
                             containerColor = Color.White,
@@ -412,6 +421,26 @@ fun StatusScreen(
                 )
             }
 
+            if (showExitDialog) {
+                AlertDialog(
+                    onDismissRequest = { showExitDialog = false },
+                    title = { Text("Confirm Navigation") },
+                    text = { Text("Are you sure you want to go back?") },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            showExitDialog = false
+                            navController.popBackStack()
+                        }) {
+                            Text("Yes")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showExitDialog = false }) {
+                            Text("No")
+                        }
+                    }
+                )
+            }
         }
         Spacer(Modifier.height(20.dp))
     }
@@ -638,6 +667,11 @@ fun MultiLineTextFieldWithCursorDropdown() {
 }
 
 /*
+
+//                LaunchedEffect(Unit) {
+//                    delay(1000)
+//                    focusRequester.requestFocus()
+//                }
 
                         val inputTransformation = object : InputTransformation {
                             override fun TextFieldBuffer.transformInput() {

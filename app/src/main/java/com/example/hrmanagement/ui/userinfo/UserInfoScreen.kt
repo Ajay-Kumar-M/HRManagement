@@ -290,7 +290,6 @@ fun UserInfoScreen(
                         selectedTabIndex = selectedTabIndex,
                         edgePadding = 3.dp
                     ) {
-
                         tabs.forEachIndexed { index, title ->
                             Tab(
                                 selected = selectedTabIndex == index,

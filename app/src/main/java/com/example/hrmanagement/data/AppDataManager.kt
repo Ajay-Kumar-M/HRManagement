@@ -185,22 +185,28 @@ class AppDataManager {
             }
     }
 
-    fun addAttendanceData(attendanceData: AttendanceData){ //}, returnResponse: (String) -> Unit){
-        val usersCollection = firestoreDB.collection("attendance").document(attendanceData.emailId).collection("attendanceLogs")
-        usersCollection.document(attendanceData.date.toString())
-            .set(attendanceData)
+    fun addRegularisationAttendanceData(emailId: String,attendanceData: List<AttendanceRegularisationData>, returnResponse: (String) -> Unit){
+        val batch = firestoreDB.batch()
+        val attendanceCollection = firestoreDB.collection("attendance").document(emailId).collection("attendanceRegularisationLogs")
+        for (data in attendanceData) {
+            val docRef = attendanceCollection.document(data.date.toString()) // auto-generated ID
+            batch.set(docRef, data)
+        }
+        batch.commit()
             .addOnSuccessListener {
-                Log.d(TAG, "DocumentSnapshot added with ID: ${attendanceData.emailId}")
+                Log.d(TAG, "DocumentSnapshot added with ID: ${emailId}")
+                returnResponse("Success")
             }
             .addOnFailureListener { e ->
                 Log.w(TAG, "Error adding document", e)
+                returnResponse("Failure")
             }
     }
 
     fun getFirebaseAttendanceData(startDateTimestamp: Long,endDateTimestamp: Long, emailId: String,responseHandler: (QuerySnapshot?,String) -> Unit){
         val attendanceCollection = firestoreDB.collection("attendance").document(emailId).collection("attendanceLogs")
         val query = attendanceCollection
-            .whereLessThan("date", endDateTimestamp)
+            .whereLessThanOrEqualTo("date", endDateTimestamp)
             .whereGreaterThanOrEqualTo("date", startDateTimestamp)
         query.get()
             .addOnSuccessListener { result ->

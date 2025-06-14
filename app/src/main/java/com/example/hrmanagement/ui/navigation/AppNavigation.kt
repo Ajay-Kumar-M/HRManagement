@@ -22,6 +22,7 @@ import com.example.hrmanagement.ui.signin.SignUpScreen
 import com.example.hrmanagement.ui.leave.ApplyLeaveScreen
 import com.example.hrmanagement.ui.userinfo.ColleagueInfoScreen
 import com.example.hrmanagement.ui.leave.LeaveDetailsScreen
+import com.example.hrmanagement.ui.leave.LeaveRegularisationScreen
 import com.example.hrmanagement.ui.leave.LeaveReportScreen
 import com.example.hrmanagement.ui.main.StatusScreen
 import com.example.hrmanagement.ui.userinfo.UserInfoScreen
@@ -123,6 +124,21 @@ fun AppNavigation(modifier: Modifier = Modifier) {
 
         composable(route = "UpcomingHolidaysScreen") {
             UpcomingHolidaysScreen(modifier,navController)
+        }
+
+        composable(
+            route = "LeaveRegularisationScreen/{userEmailId}/{username}/{employeeId}",
+            arguments = listOf(
+                navArgument("userEmailId") { type = NavType.StringType },
+                navArgument("username") { type = NavType.StringType },
+                navArgument("employeeId") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val userEmailId = backStackEntry.arguments?.getString("userEmailId")
+            val username = backStackEntry.arguments?.getString("username")
+            val employeeId = backStackEntry.arguments?.getString("employeeId")
+            if (userEmailId != null)
+                LeaveRegularisationScreen(modifier,navController, userEmailId,username, employeeId)
         }
 
         composable(

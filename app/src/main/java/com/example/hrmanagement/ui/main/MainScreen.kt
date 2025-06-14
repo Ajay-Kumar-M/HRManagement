@@ -140,7 +140,7 @@ fun MainScreen(
     val isViewLoading = viewModel.isViewLoading.collectAsStateWithLifecycle()
     val liveUserDetails: State<UserLoginData> = viewModel.liveUserDetails.collectAsStateWithLifecycle()
     var selectedItem by remember { mutableIntStateOf(1) }
-    val items = listOf("Services", "Home", "", "Approvals", "More")
+    val tabItems = listOf("Services", "Home", "", "Approvals", "More")
     val selectedIcons = listOf(ImageVector.vectorResource(id = R.drawable.apps),Icons.Filled.Home,Icons.Filled.AddCircle, Icons.Rounded.CheckCircle, Icons.Rounded.MoreVert)
     val unselectedIcons = listOf(ImageVector.vectorResource(id = R.drawable.drag_indicator),Icons.Outlined.Home,Icons.Outlined.AddCircle, Icons.Outlined.CheckCircle, Icons.Outlined.MoreVert)
     val addTaskShowBottomSheet = viewModel.addTaskShowBottomSheet.collectAsStateWithLifecycle()
@@ -181,7 +181,7 @@ fun MainScreen(
 
                             Spacer(modifier = Modifier.width(10.dp))
                             Text(
-                                text = "Home",
+                                text = tabItems[selectedItem],
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier.padding(10.dp,5.dp,0.dp,0.dp)
                             )
@@ -235,7 +235,7 @@ fun MainScreen(
                 contentColor = Color.White
             ) {
                 NavigationBar {
-                    items.forEachIndexed { index, item ->
+                    tabItems.forEachIndexed { index, item ->
                         NavigationBarItem(
                             icon = {
                                 Icon(
@@ -351,135 +351,6 @@ fun HomeScreen(
                 modifier = Modifier
                     .clip(shape = RoundedCornerShape(15.dp))
                     .fillMaxWidth(0.8f)
-                    .height(200.dp)
-                    .background(Color.White)
-                    .verticalScroll(rememberScrollState())
-                    .padding(10.dp)
-            ) {
-                Row(
-                    modifier = Modifier.padding(10.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.FavoriteBorder, //ImageVector.vectorResource(R.drawable.clock_24dp),
-                        contentDescription = "Favorites",
-                        tint = Color(0xFFADD8E6)
-                    )
-                    Spacer(Modifier.width(10.dp))
-                    Text(
-                        text = "Favorites",
-                        style = MaterialTheme.typography.titleLarge
-                    )
-                }
-                Spacer(Modifier.height(10.dp))
-                if (false) {
-
-                } else {
-                    Column(
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        Text(
-                            text = "No Data Found",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-                }
-            }
-            Spacer(Modifier.height(20.dp))
-            Column(
-                modifier = Modifier
-                    .clip(shape = RoundedCornerShape(15.dp))
-                    .fillMaxWidth(0.8f)
-                    .height(250.dp)
-                    .background(Color.White)
-//                                .verticalScroll(rememberScrollState())
-                    .padding(10.dp)
-            ) {
-                Row(
-                    modifier = Modifier.padding(10.dp)
-                ) {
-                    Icon(
-                        imageVector = ImageVector.vectorResource(R.drawable.link_header_icon),
-                        contentDescription = "Quick Links",
-                        tint = Color.Unspecified,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(Modifier.width(10.dp))
-                    Text(
-                        text = "Quick Links",
-                        style = MaterialTheme.typography.titleLarge
-                    )
-                }
-                Spacer(Modifier.height(5.dp))
-                quickLinksData.value?.let {
-                    if (it.size() > 0) {
-                        it.forEach { quickLink ->
-                            val linkData = quickLink.toObject(LinkData::class.java)
-                            Row (
-                                modifier = Modifier.padding(10.dp)
-                            ){
-                                Icon(
-                                    imageVector = ImageVector.vectorResource(R.drawable.link),
-                                    contentDescription = "Links",
-                                    tint = Color.Unspecified,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(Modifier.width(10.dp))
-                                Text(
-                                    buildAnnotatedString {
-                                        withLink(
-                                            LinkAnnotation.Url(
-                                                url = linkData.linkurl,
-                                                styles = TextLinkStyles(style = SpanStyle(color = Color.Blue))
-                                            )
-                                        ) {
-                                            append(linkData.linkname.trimToLength(20))
-                                        }
-                                    }
-                                )
-                            }
-                        }
-                        Spacer(Modifier.width(20.dp))
-                        Button(
-                            onClick = {
-                                quickLinksData.value?.let {
-                                    navController.navigate("QuickLinksScreen")
-                                }
-                            },
-                            modifier = Modifier
-                                .align(Alignment.CenterHorizontally),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFFADD8E6)
-                            ),
-                        ) {
-                            Text(
-                                text = "View More",
-                                style = MaterialTheme.typography.titleSmall,
-                                color = Color.Black,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                        Spacer(Modifier.width(10.dp))
-                    } else {
-                        Column(
-                            verticalArrangement = Arrangement.Center,
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            Text(
-                                text = "No Data Found",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        }
-                    }
-                }
-            }
-            Spacer(Modifier.height(20.dp))
-            Column(
-                modifier = Modifier
-                    .clip(shape = RoundedCornerShape(15.dp))
-                    .fillMaxWidth(0.8f)
                     .height(370.dp)
                     .background(Color.White)
 //                                .verticalScroll(rememberScrollState())
@@ -587,6 +458,46 @@ fun HomeScreen(
                 modifier = Modifier
                     .clip(shape = RoundedCornerShape(15.dp))
                     .fillMaxWidth(0.8f)
+                    .height(200.dp)
+                    .background(Color.White)
+                    .verticalScroll(rememberScrollState())
+                    .padding(10.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(10.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.FavoriteBorder, //ImageVector.vectorResource(R.drawable.clock_24dp),
+                        contentDescription = "Favorites",
+                        tint = Color(0xFFADD8E6)
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    Text(
+                        text = "Favorites",
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                }
+                Spacer(Modifier.height(10.dp))
+                if (false) {
+
+                } else {
+                    Column(
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        Text(
+                            text = "No Data Found",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+            }
+            Spacer(Modifier.height(20.dp))
+            Column(
+                modifier = Modifier
+                    .clip(shape = RoundedCornerShape(15.dp))
+                    .fillMaxWidth(0.8f)
                     .height(310.dp)
                     .background(Color.White)
                     .padding(10.dp)
@@ -661,6 +572,95 @@ fun HomeScreen(
                         color = Color.Black,
                         fontWeight = FontWeight.Bold
                     )
+                }
+            }
+            Spacer(Modifier.height(20.dp))
+            Column(
+                modifier = Modifier
+                    .clip(shape = RoundedCornerShape(15.dp))
+                    .fillMaxWidth(0.8f)
+                    .height(250.dp)
+                    .background(Color.White)
+//                                .verticalScroll(rememberScrollState())
+                    .padding(10.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(10.dp)
+                ) {
+                    Icon(
+                        imageVector = ImageVector.vectorResource(R.drawable.link_header_icon),
+                        contentDescription = "Quick Links",
+                        tint = Color.Unspecified,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    Text(
+                        text = "Quick Links",
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                }
+                Spacer(Modifier.height(5.dp))
+                quickLinksData.value?.let {
+                    if (it.size() > 0) {
+                        it.forEach { quickLink ->
+                            val linkData = quickLink.toObject(LinkData::class.java)
+                            Row (
+                                modifier = Modifier.padding(10.dp)
+                            ){
+                                Icon(
+                                    imageVector = ImageVector.vectorResource(R.drawable.link),
+                                    contentDescription = "Links",
+                                    tint = Color.Unspecified,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(Modifier.width(10.dp))
+                                Text(
+                                    buildAnnotatedString {
+                                        withLink(
+                                            LinkAnnotation.Url(
+                                                url = linkData.linkurl,
+                                                styles = TextLinkStyles(style = SpanStyle(color = Color.Blue))
+                                            )
+                                        ) {
+                                            append(linkData.linkname.trimToLength(20))
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                        Spacer(Modifier.width(20.dp))
+                        Button(
+                            onClick = {
+                                quickLinksData.value?.let {
+                                    navController.navigate("QuickLinksScreen")
+                                }
+                            },
+                            modifier = Modifier
+                                .align(Alignment.CenterHorizontally),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFADD8E6)
+                            ),
+                        ) {
+                            Text(
+                                text = "View More",
+                                style = MaterialTheme.typography.titleSmall,
+                                color = Color.Black,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Spacer(Modifier.width(10.dp))
+                    } else {
+                        Column(
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            Text(
+                                text = "No Data Found",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
                 }
             }
             Spacer(Modifier.height(20.dp))
@@ -757,7 +757,7 @@ fun HomeScreen(
                     text = AnnotatedString("Show Snackbar"),
                     onClick = {
                         //viewModel.toggleIsViewLoading()
-                        viewModel.addUserToDB()
+//                        viewModel.addUserToDB()
 //                            viewModel.logoutCurrentUser()
                         scope.launch {
                             snackbarHostState.showSnackbar("Custom Snackbar!")
@@ -949,6 +949,7 @@ fun AddTaskShowModalSheet(
 ){
     var sheetState = rememberModalBottomSheetState()
     val coroutineScope = rememberCoroutineScope()
+    val leaveTrackerDetails = viewModel.liveLeaveTrackerDetails.collectAsStateWithLifecycle()
 
     Column{
         ModalBottomSheet(
@@ -1023,7 +1024,16 @@ fun AddTaskShowModalSheet(
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.clickable{
-                        viewModel.toggleAddTaskShowBottomSheet()
+                        coroutineScope.launch {
+                            sheetState.hide()
+                            viewModel.toggleAddTaskShowBottomSheet()
+                            if (!sheetState.isVisible) {
+                                val annualLeaveDataMap = Json.encodeToString(leaveTrackerDetails.value)
+                                val encodedLeaveJson =
+                                    URLEncoder.encode(annualLeaveDataMap, StandardCharsets.UTF_8.toString())
+                                navController.navigate("ApplyLeaveScreen/${encodedLeaveJson}/All")
+                            }
+                        }
                     }
                 ) {
                     Icon(
@@ -1047,7 +1057,13 @@ fun AddTaskShowModalSheet(
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.clickable{
-                        viewModel.toggleAddTaskShowBottomSheet()
+                        coroutineScope.launch {
+                            sheetState.hide()
+                            viewModel.toggleAddTaskShowBottomSheet()
+                            if (!sheetState.isVisible&&(liveUserDetails.emp_Id.isNotBlank())) {
+                                navController.navigate("LeaveRegularisationScreen/${liveUserDetails.email}/${liveUserDetails.username}/${liveUserDetails.emp_Id}")
+                            }
+                        }
                     }
                 ) {
                     Icon(

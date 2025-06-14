@@ -151,7 +151,7 @@ class ApplyCompOffViewModel(
             if (isViewLoading.value==false) toggleIsViewLoading()
             _workDate.value = timestamp
             numberOfFeatchProcess++
-            appDataManager.getFirebaseAttendanceData(workDate.value,(workDate.value+86400000),personEmailId,::updateAttendanceDetails)
+            appDataManager.getFirebaseAttendanceData(workDate.value,(workDate.value+86399990),personEmailId,::updateAttendanceDetails)
         }
     }
 

@@ -304,6 +304,12 @@ class UserInfoScreenViewModel: ViewModel() {
         val calendar = Calendar.getInstance()
         calendar.firstDayOfWeek = Calendar.MONDAY
         calendar.set(Calendar.DAY_OF_WEEK, calendar.firstDayOfWeek)
+        calendar.apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
         attendanceStartDateTimestamp = calendar.timeInMillis
         _attendanceStartDate.value = SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault()).format(Date(attendanceStartDateTimestamp))
         calendar.add(Calendar.DAY_OF_WEEK, 6)

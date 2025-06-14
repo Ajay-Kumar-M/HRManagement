@@ -144,7 +144,7 @@ class MainScreenViewModel: ViewModel(),DefaultLifecycleObserver {
                 toggleIsViewLoading()
             }
             numberOfFeatchProcess++
-            appDataManager.getFirebaseAttendanceData(startOfTheDay.timeInMillis,startOfTheDay.timeInMillis+86400000,userEmailUiState!!,::updateAttendanceDetails)
+            appDataManager.getFirebaseAttendanceData(startOfTheDay.timeInMillis,startOfTheDay.timeInMillis+86399990,userEmailUiState!!,::updateAttendanceDetails)
         }
     }
 

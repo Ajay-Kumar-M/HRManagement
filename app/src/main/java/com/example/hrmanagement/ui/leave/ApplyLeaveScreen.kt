@@ -97,13 +97,11 @@ fun ApplyLeaveScreen(
     }
 
     Scaffold(
-        modifier = Modifier.padding(5.dp),
         contentWindowInsets = WindowInsets.safeDrawing,
         topBar = {
             Row(
                 modifier = Modifier
                     .statusBarsPadding()
-                    .background(Color.White)
                     .fillMaxWidth(),
             ) {
                 IconButton(
@@ -123,7 +121,7 @@ fun ApplyLeaveScreen(
                         contentDescription = "Next Year"
                     )
                 }
-                Text("Leave Details",
+                Text("Apply Leave",
                     style = MaterialTheme.typography.titleLarge,
                     modifier = Modifier.padding(20.dp,5.dp)
                 )
@@ -134,6 +132,8 @@ fun ApplyLeaveScreen(
                 Row(
                     modifier = Modifier
                         .navigationBarsPadding()
+                        .height(55.dp)
+                        .background(Color.White)
                         .fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
@@ -230,7 +230,8 @@ fun ApplyLeaveScreen(
                     )
                 }
                 Row(
-                    modifier = Modifier.clickable{
+                    modifier = Modifier.padding(20.dp,0.dp)
+                        .clickable{
                         fromShowDatePicker = !fromShowDatePicker
                     }
                 ) {
@@ -285,7 +286,8 @@ fun ApplyLeaveScreen(
                     )
                 }
                 Row(
-                    modifier = Modifier.clickable{
+                    modifier = Modifier.padding(20.dp,0.dp)
+                        .clickable{
                         toShowDatePicker = !toShowDatePicker
                     }
                 ) {
@@ -354,6 +356,7 @@ fun ApplyLeaveScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .padding(20.dp,0.dp)
                 ) {
                     Row{
                         OutlinedTextField(
@@ -403,7 +406,8 @@ fun ApplyLeaveScreen(
                         viewModel.onLeaveReasonUpdated(it)
                     },
                     label = { Text("Reason for leave") },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.padding(10.dp)
+                        .fillMaxWidth()
                 )
 
             }

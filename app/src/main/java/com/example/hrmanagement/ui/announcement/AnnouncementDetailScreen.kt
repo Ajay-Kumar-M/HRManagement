@@ -64,6 +64,7 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.hrmanagement.R
 import com.example.hrmanagement.component.CircularProgressIndicatorComposable
+import com.example.hrmanagement.ui.main.UserProfileImage
 import com.example.hrmanagement.ui.main.formatTimestamp
 import com.example.hrmanagement.ui.main.trimToLength
 import kotlinx.serialization.json.Json
@@ -169,17 +170,7 @@ fun AnnouncementDetailScreen(
                         Row(modifier = Modifier
                             .fillMaxWidth()
                         ) {
-                            AsyncImage(
-                                model = if (announcement.reporterProfileImageUrl.isBlank()) {
-                                    R.drawable.account_circle_24
-                                } else {
-                                    announcement.reporterProfileImageUrl
-                                },
-                                contentDescription = "Reporter Profile Icon",
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .clip(shape = RoundedCornerShape(15.dp))
-                            )
+                            UserProfileImage(announcement.reporterProfileImageUrl)
                             Spacer(Modifier.width(10.dp))
                             Column(
                                 modifier = Modifier.weight(1f)
@@ -336,17 +327,7 @@ fun AnnouncementDetailScreen(
                                 Row (
                                     modifier = Modifier.fillMaxWidth()
                                 ){
-                                    AsyncImage(
-                                        model = if (comment.value.userProfileImageUrl.isBlank()) {
-                                            R.drawable.account_circle_24
-                                        } else {
-                                            comment.value.userProfileImageUrl
-                                        },
-                                        contentDescription = "Reporter Profile Icon",
-                                        modifier = Modifier
-                                            .size(40.dp)
-                                            .clip(shape = RoundedCornerShape(15.dp))
-                                    )
+                                    UserProfileImage(comment.value.userProfileImageUrl)
                                     Spacer(Modifier.width(10.dp))
                                     Column(
                                     ) {

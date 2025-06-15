@@ -20,10 +20,7 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -31,7 +28,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DatePickerState
@@ -58,6 +54,7 @@ import androidx.compose.material3.TimePickerState
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -72,6 +69,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -79,22 +77,16 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.hrmanagement.component.CircularProgressIndicatorComposable
 import com.example.hrmanagement.data.AttendanceRegularisationData
-import com.example.hrmanagement.data.UserLoginData
 import kotlinx.datetime.Month
-import java.nio.file.WatchEvent
 import java.text.SimpleDateFormat
 import java.time.Instant
-import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.ZoneOffset
-import java.time.ZonedDateTime
-import java.time.format.TextStyle
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
-import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -138,6 +130,11 @@ fun LeaveRegularisationScreen(
     var checkInAttendance by remember { mutableStateOf<AttendanceRegularisationData?>(null) }
     var checkOutAttendance by remember { mutableStateOf<AttendanceRegularisationData?>(null) }
 
+    LaunchedEffect(viewModel) {
+        viewModel.toastEvent.collect { message ->
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        }
+    }
 
     Scaffold(
         contentWindowInsets = WindowInsets.safeDrawing,
@@ -664,7 +661,8 @@ fun LeaveRegularisationScreen(
                                     .background(Color(0xFFE5E4E2),RoundedCornerShape(20.dp))
                                     .padding(1.dp),
                                 minLines = 2,
-                                singleLine = false
+                                singleLine = false,
+                                textStyle = androidx.compose.ui.text.TextStyle(fontSize = 15.sp)
                             )
                             Spacer(modifier = Modifier.height(10.dp))
                             Row(
@@ -685,12 +683,6 @@ fun LeaveRegularisationScreen(
                     }
                     Spacer(modifier = Modifier.height(20.dp))
                 }
-
-                Text(
-                    "DayOfDate(attendanceData.date)",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
 
                 checkInAttendance?.let { attendance ->
                     DateTimePickerDialog(
@@ -906,7 +898,7 @@ fun dayOfDate(timestamp: Long): String {
 
 fun monthNumberToShortName(month: Int): String {
     return Month.of(month)
-        .getDisplayName(TextStyle.SHORT, Locale.ENGLISH) // "Jan", "Feb", "Mar", ...
+        .getDisplayName(java.time.format.TextStyle.SHORT, Locale.ENGLISH) // "Jan", "Feb", "Mar", ...
 }
 
 fun completeFormatTimestamp(timestamp: Long): String {

@@ -1,10 +1,10 @@
 package com.example.hrmanagement.ui.userinfo
 
 import android.content.Intent
-import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -22,22 +22,17 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
@@ -47,7 +42,6 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.PrimaryScrollableTabRow
-import androidx.compose.material3.ProgressIndicatorDefaults.LinearStrokeCap
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
@@ -66,8 +60,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.modifier.modifierLocalConsumer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.TextStyle
@@ -90,6 +84,7 @@ import com.example.hrmanagement.data.AttendanceData
 import com.example.hrmanagement.data.GoalData
 import com.example.hrmanagement.data.LeaveTrackerData
 import com.example.hrmanagement.data.UserLoginData
+import com.example.hrmanagement.ui.main.UserProfileImage
 import com.google.firebase.firestore.QuerySnapshot
 import kotlinx.serialization.json.Json
 import java.net.URLEncoder
@@ -103,10 +98,11 @@ import kotlin.reflect.full.memberProperties
 fun UserInfoScreen(
     modifier: Modifier,
     navController: NavController,
-    userLoginData: UserLoginData,
+    emailId: String,
     viewModel: UserInfoScreenViewModel = viewModel()
 ) {
     val userImageUri = viewModel.userImageUriFlowState.collectAsStateWithLifecycle()
+    val userLoginData = viewModel.userLoginData.collectAsStateWithLifecycle()
     val userSignInStatus = appDataManager.liveUserSignInStatus.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val tabs = listOf("Profile", "Team", "Leave Tracker", "Goals", "Attendance")
@@ -169,20 +165,24 @@ fun UserInfoScreen(
                     Box(
                         modifier = Modifier
                             .height(300.dp)
-                            .background(Color.Red)
                             .fillMaxWidth()
                     )
                     {
-                        AsyncImage(
-                            model = if (userImageUri.value.isNullOrBlank()) {
-                                R.drawable.account_circle_24
-                            } else {
-                                userImageUri.value
-                            },
-                            contentDescription = "Profile Icon",
-                            modifier = Modifier.matchParentSize(),
-                            contentScale = ContentScale.FillBounds
-                        )
+                        if (userImageUri.value?.isBlank() == true) {
+                            Image(
+                                painter = rememberVectorPainter(Icons.Filled.AccountCircle),
+                                alpha = 0.5f,
+                                contentDescription = null,
+                                modifier = Modifier.matchParentSize()
+                            )
+                        } else {
+                            AsyncImage(
+                                model = userImageUri.value,
+                                contentDescription = "Profile Icon",
+                                modifier = Modifier.matchParentSize(),
+                                contentScale = ContentScale.FillBounds
+                            )
+                        }
                         IconButton(
                             onClick = { navController.popBackStack() },
                             colors = IconButtonDefaults.iconButtonColors(
@@ -202,7 +202,7 @@ fun UserInfoScreen(
                             onClick = {
                                 val sendIntent = Intent().apply {
                                     action = Intent.ACTION_SEND
-                                    putExtra(Intent.EXTRA_TEXT, userLoginData.profileUrl)
+                                    putExtra(Intent.EXTRA_TEXT, userLoginData.value.profileUrl)
                                     type = "text/plain"
                                 }
                                 val shareIntent = Intent.createChooser(sendIntent, "Share URL via")
@@ -257,7 +257,7 @@ fun UserInfoScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = userLoginData.username.toString(),
+                        text = userLoginData.value.username.toString(),
                         style = TextStyle(
                             fontWeight = FontWeight.Bold,
                             fontFamily = FontFamily.Default
@@ -272,7 +272,7 @@ fun UserInfoScreen(
                             .align(Alignment.CenterHorizontally)
                     )
                     Text(
-                        text = userLoginData.email.toString(),
+                        text = userLoginData.value.email.toString(),
                         style = TextStyle(
                             fontWeight = FontWeight.Bold,
                             fontFamily = FontFamily.Default
@@ -297,8 +297,8 @@ fun UserInfoScreen(
                                     selectedTabIndex = index
                                     when (selectedTabIndex) {
                                         1 -> {
-                                            if (userLoginData.departmentName.isNotBlank()) {
-                                                viewModel.getDepartmentDetails(userLoginData.departmentName)
+                                            if (userLoginData.value.departmentName.isNotBlank()) {
+                                                viewModel.getDepartmentDetails(userLoginData.value.departmentName)
                                             }
                                         }
                                         2 -> {
@@ -336,7 +336,7 @@ fun UserInfoScreen(
                     ) {
                         when (selectedTabIndex) {
                             0 -> {
-                                ProfileComposable(userLoginData)
+                                ProfileComposable(userLoginData.value)
                             }
                             1 -> {
                                 TeamComposable(viewModel, navController)
@@ -1401,18 +1401,7 @@ fun TeamComposable(
                         navController.navigate("ColleagueInfoScreen/${teamMemberInfo.email}")
                     }
             ) {
-                AsyncImage(
-                    model = if(teamMemberInfo.imageUrl.isBlank()) {
-                        Icons.Filled.AccountCircle
-                    } else {
-                        teamMemberInfo.imageUrl
-                    },
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                )
+                UserProfileImage(teamMemberInfo.imageUrl)
                 Column (modifier = Modifier.padding(30.dp,0.dp,5.dp,20.dp))
                 {
                     Text(
@@ -1525,7 +1514,6 @@ fun ProfileComposable(userLoginData: UserLoginData)
         Spacer(modifier = Modifier.height(5.dp))
         Text("Employee", style = MaterialTheme.typography.titleSmall)
         Spacer(modifier = Modifier.height(15.dp))
-
         Text(
             "Employee ID",
             style = MaterialTheme.typography.bodyMedium

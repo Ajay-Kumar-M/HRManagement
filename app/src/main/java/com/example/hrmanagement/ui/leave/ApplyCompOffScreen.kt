@@ -221,7 +221,7 @@ fun ApplyCompOffScreen(
                     Text(
                         "Worked Date",
                         style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(20.dp, 15.dp, 5.dp, 2.dp),
+                        modifier = Modifier.padding(20.dp, 10.dp, 5.dp, 2.dp),
                         fontWeight = FontWeight.Bold
                     )
                     Text(
@@ -233,14 +233,14 @@ fun ApplyCompOffScreen(
                     )
                 }
                 Row(
-                    modifier = Modifier.clickable{
+                    modifier = Modifier.padding(20.dp,0.dp).clickable{
                         workShowDatePicker = !workShowDatePicker
                     }
                 ) {
                     OutlinedTextField(
                         value = workSelectedDate,
                         onValueChange = {},
-                        label = { Text("Select Date") },
+//                        label = { Text("Select Date") },
                         readOnly = true,
                         trailingIcon = {
                             IconButton(onClick = { workShowDatePicker = !workShowDatePicker }) {
@@ -349,7 +349,7 @@ fun ApplyCompOffScreen(
                 }
                 Row (
                     modifier = Modifier.fillMaxWidth()
-                            .padding(20.dp, 20.dp, 5.dp, 2.dp),
+                            .padding(20.dp, 10.dp, 5.dp, 2.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ){
                     Text(
@@ -385,7 +385,7 @@ fun ApplyCompOffScreen(
                     }
                 }
                 Row(
-                    modifier = Modifier.padding(20.dp, 20.dp, 5.dp, 2.dp),
+                    modifier = Modifier.padding(20.dp, 0.dp, 5.dp, 2.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
@@ -405,7 +405,7 @@ fun ApplyCompOffScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(20.dp, 2.dp, 5.dp, 15.dp),
+                            .padding(20.dp, 2.dp, 20.dp, 15.dp),
                     ) {
                         Row{
                             OutlinedTextField(
@@ -492,7 +492,7 @@ fun ApplyCompOffScreen(
                         "Start Time",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(20.dp, 20.dp, 5.dp, 2.dp),
+                        modifier = Modifier.padding(20.dp, 10.dp, 5.dp, 2.dp),
                     )
                     Text(
                         "${startTimeData.value.first}:${startTimeData.value.second}",
@@ -535,7 +535,7 @@ fun ApplyCompOffScreen(
                         "End Time",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(20.dp, 20.dp, 5.dp, 2.dp),
+                        modifier = Modifier.padding(20.dp, 10.dp, 5.dp, 2.dp),
                     )
                     Text(
                         "${endTimeData.value.first}:${endTimeData.value.second}",
@@ -579,7 +579,7 @@ fun ApplyCompOffScreen(
                     "Expiry Date",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(20.dp, 20.dp, 5.dp, 2.dp),
+                    modifier = Modifier.padding(20.dp, 10.dp, 5.dp, 2.dp),
                 )
                 Text(
                     "31-Dec-${viewModel.year}",
@@ -592,14 +592,20 @@ fun ApplyCompOffScreen(
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(20.dp, 20.dp, 5.dp, 2.dp),
                 )
-                OutlinedTextField(
-                    value = leaveReason.value,
-                    onValueChange = {
-                        viewModel.onLeaveReasonUpdated(it)
-                    },
-                    label = { Text("Reason for leave") },
-                    modifier = Modifier.fillMaxWidth()
-                )
+                Row(
+                    modifier = Modifier.padding(20.dp,0.dp)
+                        .fillMaxWidth()
+                ) {
+                    OutlinedTextField(
+                        value = leaveReason.value,
+                        onValueChange = {
+                            viewModel.onLeaveReasonUpdated(it)
+                        },
+                        label = { Text("Reason for leave") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                Spacer(modifier = Modifier.height(10.dp))
 
             }
         }

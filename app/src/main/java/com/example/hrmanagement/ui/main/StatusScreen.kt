@@ -338,18 +338,7 @@ fun StatusScreen(
                                         Row (
                                             verticalAlignment = Alignment.CenterVertically
                                         ){
-                                            AsyncImage(
-                                                model = if(userData.imageUrl.isBlank()) {
-                                                    R.drawable.account_circle_24
-                                                } else {
-                                                    userData.imageUrl
-                                                },
-                                                placeholder = painterResource(R.drawable.account_circle_24),
-                                                contentDescription = "Profile Icon",
-                                                modifier = Modifier
-                                                    .size(40.dp)
-                                                    .clip(CircleShape)
-                                            )
+                                            UserProfileImage(userData.imageUrl)
                                             Spacer(modifier = Modifier.width(10.dp))
                                             Text(userData.username)
                                         }

@@ -2,16 +2,20 @@ package com.example.hrmanagement.ui.leave
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
 import com.example.hrmanagement.Service.MyApplication.Companion.appPreferenceDataStore
 import com.example.hrmanagement.data.AttendanceData
 import com.example.hrmanagement.data.AttendanceRegularisationData
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.QuerySnapshot
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.text.SimpleDateFormat
 import java.time.LocalDate
@@ -46,6 +50,8 @@ class LeaveRegularisationViewModel: ViewModel() {
     val periodStartDate = _periodStartDate.asStateFlow()
     private val _periodEndDate: MutableStateFlow<String> = MutableStateFlow("")
     val periodEndDate = _periodEndDate.asStateFlow()
+    private val _toastEvent = MutableSharedFlow<String>(replay = 0)
+    val toastEvent = _toastEvent.asSharedFlow()
     var year: Int = 0
     var month: Int = 0
 
@@ -114,10 +120,12 @@ class LeaveRegularisationViewModel: ViewModel() {
         numberOfFeatchProcess--
         if(response == "Success"){
             Log.d("addRegularisationDataResponse","Record Added $response")
+            triggerToast("Record Added")
             clearAllFields()
         } else {
             //handle errors
             TODO()
+            triggerToast("Error try again!")
         }
         if ((isViewLoading.value==true)&&(numberOfFeatchProcess==0))
             toggleIsViewLoading()
@@ -263,4 +271,9 @@ class LeaveRegularisationViewModel: ViewModel() {
         getAttendanceDetails()
     }
 
+    fun triggerToast(message: String) {
+        viewModelScope.launch {
+            _toastEvent.emit(message)
+        }
+    }
 }

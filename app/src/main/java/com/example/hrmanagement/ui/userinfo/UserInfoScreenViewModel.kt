@@ -34,6 +34,8 @@ class UserInfoScreenViewModel: ViewModel() {
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = null
         )
+    private val _userLoginData: MutableStateFlow<UserLoginData> = MutableStateFlow(UserLoginData())
+    val userLoginData = _userLoginData.asStateFlow()
     private val _leaveTrackerShowBottomSheet: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val leaveTrackerShowBottomSheet = _leaveTrackerShowBottomSheet.asStateFlow()
     private val _attendanceFilterShowBottomSheet: MutableStateFlow<Boolean> = MutableStateFlow(false)
@@ -48,7 +50,7 @@ class UserInfoScreenViewModel: ViewModel() {
     val attendanceEndDate = _attendanceEndDate.asStateFlow()
     private val _showBottomSheetLeaveType: MutableStateFlow<String> = MutableStateFlow("")
     val showBottomSheetLeaveType = _showBottomSheetLeaveType.asStateFlow()
-    var userEmailDBState: String? = ""
+    var userEmailId: String? = ""
     private var _isViewLoading: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val isViewLoading = _isViewLoading.asStateFlow()
 //    var _liveUserDetails: MutableStateFlow<UserLoginData> = MutableStateFlow(UserLoginData())
@@ -81,12 +83,34 @@ class UserInfoScreenViewModel: ViewModel() {
     init {
         toggleIsViewLoading()
         runBlocking {
-            userEmailDBState = appPreferenceDataStore.emailFlow.firstOrNull()
+            userEmailId = appPreferenceDataStore.emailFlow.firstOrNull()
         }
+        fetchUserDetails()
         _calendarYear.value = Calendar.getInstance().get(Calendar.YEAR);
         _attendanceSelectedYear.value = _calendarYear.value
         _attendanceSelectedMonth.value = (Calendar.getInstance().get(Calendar.MONTH) + 1);
-        toggleIsViewLoading()
+    }
+
+    fun fetchUserDetails() {
+        if (!_isViewLoading.value) {
+            toggleIsViewLoading()
+        }
+        numberOfFeatchProcess++
+        userEmailId?.let { appDataManager.getFirebaseUser(it,::updateUserDetails) }
+    }
+
+    fun updateUserDetails(userDetails: UserLoginData?, response: String){
+        numberOfFeatchProcess--
+        Log.d("MainScreenViewModel","updateUserDetails called $userDetails")
+        if((response == "Success")&&(userDetails!=null)){
+            _userLoginData.value = userDetails
+        } else {
+            //handle errors
+            TODO()
+        }
+        if((isViewLoading.value)&&(numberOfFeatchProcess==0)) {
+            toggleIsViewLoading()
+        }
     }
 
     fun fillAttendanceCalendarMetadata() {
@@ -113,7 +137,7 @@ class UserInfoScreenViewModel: ViewModel() {
     }
 
     fun updateUserSignInStatus(){
-        if ((userEmailDBState!=null)&&((userEmailDBState?.isNotBlank())==true)) {
+        if ((userEmailId!=null)&&((userEmailId?.isNotBlank())==true)) {
             if (isViewLoading.value==false) toggleIsViewLoading()
             val calendar = Calendar.getInstance()
             val startOfTheDay = Calendar.getInstance()
@@ -124,7 +148,7 @@ class UserInfoScreenViewModel: ViewModel() {
                 set(Calendar.MILLISECOND, 0)  // Set milliseconds to 0
             }
             numberOfFeatchProcess++
-            appDataManager.addSignInStatus(userEmailDBState!!,calendar.timeInMillis,startOfTheDay.timeInMillis,::updateSignInResponse)
+            appDataManager.addSignInStatus(userEmailId!!,calendar.timeInMillis,startOfTheDay.timeInMillis,::updateSignInResponse)
         }
     }
 
@@ -149,18 +173,18 @@ class UserInfoScreenViewModel: ViewModel() {
     }
 
     fun getGoals(){
-        if ((userEmailDBState!=null)&&((userEmailDBState?.isNotBlank())==true)) {
+        if ((userEmailId!=null)&&((userEmailId?.isNotBlank())==true)) {
             if (isViewLoading.value==false) toggleIsViewLoading()
             numberOfFeatchProcess++
-            appDataManager.getUserGoalsData(userEmailDBState!!,::updateUserGoalsData)
+            appDataManager.getUserGoalsData(userEmailId!!,::updateUserGoalsData)
         }
     }
 
     fun getAttendanceDetails(){
-        if ((userEmailDBState!=null)&&((userEmailDBState?.isNotBlank())==true)) {
+        if ((userEmailId!=null)&&((userEmailId?.isNotBlank())==true)) {
             if (isViewLoading.value==false) toggleIsViewLoading()
             numberOfFeatchProcess++
-            appDataManager.getFirebaseAttendanceData(attendanceStartDateTimestamp,attendanceEndDateTimestamp,userEmailDBState!!,::updateAttendanceDetails)
+            appDataManager.getFirebaseAttendanceData(attendanceStartDateTimestamp,attendanceEndDateTimestamp,userEmailId!!,::updateAttendanceDetails)
         }
     }
 
@@ -183,10 +207,10 @@ class UserInfoScreenViewModel: ViewModel() {
     }
 
     fun getLeaveTrackerDetails(){
-        if ((userEmailDBState!=null)&&((userEmailDBState?.isNotBlank())==true)) {
+        if ((userEmailId!=null)&&((userEmailId?.isNotBlank())==true)) {
             if (isViewLoading.value==false) toggleIsViewLoading()
             numberOfFeatchProcess++
-            appDataManager.getFirebaseLeaveTrackerData(calendarYear.value, userEmailDBState!!,::updateLeaveTrackerData)
+            appDataManager.getFirebaseLeaveTrackerData(calendarYear.value, userEmailId!!,::updateLeaveTrackerData)
         }
     }
 

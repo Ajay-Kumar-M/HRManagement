@@ -1,32 +1,36 @@
 package com.example.hrmanagement.ui.main
 
 import android.util.Log
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.AddCircle
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
@@ -41,31 +45,28 @@ import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
@@ -79,8 +80,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkAnnotation
@@ -90,31 +92,22 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
-import coil.compose.AsyncImagePainter
+import coil.request.ImageRequest
 import com.example.hrmanagement.R
-import com.example.hrmanagement.Service.MyApplication
 import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
 import com.example.hrmanagement.component.CircularProgressIndicatorComposable
 import com.example.hrmanagement.data.AnnouncementList
 import com.example.hrmanagement.data.HolidayData
-import com.example.hrmanagement.data.LeaveTrackerData
 import com.example.hrmanagement.data.LinkData
 import com.example.hrmanagement.data.UserLoginData
-import com.example.hrmanagement.ui.userinfo.AttendanceFilterShowModalSheet
-import com.example.hrmanagement.ui.userinfo.LeaveTrackerShowModalSheet
-import com.example.hrmanagement.ui.userinfo.UserInfoScreenViewModel
 import com.example.hrmanagement.ui.userinfo.getPropertyValue
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
@@ -123,6 +116,7 @@ import java.nio.charset.StandardCharsets
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -139,7 +133,7 @@ fun MainScreen(
     val userImageUri = viewModel.userImageUriUiState.collectAsStateWithLifecycle()
     val isViewLoading = viewModel.isViewLoading.collectAsStateWithLifecycle()
     val liveUserDetails: State<UserLoginData> = viewModel.liveUserDetails.collectAsStateWithLifecycle()
-    var selectedItem by remember { mutableIntStateOf(1) }
+    var selectedItem by remember { mutableIntStateOf(0) }
     val tabItems = listOf("Services", "Home", "", "Approvals", "More")
     val selectedIcons = listOf(ImageVector.vectorResource(id = R.drawable.apps),Icons.Filled.Home,Icons.Filled.AddCircle, Icons.Rounded.CheckCircle, Icons.Rounded.MoreVert)
     val unselectedIcons = listOf(ImageVector.vectorResource(id = R.drawable.drag_indicator),Icons.Outlined.Home,Icons.Outlined.AddCircle, Icons.Outlined.CheckCircle, Icons.Outlined.MoreVert)
@@ -156,28 +150,32 @@ fun MainScreen(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ){
                         Row {
-                            AsyncImage(
-                                model = if(userImageUri.value.isNullOrBlank()) {
-                                    Log.d("MainScreen","if block ${userImageUri.value}")
-                                    R.drawable.account_circle_24
-                                } else {
-                                    Log.d("MainScreen","else block ${userImageUri.value}")
-                                    userImageUri.value
-                                },
-                                contentDescription = "Profile Icon",
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .clip(RoundedCornerShape(16.dp)) // Rounded corners
-                                    .clickable(onClick = {
-                                        val userJson =
-                                            Json.encodeToString(liveUserDetails.value)
-                                        val encodedUserJson = URLEncoder.encode(
-                                            userJson,
-                                            StandardCharsets.UTF_8.toString()
-                                        )
-                                        navController.navigate("UserInfoScreen/$encodedUserJson")
-                                    })
-                            )
+                            if (userImageUri.value?.isBlank() == true) {
+                                Image(
+                                    painter = rememberVectorPainter(Icons.Filled.AccountCircle),
+                                    alpha = 0.5f,
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .size(50.dp)
+                                        .clip(CircleShape)
+                                )
+                            } else {
+                                AsyncImage(
+                                    model = ImageRequest.Builder(LocalContext.current)
+                                        .data(userImageUri.value)
+                                        .crossfade(true)
+                                        .build(),
+                                    contentDescription = null,
+                                    placeholder = rememberVectorPainter(Icons.Filled.AccountCircle),
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .clip(CircleShape)
+                                        .clickable(onClick = {
+                                            navController.navigate("UserInfoScreen/${liveUserDetails.value.email}")
+                                        })
+                                )
+                            }
 
                             Spacer(modifier = Modifier.width(10.dp))
                             Text(
@@ -241,7 +239,7 @@ fun MainScreen(
                                 Icon(
                                     if (selectedItem == index) selectedIcons[index] else unselectedIcons[index],
                                     contentDescription = item,
-                                    modifier = if (index == 2) Modifier.size(35.dp) else Modifier.size(25.dp)
+                                    modifier = if (index == 2) Modifier.size(30.dp) else Modifier.size(20.dp)
                                 )
                             },
                             label = { Text(item) },
@@ -280,7 +278,7 @@ fun MainScreen(
             } else {
                 when(selectedItem){
                     0 -> {
-
+                        SearvicesScreen(outerPadding,navController,liveUserDetails.value.email,viewModel)
                     }
                     1 -> {
                         HomeScreen(outerPadding,navController,viewModel)
@@ -295,6 +293,209 @@ fun MainScreen(
             }
         }
     }
+}
+
+fun handleServiceNavigation(service: String,navController: NavController, emailId: String){
+    when(service) {
+        "Employee Information" -> {
+            navController.navigate("EmployeeInformationScreen/${emailId}")
+        }
+        "Attendance" -> {
+
+        }
+        "Time Tracker" -> {
+
+        }
+        "Performance" -> {
+
+        }
+        "Announcements" -> {
+
+        }
+        "Leave Tracker" -> {
+
+        }
+        "Tasks" -> {
+
+        }
+        "Cases" -> {
+
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SearvicesScreen(
+    outerPadding: PaddingValues,
+    navController: NavController,
+    emailId: String,
+    viewModel: MainScreenViewModel
+) {
+
+    val isListView = remember { mutableStateOf(false) }
+    val isPullDownRefreshing = remember { mutableStateOf(false) }
+    val listOfServices = listOf("Employee Information","Attendance","Time Tracker","Performance","Announcements","Leave Tracker","Tasks","Cases")
+    val serviceTypeIcons: Map<String, ImageVector> = mapOf(
+        Pair("Employee Information",ImageVector.vectorResource(id = R.drawable.employee_information)),
+        Pair("Attendance",ImageVector.vectorResource(id = R.drawable.attendance)),
+        Pair("Performance",ImageVector.vectorResource(id = R.drawable.performance)),
+        Pair("Announcements",ImageVector.vectorResource(id = R.drawable.announcement)),
+        Pair("Leave Tracker",ImageVector.vectorResource(id = R.drawable.leave_tracker)),
+        Pair("Time Tracker",ImageVector.vectorResource(id = R.drawable.time_tracker)),
+        Pair("Tasks",ImageVector.vectorResource(id = R.drawable.tasks)),
+        Pair("Cases",ImageVector.vectorResource(id = R.drawable.cases)))
+    var searchText by remember { mutableStateOf("") }
+    var filteredListOfServices = listOfServices.toMutableList()
+
+    PullToRefreshBox(
+        isRefreshing = isPullDownRefreshing.value,
+        onRefresh = {},
+        modifier = Modifier.fillMaxSize()
+    ) {
+        Column(
+            modifier = Modifier
+//                .verticalScroll(rememberScrollState())
+                .fillMaxSize()
+                .padding(outerPadding),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+//            Spacer(Modifier.height(20.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth()
+                    .padding(10.dp)
+            ) {
+                TextField(
+                    value = searchText,
+                    onValueChange = {
+                        searchText = it
+                        filteredListOfServices.clear()
+                        filteredListOfServices.addAll(listOfServices.filter {
+                            it.contains(searchText,true)
+                        })
+                    },
+                    singleLine = true,
+                    placeholder = { Text("Search Services", fontSize = 14.sp) },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = "Search"
+                        )
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color.White, RoundedCornerShape(25.dp))
+                        .padding(horizontal = 5.dp)
+                        .height(50.dp)
+                        .weight(0.85f),
+                    colors = TextFieldDefaults.colors(
+                        unfocusedContainerColor = Color.Transparent,
+                        focusedContainerColor = Color.Transparent,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent
+                    ),
+                    textStyle = TextStyle(fontSize = 14.sp),
+                    trailingIcon = {
+                        if (searchText.isNotEmpty()){
+                            Icon(
+                                imageVector = Icons.Filled.Clear,
+                                contentDescription = "Clear",
+                                modifier = Modifier.clickable{
+                                    searchText = ""
+                                }
+                            )
+                        }
+                    }
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                IconButton(
+                    onClick = { isListView.value = !isListView.value },
+                    colors = IconButtonDefaults.iconButtonColors(
+                        containerColor = Color.White,
+                        contentColor = Color.Black
+                    ),
+                    modifier = Modifier
+                        .size(50.dp)
+                        .background(Color.White,RoundedCornerShape(20.dp))
+                        .padding(5.dp)
+                        .weight(0.15f)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Menu,
+                        contentDescription = "List",
+                    )
+                }
+
+            }
+            if (isListView.value) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxWidth()
+                        .padding(20.dp)
+                ) {
+                    items(filteredListOfServices) { service ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth()
+                                .background(Color.White,RoundedCornerShape(20.dp))
+                                .padding(15.dp)
+                                .clickable{
+                                    handleServiceNavigation(service,navController,emailId)
+                                }
+                        ) {
+                            Icon(
+                                imageVector = serviceTypeIcons.getValue(service),
+                                contentDescription = "List",
+                                tint = Color.Unspecified,
+                                modifier = Modifier.size(25.dp)
+                            )
+                            Spacer(Modifier.width(15.dp))
+                            Text(
+                                service,
+                                fontSize = 16.sp,
+                            )
+                        }
+                        Spacer(Modifier.height(15.dp))
+                    }
+                }
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+//                    modifier = Modifier.padding(30.dp),
+                    contentPadding = PaddingValues(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    items(filteredListOfServices) { service ->
+                        Box (
+                            modifier = Modifier.fillMaxSize()
+                                .background(Color.White,RoundedCornerShape(20.dp))
+                                .padding(20.dp)
+                                .height(120.dp)
+                                .clickable{
+                                    handleServiceNavigation(service,navController,emailId)
+                                }
+                        ){
+                            Icon(
+                                imageVector = serviceTypeIcons.getValue(service),
+                                contentDescription = "List",
+                                tint = Color.Unspecified,
+                                modifier = Modifier.align(Alignment.Center)
+                                    .size(35.dp)
+                            )
+                            Text(
+                                service.truncate(15),
+                                fontSize = 12.sp,
+                                modifier = Modifier.align(Alignment.BottomCenter)
+                                    .offset(y = (-6).dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+        }
+    }
+
+
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -385,17 +586,7 @@ fun HomeScreen(
                                     },
                                 verticalAlignment = Alignment.CenterVertically
                             ){
-                                AsyncImage(
-                                    model = if(announcementData.reporterProfileImageUrl.isBlank()) {
-                                        R.drawable.account_circle_24
-                                    } else {
-                                        announcementData.reporterProfileImageUrl
-                                    },
-                                    contentDescription = "Reporter Profile Icon",
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(16.dp)) // Rounded corners
-                                        .size(40.dp)
-                                )
+                                UserProfileImage(announcementData.reporterProfileImageUrl)
                                 Spacer(Modifier.width(10.dp))
                                 Column {
                                     Text(
@@ -1102,6 +1293,40 @@ fun AddTaskShowModalSheet(
 
 }
 
+@Composable
+fun UserProfileImage(imageUrl: String) {
+    if (imageUrl.isBlank()) {
+        Image(
+            painter = rememberVectorPainter(Icons.Filled.AccountCircle),
+            alpha = 0.5f,
+            contentDescription = null,
+            modifier = Modifier
+                .size(50.dp)
+                .clip(CircleShape)
+        )
+    } else {
+        AsyncImage(
+            model = ImageRequest.Builder(LocalContext.current)
+                .data(imageUrl)
+                .crossfade(true)
+                .build(),
+            contentDescription = null,
+            placeholder = rememberVectorPainter(Icons.Filled.AccountCircle),
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .size(50.dp)
+                .clip(CircleShape)
+        )
+    }
+}
+
+fun String.truncate(maxLength: Int): String {
+    return if (this.length > maxLength) {
+        this.take(maxLength) + "..."
+    } else {
+        this
+    }
+}
 
 //"https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c",
 

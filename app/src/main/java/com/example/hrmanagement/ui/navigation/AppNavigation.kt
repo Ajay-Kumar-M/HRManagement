@@ -25,6 +25,9 @@ import com.example.hrmanagement.ui.leave.LeaveDetailsScreen
 import com.example.hrmanagement.ui.leave.LeaveRegularisationScreen
 import com.example.hrmanagement.ui.leave.LeaveReportScreen
 import com.example.hrmanagement.ui.main.StatusScreen
+import com.example.hrmanagement.ui.services.ColleaguesScreen
+import com.example.hrmanagement.ui.services.EmployeeDetailsScreen
+import com.example.hrmanagement.ui.services.EmployeeInformationScreen
 import com.example.hrmanagement.ui.userinfo.UserInfoScreen
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.runBlocking
@@ -55,16 +58,12 @@ fun AppNavigation(modifier: Modifier = Modifier) {
         }
 
         composable(
-            route = "UserInfoScreen/{userLoginData}",
-            arguments = listOf(navArgument("userLoginData") { type = NavType.StringType })
+            route = "UserInfoScreen/{userEmailId}",
+            arguments = listOf(navArgument("userEmailId") { type = NavType.StringType })
         ) { backStackEntry ->
-            val encodedUserJson = backStackEntry.arguments?.getString("userLoginData")
-            val user = encodedUserJson?.let {
-                val decodedJson = URLDecoder.decode(it, StandardCharsets.UTF_8.toString())
-                Json.decodeFromString<UserLoginData>(decodedJson)
-            }
-            if (user != null) {
-                UserInfoScreen(modifier,navController,user)
+            val userEmailId = backStackEntry.arguments?.getString("userEmailId")
+            if (userEmailId != null) {
+                UserInfoScreen(modifier,navController,userEmailId)
             }
         }
 
@@ -139,6 +138,33 @@ fun AppNavigation(modifier: Modifier = Modifier) {
             val employeeId = backStackEntry.arguments?.getString("employeeId")
             if (userEmailId != null)
                 LeaveRegularisationScreen(modifier,navController, userEmailId,username, employeeId)
+        }
+
+        composable(
+            route = "ColleaguesScreen/{userEmailId}",
+            arguments = listOf(navArgument("userEmailId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val userEmailId = backStackEntry.arguments?.getString("userEmailId")
+            if (userEmailId != null)
+                ColleaguesScreen(navController, userEmailId)
+        }
+
+        composable(
+            route = "EmployeeDetailsScreen/{userEmailId}",
+            arguments = listOf(navArgument("userEmailId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val userEmailId = backStackEntry.arguments?.getString("userEmailId")
+            if (userEmailId != null)
+                EmployeeDetailsScreen(navController, userEmailId)
+        }
+
+        composable(
+            route = "EmployeeInformationScreen/{userEmailId}",
+            arguments = listOf(navArgument("userEmailId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val userEmailId = backStackEntry.arguments?.getString("userEmailId")
+            if (userEmailId != null)
+                EmployeeInformationScreen(modifier,navController, userEmailId)
         }
 
         composable(

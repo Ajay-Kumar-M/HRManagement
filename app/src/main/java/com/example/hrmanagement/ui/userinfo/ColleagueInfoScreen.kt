@@ -1,7 +1,6 @@
 package com.example.hrmanagement.ui.userinfo
 
 import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -17,16 +16,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MailOutline
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -43,9 +39,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -55,20 +51,21 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.hrmanagement.R
+import com.example.hrmanagement.component.CircularProgressIndicatorComposable
+import com.example.hrmanagement.data.UserLoginData
+import com.example.hrmanagement.ui.main.UserProfileImage
 import kotlinx.serialization.json.Json
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
-import androidx.core.net.toUri
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
-import com.example.hrmanagement.component.CircularProgressIndicatorComposable
-import com.example.hrmanagement.data.UserLoginData
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -116,16 +113,21 @@ fun ColleagueInfoScreen(
                         .background(Color.Red)
                         .fillMaxWidth())
                 {
-                    AsyncImage(
-                        model = if(liveColleagueDetails.value.imageUrl.isBlank()) {
-                            R.drawable.account_circle_24
-                        } else {
-                            liveColleagueDetails.value.imageUrl
-                        },
-                        contentDescription = "Profile Icon",
-                        modifier = Modifier.matchParentSize(),
-                        contentScale = ContentScale.FillBounds
-                    )
+                    if (liveColleagueDetails.value.imageUrl.isBlank()) {
+                        Image(
+                            painter = rememberVectorPainter(Icons.Filled.AccountCircle),
+                            alpha = 0.5f,
+                            contentDescription = null,
+                            modifier = Modifier.matchParentSize()
+                        )
+                    } else {
+                        AsyncImage(
+                            model = liveColleagueDetails.value.imageUrl,
+                            contentDescription = "Profile Icon",
+                            modifier = Modifier.matchParentSize(),
+                            contentScale = ContentScale.FillBounds
+                        )
+                    }
                     IconButton(
                         onClick = { navController.popBackStack() },
                         colors = IconButtonDefaults.iconButtonColors(
@@ -270,7 +272,8 @@ fun ColleagueInfoScreen(
                 }
                 PrimaryScrollableTabRow(
                     selectedTabIndex = selectedTabIndex,
-                    edgePadding = 3.dp
+                    edgePadding = 3.dp,
+                    modifier = Modifier.fillMaxWidth()
                 ) {
 
                     tabs.forEachIndexed { index, title ->
@@ -278,8 +281,10 @@ fun ColleagueInfoScreen(
                             selected = selectedTabIndex == index,
                             onClick = {
                                 selectedTabIndex = index
-                                viewModel.getColleagueDepartmentMembers(liveColleagueDetails.value.departmentName)
-                                      },
+                                if (selectedTabIndex == 1) {
+                                    viewModel.getColleagueDepartmentMembers(liveColleagueDetails.value.departmentName)
+                                }
+                            },
                             text = { Text(title) }
                         )
                     }
@@ -440,18 +445,7 @@ fun ColleagueInfoScreen(
                                             navController.navigate("ColleagueInfoScreen/${encodedUserJson}")
                                         }
                                     ) {
-                                        AsyncImage(
-                                            model = if (teamMemberInfo.imageUrl.isBlank()) {
-                                                Icons.Filled.AccountCircle
-                                            } else {
-                                                teamMemberInfo.imageUrl
-                                            },
-                                            contentDescription = null,
-                                            contentScale = ContentScale.Crop,
-                                            modifier = Modifier
-                                                .size(40.dp)
-                                                .clip(CircleShape)
-                                        )
+                                        UserProfileImage(teamMemberInfo.imageUrl)
                                         Column (modifier = Modifier.padding(30.dp,0.dp,5.dp,20.dp)){
                                             Text(
                                                 teamMemberInfo.username,

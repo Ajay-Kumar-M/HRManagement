@@ -54,6 +54,7 @@ import com.example.hrmanagement.data.AnnouncementList
 import com.example.hrmanagement.ui.main.formatTimestamp
 import com.example.hrmanagement.ui.main.trimToLength
 import androidx.compose.runtime.livedata.observeAsState
+import com.example.hrmanagement.ui.main.UserProfileImage
 import kotlinx.serialization.json.Json
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
@@ -175,17 +176,7 @@ fun AnnouncementsScreen(
                                         },
                                     verticalAlignment = Alignment.CenterVertically
                                 ){
-                                    AsyncImage(
-                                        model = if(announcement.reporterProfileImageUrl.isBlank()) {
-                                            R.drawable.account_circle_24
-                                        } else {
-                                            announcement.reporterProfileImageUrl
-                                        },
-                                        contentDescription = "Reporter Profile Icon",
-                                        modifier = Modifier
-                                            .size(40.dp)
-                                            .clip(CircleShape)
-                                    )
+                                    UserProfileImage(announcement.reporterProfileImageUrl)
                                     Spacer(Modifier.width(10.dp))
                                     Column(
                                         modifier = Modifier.weight(1f)

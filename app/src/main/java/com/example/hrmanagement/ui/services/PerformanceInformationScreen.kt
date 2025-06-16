@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
@@ -32,19 +33,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 
 @Composable
-fun EmployeeInformationScreen(
-    modifier: Modifier,
-    navController: NavController,
-    emailId: String,
-    viewModel: EmployeeInformationViewModel = viewModel()
+fun PerformanceInformationScreen(
+    navController: NavController
 ) {
     val listOfActions: List<Pair<String,String>> = listOf(
-        "Colleagues" to "ColleaguesScreen",
-        "Employee Details" to "EmployeeDetailsScreen",
+        "Goals" to "GoalsComposableView",
     )
 
     Scaffold(
@@ -71,10 +67,10 @@ fun EmployeeInformationScreen(
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Next Year"
+                        contentDescription = "Previous screen"
                     )
                 }
-                Text("Employee Information",
+                Text("Performance",
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(20.dp,5.dp)
                 )
@@ -88,6 +84,7 @@ fun EmployeeInformationScreen(
                 .background(Color.White)
                 .verticalScroll(rememberScrollState())
                 .padding(innerPadding)
+                .imePadding()
         ) {
             listOfActions.forEach { action ->
                 Row(
@@ -96,11 +93,8 @@ fun EmployeeInformationScreen(
                         .padding(15.dp)
                         .clickable{
                             when(action.first) {
-                                "Colleagues" -> {
-                                    navController.navigate("${action.second}/$emailId")
-                                }
-                                "Employee Details" -> {
-                                    navController.navigate("${action.second}/$emailId")
+                                "Goals" -> {
+                                    navController.navigate(action.second)
                                 }
                             }
                         }

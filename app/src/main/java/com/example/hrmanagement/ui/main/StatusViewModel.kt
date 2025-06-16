@@ -148,7 +148,6 @@ class StatusViewModel: ViewModel() {
     }
 
     fun onMentionSelection(user: UserLoginData){
-        println("onMentionSelection ${user.username}")
         // Example: Replace "@old" with "@new"
         val oldText = statusData.value.text
         addDollorMap(oldText.indexOf("@${searchStringData}"), user.username, user.email)

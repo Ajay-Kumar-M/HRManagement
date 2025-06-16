@@ -16,6 +16,7 @@ import com.example.hrmanagement.data.GoogleAuth
 import com.example.hrmanagement.data.LeaveTrackerData
 import com.example.hrmanagement.data.LikeData
 import com.example.hrmanagement.data.LinkData
+import com.example.hrmanagement.data.NotificationData
 import com.example.hrmanagement.data.UserLoginData
 import com.google.firebase.firestore.QuerySnapshot
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,7 +28,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.util.Calendar
 
-class MainScreenViewModel: ViewModel(),DefaultLifecycleObserver {
+class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
 
     val userImageUriUiState = appPreferenceDataStore.userImageURLFlow
         .stateIn(
@@ -36,11 +37,14 @@ class MainScreenViewModel: ViewModel(),DefaultLifecycleObserver {
             initialValue = null
         )
     var userEmailUiState: String?
-    private var _liveLeaveTrackerDetails: MutableStateFlow<LeaveTrackerData> = MutableStateFlow(LeaveTrackerData())
+    private var _liveLeaveTrackerDetails: MutableStateFlow<LeaveTrackerData> =
+        MutableStateFlow(LeaveTrackerData())
     val liveLeaveTrackerDetails = _liveLeaveTrackerDetails.asStateFlow()
-    private var _liveUserDetails: MutableStateFlow<UserLoginData> = MutableStateFlow(UserLoginData())
+    private var _liveUserDetails: MutableStateFlow<UserLoginData> =
+        MutableStateFlow(UserLoginData())
     val liveUserDetails = _liveUserDetails.asStateFlow()
-    private var _userAttendanceData: MutableStateFlow<AttendanceData> = MutableStateFlow(AttendanceData())
+    private var _userAttendanceData: MutableStateFlow<AttendanceData> =
+        MutableStateFlow(AttendanceData())
     val userAttendanceData = _userAttendanceData.asStateFlow()
     private var _quickLinksLimitedData: MutableStateFlow<QuerySnapshot?> = MutableStateFlow(null)
     val quickLinksLimitedData = _quickLinksLimitedData.asStateFlow()
@@ -67,7 +71,7 @@ class MainScreenViewModel: ViewModel(),DefaultLifecycleObserver {
         fetchLimitedAnnouncements()
         getLeaveTrackerDetails()
         getHolidayDetails()
-        if (!userEmailUiState.isNullOrBlank()){
+        if (!userEmailUiState.isNullOrBlank()) {
             appDataManager.listenForUserSignInStatusUpdates(userEmailUiState!!)
         }
 //        viewModelScope.launch {
@@ -80,15 +84,15 @@ class MainScreenViewModel: ViewModel(),DefaultLifecycleObserver {
             toggleIsViewLoading()
         }
         numberOfFeatchProcess++
-        if(userEmailUiState!=null) {
-            appDataManager.getFirebaseUser(userEmailUiState!!,::updateUserDetails)
+        if (userEmailUiState != null) {
+            appDataManager.getFirebaseUser(userEmailUiState!!, ::updateUserDetails)
         }
     }
 
-    fun updateUserDetails(userDetails: UserLoginData?, response: String){
+    fun updateUserDetails(userDetails: UserLoginData?, response: String) {
         numberOfFeatchProcess--
-        Log.d("MainScreenViewModel","updateUserDetails called $userDetails")
-        if((response == "Success")&&(userDetails!=null)){
+        Log.d("MainScreenViewModel", "updateUserDetails called $userDetails")
+        if ((response == "Success") && (userDetails != null)) {
             _liveUserDetails.value = userDetails
 //            viewModelScope.launch {
 //                appPreferenceDataStore.updateUserDetails(UserLoginData.from(userDetails))
@@ -97,14 +101,14 @@ class MainScreenViewModel: ViewModel(),DefaultLifecycleObserver {
             //handle errors
             TODO()
         }
-        if((isViewLoading.value)&&(numberOfFeatchProcess==0)) {
+        if ((isViewLoading.value) && (numberOfFeatchProcess == 0)) {
             toggleIsViewLoading()
         }
     }
 
-    fun updateUserSignInStatus(){
-        if ((userEmailUiState!=null)&&((userEmailUiState?.isNotBlank())==true)) {
-            if (isViewLoading.value==false) toggleIsViewLoading()
+    fun updateUserSignInStatus() {
+        if ((userEmailUiState != null) && ((userEmailUiState?.isNotBlank()) == true)) {
+            if (isViewLoading.value == false) toggleIsViewLoading()
             val calendar = Calendar.getInstance()
             val startOfTheDay = Calendar.getInstance()
             startOfTheDay.apply {
@@ -114,20 +118,25 @@ class MainScreenViewModel: ViewModel(),DefaultLifecycleObserver {
                 set(Calendar.MILLISECOND, 0)  // Set milliseconds to 0
             }
             numberOfFeatchProcess++
-            appDataManager.addSignInStatus(userEmailUiState!!,calendar.timeInMillis,startOfTheDay.timeInMillis,::updateSignInResponse)
+            appDataManager.addSignInStatus(
+                userEmailUiState!!,
+                calendar.timeInMillis,
+                startOfTheDay.timeInMillis,
+                ::updateSignInResponse
+            )
         }
     }
 
-    fun updateSignInResponse(response: String,error: String) {
+    fun updateSignInResponse(response: String, error: String) {
         numberOfFeatchProcess--
-        if(response == "Success"){
-            Log.d("MainScreenViewModel","updateSignInResponse called $response")
+        if (response == "Success") {
+            Log.d("MainScreenViewModel", "updateSignInResponse called $response")
         } else {
             //handle errors
             TODO()
         }
         fetchUserSignInStatus()
-        if ((isViewLoading.value==true)&&(numberOfFeatchProcess==0))
+        if ((isViewLoading.value == true) && (numberOfFeatchProcess == 0))
             toggleIsViewLoading()
     }
 
@@ -139,46 +148,51 @@ class MainScreenViewModel: ViewModel(),DefaultLifecycleObserver {
             set(Calendar.SECOND, 0)       // Set seconds to 0
             set(Calendar.MILLISECOND, 0)  // Set milliseconds to 0
         }
-        if (!userEmailUiState.isNullOrBlank()){
+        if (!userEmailUiState.isNullOrBlank()) {
             if (!_isViewLoading.value) {
                 toggleIsViewLoading()
             }
             numberOfFeatchProcess++
-            appDataManager.getFirebaseAttendanceData(startOfTheDay.timeInMillis,startOfTheDay.timeInMillis+86399990,userEmailUiState!!,::updateAttendanceDetails)
+            appDataManager.getFirebaseAttendanceData(
+                startOfTheDay.timeInMillis,
+                startOfTheDay.timeInMillis + 86399990,
+                userEmailUiState!!,
+                ::updateAttendanceDetails
+            )
         }
     }
 
-    fun updateAttendanceDetails(attendanceData: QuerySnapshot?,response: String){
+    fun updateAttendanceDetails(attendanceData: QuerySnapshot?, response: String) {
         numberOfFeatchProcess--
-        if(response == "Success"){
-            Log.d("UserInfoScreenViewModel","updateAttendanceDetails called $attendanceData")
+        if (response == "Success") {
+            Log.d("UserInfoScreenViewModel", "updateAttendanceDetails called $attendanceData")
             val documentSnapshot = attendanceData?.first()
-            if(documentSnapshot?.exists() == true) {
+            if (documentSnapshot?.exists() == true) {
                 _userAttendanceData.value = documentSnapshot.toObject(AttendanceData::class.java)
             }
         } else {
             //handle errors
             TODO()
         }
-        if ((isViewLoading.value==true)&&(numberOfFeatchProcess==0))
+        if ((isViewLoading.value == true) && (numberOfFeatchProcess == 0))
             toggleIsViewLoading()
     }
 
-    fun fetchLimitedQuickLinks(){
+    fun fetchLimitedQuickLinks() {
         if (!_isViewLoading.value) {
             toggleIsViewLoading()
         }
         numberOfFeatchProcess++
-        appDataManager.getLimitedQuickLinks(3L,::updateLimitedQuickLinksData)
+        appDataManager.getLimitedQuickLinks(3L, ::updateLimitedQuickLinksData)
 
     }
 
-    fun updateLimitedQuickLinksData(quickLinksData: QuerySnapshot?,response: String){
+    fun updateLimitedQuickLinksData(quickLinksData: QuerySnapshot?, response: String) {
         numberOfFeatchProcess--
-        if(response == "Success"){
-            Log.d("MainScreenViewModel","updateQuickLinksData called $quickLinksData")
+        if (response == "Success") {
+            Log.d("MainScreenViewModel", "updateQuickLinksData called $quickLinksData")
             quickLinksData?.count()?.let {
-                if(it > 0) {
+                if (it > 0) {
                     _quickLinksLimitedData.value = quickLinksData
                 }
             }
@@ -186,26 +200,26 @@ class MainScreenViewModel: ViewModel(),DefaultLifecycleObserver {
             //handle errors
             TODO()
         }
-        if ((isViewLoading.value==true)&&(numberOfFeatchProcess==0))
+        if ((isViewLoading.value == true) && (numberOfFeatchProcess == 0))
             toggleIsViewLoading()
     }
 
 
-    fun fetchLimitedAnnouncements(){
+    fun fetchLimitedAnnouncements() {
         if (!_isViewLoading.value) {
             toggleIsViewLoading()
         }
         numberOfFeatchProcess++
-        appDataManager.getLimitedAnnouncements(3L,::updateLimitedAnnouncementsData)
+        appDataManager.getLimitedAnnouncements(3L, ::updateLimitedAnnouncementsData)
 
     }
 
-    fun updateLimitedAnnouncementsData(announcementData: QuerySnapshot?,response: String){
+    fun updateLimitedAnnouncementsData(announcementData: QuerySnapshot?, response: String) {
         numberOfFeatchProcess--
-        if(response == "Success"){
-            Log.d("MainScreenViewModel","updateQuickLinksData called $announcementData")
+        if (response == "Success") {
+            Log.d("MainScreenViewModel", "updateQuickLinksData called $announcementData")
             announcementData?.count()?.let {
-                if(it > 0) {
+                if (it > 0) {
                     _announcementsLimitedData.value = announcementData
                 }
             }
@@ -213,188 +227,83 @@ class MainScreenViewModel: ViewModel(),DefaultLifecycleObserver {
             //handle errors
             TODO()
         }
-        if ((isViewLoading.value==true)&&(numberOfFeatchProcess==0))
+        if ((isViewLoading.value == true) && (numberOfFeatchProcess == 0))
             toggleIsViewLoading()
     }
 
-    fun getLeaveTrackerDetails(){
-        if ((userEmailUiState!=null)&&((userEmailUiState?.isNotBlank())==true)) {
-            if (isViewLoading.value==false) toggleIsViewLoading()
+    fun getLeaveTrackerDetails() {
+        if ((userEmailUiState != null) && ((userEmailUiState?.isNotBlank()) == true)) {
+            if (isViewLoading.value == false) toggleIsViewLoading()
             numberOfFeatchProcess++
-            appDataManager.getFirebaseLeaveTrackerData(calendarYear, userEmailUiState!!,::updateLeaveTrackerData)
+            appDataManager.getFirebaseLeaveTrackerData(
+                calendarYear,
+                userEmailUiState!!,
+                ::updateLeaveTrackerData
+            )
         }
     }
 
-    fun updateLeaveTrackerData(leaveTrackerData: LeaveTrackerData?, response: String){
-        Log.d("MainScreenViewModel","updateLeaveTrackerData called $leaveTrackerData")
+    fun updateLeaveTrackerData(leaveTrackerData: LeaveTrackerData?, response: String) {
+        Log.d("MainScreenViewModel", "updateLeaveTrackerData called $leaveTrackerData")
         numberOfFeatchProcess--
-        if((response == "Success")&&(leaveTrackerData!=null)){
+        if ((response == "Success") && (leaveTrackerData != null)) {
             _liveLeaveTrackerDetails.value = leaveTrackerData
         } else {
             //handle errors
             TODO()
         }
-        if ((isViewLoading.value==true)&&(numberOfFeatchProcess==0))
+        if ((isViewLoading.value == true) && (numberOfFeatchProcess == 0))
             toggleIsViewLoading()
     }
 
-    fun getHolidayDetails(){
-        if (isViewLoading.value==false) toggleIsViewLoading()
+    fun getHolidayDetails() {
+        if (isViewLoading.value == false) toggleIsViewLoading()
         numberOfFeatchProcess++
         appDataManager.getHolidays(::updateHolidayData)
     }
 
-    fun updateHolidayData(holidays: QuerySnapshot?, response: String){
-        Log.d("MainScreenViewModel","updateHolidayData called $holidays")
+    fun updateHolidayData(holidays: QuerySnapshot?, response: String) {
+        Log.d("MainScreenViewModel", "updateHolidayData called $holidays")
         numberOfFeatchProcess--
-        if((response == "Success")&&(holidays!=null)){
+        if ((response == "Success") && (holidays != null)) {
             _holidaysData.value = holidays
         } else {
             //handle errors
             TODO()
         }
-        if ((isViewLoading.value==true)&&(numberOfFeatchProcess==0))
+        if ((isViewLoading.value == true) && (numberOfFeatchProcess == 0))
             toggleIsViewLoading()
     }
 
-    fun toggleAddTaskShowBottomSheet(){
+    fun toggleAddTaskShowBottomSheet() {
         _addTaskShowBottomSheet.value = !_addTaskShowBottomSheet.value
     }
 
-    fun toggleIsViewLoading(){
+    fun toggleIsViewLoading() {
         _isViewLoading.value = !_isViewLoading.value
     }
 
-    fun addUserToDB(){
-        for(i in 2..10) {
-
-            appDataManager.addAnnouncementTemp(
-                AnnouncementList(
-                    i,
-                    "Announcement Title $i",
-                    Calendar.getInstance().timeInMillis,
-                    "General Awarness",
-                    1,
-                    3,
-                    "ajay.kumar0495@gmail.com",
-                    "Ajay Kumar M",
-                    "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c",
-                    false,
-                    "Chennai"
-                )
-            )
-
-            appDataManager.addAnnouncementDataTemp(
-                AnnouncementData(
-                    i,
-                "Announcement Title $i",
-                Calendar.getInstance().timeInMillis,
-                "General Awarness",
-                "Chennai",
-                "Announcement Message",
-                "https://www.google.com/",
-                0,
-                "Active",
-                false,
-                true,
-                3,
-                1,
-                1,
-                3,
-                    mutableMapOf(
-                    Pair("1",
-                        LikeData(
-                            "Ajay Kumar M",
-                            "ajay.kumar0495@gmail.com",
-                            "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c"
-                        )
-                    )
-                ),
-                    mutableMapOf(
-                    Pair(
-                        "1",
-                        CommentsData(
-                            1,
-                            "Dummy User 1",
-                            "dummayuser1@gmail.com",
-                            "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c",
-                            Calendar.getInstance().timeInMillis,
-                            1,
-                            mutableMapOf(
-                                Pair("1",
-                                    LikeData(
-                                        "Dummy User 1",
-                                        "dummayuser1@gmail.com",
-                                        "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c"
-                                    )
-                                )
-                            ),
-                            "Announcement comment 1",
-                            1
-                        )
-                    ),
-                    Pair(
-                        "2",
-                        CommentsData(
-                            2,
-                            "Dummy User 2",
-                            "dummayuser2@gmail.com",
-                            "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c",
-                            Calendar.getInstance().timeInMillis,
-                            1,
-                            mutableMapOf(
-                                Pair("1",
-                                    LikeData(
-                                        "Dummy User 2",
-                                        "dummayuser2@gmail.com",
-                                        "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c"
-                                    )
-                                )
-                            ),
-                            "Announcement comment 2",
-                            1
-                        )
-                    ),
-                    Pair(
-                        "3",
-                        CommentsData(
-                            3,
-                            "Dummy User 3",
-                            "dummayuser3@gmail.com",
-                            "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c",
-                            Calendar.getInstance().timeInMillis,
-                            1,
-                            mutableMapOf(
-                                Pair("1",
-                                    LikeData(
-                                        "Dummy User 3",
-                                        "dummayuser3@gmail.com",
-                                        "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c"
-                                    )
-                                )
-                            ),
-                            "Announcement comment 3",
-                            1
-                        )
-                    )
-                ),
-                "ajay.kumar0495@gmail.com",
-                "Ajay Kumar M",
-                "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c"
-            )
-            )
-
-
-        }
+    fun addUserToDB() {
+        appDataManager.addNotificationDataTemp(NotificationData(
+            4,
+            "Ajay Kumar M has posted in Town Hall",
+            "Ajay Kumar M has posted in Town Hall",
+            Calendar.getInstance().timeInMillis,
+            "ajay.kumar0495@gmail.com",
+            "Ajay Kumar M",
+            "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c",
+            "Active",
+            0
+        ))
     }
 
-    fun logoutCurrentUser(){
+    fun logoutCurrentUser() {
         viewModelScope.launch {
             MyApplication.googleAuthenticationService.logout()
         }
     }
 
-    fun tempupdatedb(){
+    fun tempupdatedb() {
         viewModelScope.launch {
             appPreferenceDataStore.updateUserDetails(
                 UserLoginData(
@@ -416,6 +325,129 @@ class MainScreenViewModel: ViewModel(),DefaultLifecycleObserver {
 }
 
 /*
+
+        for (i in 2..10) {
+
+            appDataManager.addAnnouncementTemp(
+                AnnouncementList(
+                    i,
+                    "Announcement Title $i",
+                    Calendar.getInstance().timeInMillis,
+                    "General Awarness",
+                    1,
+                    3,
+                    "ajay.kumar0495@gmail.com",
+                    "Ajay Kumar M",
+                    "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c",
+                    false,
+                    "Chennai"
+                )
+            )
+
+            appDataManager.addAnnouncementDataTemp(
+                AnnouncementData(
+                    i,
+                    "Announcement Title $i",
+                    Calendar.getInstance().timeInMillis,
+                    "General Awarness",
+                    "Chennai",
+                    "Announcement Message",
+                    "https://www.google.com/",
+                    0,
+                    "Active",
+                    false,
+                    true,
+                    3,
+                    1,
+                    1,
+                    3,
+                    mutableMapOf(
+                        Pair(
+                            "1",
+                            LikeData(
+                                "Ajay Kumar M",
+                                "ajay.kumar0495@gmail.com",
+                                "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c"
+                            )
+                        )
+                    ),
+                    mutableMapOf(
+                        Pair(
+                            "1",
+                            CommentsData(
+                                1,
+                                "Dummy User 1",
+                                "dummayuser1@gmail.com",
+                                "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c",
+                                Calendar.getInstance().timeInMillis,
+                                1,
+                                mutableMapOf(
+                                    Pair(
+                                        "1",
+                                        LikeData(
+                                            "Dummy User 1",
+                                            "dummayuser1@gmail.com",
+                                            "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c"
+                                        )
+                                    )
+                                ),
+                                "Announcement comment 1",
+                                1
+                            )
+                        ),
+                        Pair(
+                            "2",
+                            CommentsData(
+                                2,
+                                "Dummy User 2",
+                                "dummayuser2@gmail.com",
+                                "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c",
+                                Calendar.getInstance().timeInMillis,
+                                1,
+                                mutableMapOf(
+                                    Pair(
+                                        "1",
+                                        LikeData(
+                                            "Dummy User 2",
+                                            "dummayuser2@gmail.com",
+                                            "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c"
+                                        )
+                                    )
+                                ),
+                                "Announcement comment 2",
+                                1
+                            )
+                        ),
+                        Pair(
+                            "3",
+                            CommentsData(
+                                3,
+                                "Dummy User 3",
+                                "dummayuser3@gmail.com",
+                                "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c",
+                                Calendar.getInstance().timeInMillis,
+                                1,
+                                mutableMapOf(
+                                    Pair(
+                                        "1",
+                                        LikeData(
+                                            "Dummy User 3",
+                                            "dummayuser3@gmail.com",
+                                            "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c"
+                                        )
+                                    )
+                                ),
+                                "Announcement comment 3",
+                                1
+                            )
+                        )
+                    ),
+                    "ajay.kumar0495@gmail.com",
+                    "Ajay Kumar M",
+                    "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c"
+                )
+            )
+        }
 
 fun search() {
         toggleCircularProgressIndicator()

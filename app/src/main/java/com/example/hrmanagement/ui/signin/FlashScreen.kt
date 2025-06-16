@@ -48,7 +48,7 @@ fun FlashScreen(modifier: Modifier,navController: NavController) {
     var isViewLoading by rememberSaveable { mutableStateOf(false) }
 
     Column (
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
         ) {
@@ -62,7 +62,14 @@ fun FlashScreen(modifier: Modifier,navController: NavController) {
         val scope = rememberCoroutineScope()
         val context = LocalContext.current
         if (isViewLoading) {
-            CircularProgressIndicatorComposable()
+            Column(
+                modifier = Modifier
+                    .fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                CircularProgressIndicatorComposable()
+            }
         } else {
             Button(
                 modifier = Modifier.padding(0.dp,25.dp,0.dp,0.dp),
@@ -71,8 +78,8 @@ fun FlashScreen(modifier: Modifier,navController: NavController) {
 //                    signInWithGoogle(context, navController, scope)
                     scope.launch {
                         val result = MyApplication.googleAuthenticationService.signIn(context)
-                        if((result.token.isNotEmpty())&&(result.status=="Success")) {
-                            Log.d("FlashScreen","${result.token} user token")
+                        if((result!=null)&&(result.token.isNotEmpty())&&(result.status=="Success")) {
+//                            Log.d("FlashScreen","${result.token} user token")
 //            MyApplication.appPreferenceDataStore.updateToken(result.token)
                             MyApplication.appPreferenceDataStore.updateGoogleAuthDetails(result)
                             MyApplication.appDataManager.addGoogleAuthUserData(result)
@@ -91,9 +98,8 @@ fun FlashScreen(modifier: Modifier,navController: NavController) {
                         } else {
                             Toast.makeText(context, "Error while authenticating user. Try again!", Toast.LENGTH_LONG).show()
                         }
-
                     }
-                          },
+                },
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.onPrimary,
                     contentColor = MaterialTheme.colorScheme.background
@@ -128,7 +134,7 @@ fun signInWithGoogle(
 //        val response = apiService.signIn(result.toSignInRequest())
 //        if (response.data == null) return@launch
 
-        if((result.token.isNotEmpty())&&(result.status=="Success")) {
+        if((result!=null)&&(result.token.isNotEmpty())&&(result.status=="Success")) {
             Log.d("FlashScreen","${result.token} user token")
 //            MyApplication.appPreferenceDataStore.updateToken(result.token)
             MyApplication.appPreferenceDataStore.updateGoogleAuthDetails(result)

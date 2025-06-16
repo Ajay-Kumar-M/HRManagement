@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -35,6 +36,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -43,6 +45,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SheetState
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -50,6 +53,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -86,6 +90,8 @@ import com.example.hrmanagement.data.LeaveTrackerData
 import com.example.hrmanagement.data.UserLoginData
 import com.example.hrmanagement.ui.main.UserProfileImage
 import com.google.firebase.firestore.QuerySnapshot
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
@@ -108,27 +114,6 @@ fun UserInfoScreen(
     val tabs = listOf("Profile", "Team", "Leave Tracker", "Goals", "Attendance")
     var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
     val isViewLoading = viewModel.isViewLoading.collectAsStateWithLifecycle()
-    val leaveTrackerData = viewModel.liveLeaveTrackerDetails.collectAsStateWithLifecycle()
-    val goalsQuerySnapshot = viewModel.goalsQuerySnapshot.collectAsStateWithLifecycle()
-    val attendanceSelectedViewType = viewModel.attendanceSelectedViewType.collectAsStateWithLifecycle()
-    val lifecycleOwner = LocalLifecycleOwner.current
-
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            when (event) {
-                Lifecycle.Event.ON_START -> {
-//                    viewModel.getLeaveTrackerDetails()
-//                    viewModel.getGoals()
-//                    viewModel.getAttendanceDetails()
-                }
-                else -> {}
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-        }
-    }
 
     Scaffold(
         floatingActionButton = {
@@ -139,10 +124,7 @@ fun UserInfoScreen(
                     onClick = {
                         when(selectedTabIndex) {
                             2 -> {
-                                val annualLeaveDataMap = Json.encodeToString(leaveTrackerData.value)
-                                val encodedLeaveJson =
-                                    URLEncoder.encode(annualLeaveDataMap, StandardCharsets.UTF_8.toString())
-                                navController.navigate("ApplyLeaveScreen/${encodedLeaveJson}/All")
+                                navController.navigate("ApplyLeaveScreen/${userLoginData.value.email}/All")
                             }
                             3 -> {
 
@@ -301,20 +283,6 @@ fun UserInfoScreen(
                                                 viewModel.getDepartmentDetails(userLoginData.value.departmentName)
                                             }
                                         }
-                                        2 -> {
-                                            viewModel.getLeaveTrackerDetails()
-                                        }
-                                        3 -> {
-                                            viewModel.getGoals()
-                                        }
-                                        4 -> {
-                                            if (attendanceSelectedViewType.value == "Week") {
-                                                viewModel.getCurrentWeekRangeUsingCalendar()
-                                            } else {
-                                                viewModel.fillAttendanceCalendarMetadata()
-                                            }
-                                            viewModel.getAttendanceDetails()
-                                        }
                                     }
                                 },
                                 text = { Text(title) }
@@ -325,7 +293,14 @@ fun UserInfoScreen(
             }
             if (isViewLoading.value) {
                 item {
-                    CircularProgressIndicatorComposable()
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        CircularProgressIndicatorComposable()
+                    }
                 }
             } else {
                 item {
@@ -336,19 +311,19 @@ fun UserInfoScreen(
                     ) {
                         when (selectedTabIndex) {
                             0 -> {
-                                ProfileComposable(userLoginData.value)
+                                ProfileComposable(userLoginData.value,navController)
                             }
                             1 -> {
                                 TeamComposable(viewModel, navController)
                             }
                             2 -> {
-                                LeaveTrackerComposable(navController, leaveTrackerData.value, viewModel)
+                                LeaveTrackerComposable(navController)
                             }
                             3 -> {
-                                GoalsComposable(goalsQuerySnapshot.value)
+                                GoalsComposable()
                             }
                             4 -> {
-                                AttendanceComposable(userSignInStatus.value,viewModel)
+                                AttendanceComposable()
                             }
                         }
                     }
@@ -362,10 +337,9 @@ fun UserInfoScreen(
 
 @Composable
 fun AttendanceComposable(
-    userSignInStatus: String,
-    viewModel: UserInfoScreenViewModel
+    viewModel: AttendanceViewModel = viewModel()
 ){
-
+    val isViewLoading = viewModel.isViewLoading.collectAsStateWithLifecycle()
     val attendanceFilterShowBottomSheet = viewModel.attendanceFilterShowBottomSheet.collectAsStateWithLifecycle()
     val attendanceMonthShowModal = viewModel.attendanceMonthShowModal.collectAsStateWithLifecycle()
     val attendanceSelectedViewType = viewModel.attendanceSelectedViewType.collectAsStateWithLifecycle()
@@ -377,6 +351,7 @@ fun AttendanceComposable(
     val attendanceSelectedYear = viewModel.attendanceSelectedYear.collectAsStateWithLifecycle()
     val attendanceSelectedMonth = viewModel.attendanceSelectedMonth.collectAsStateWithLifecycle()
     val attendanceModalSelectedDate = viewModel.attendanceModalSelectedDate.collectAsStateWithLifecycle()
+    val userSignInStatus = appDataManager.liveUserSignInStatus.collectAsStateWithLifecycle()
     val leaveTypeColorMap: Map<String, Color> = mapOf(
         Pair("Casual Leave",Color(0xFFE08607)),
         Pair("Sick Leave",Color(0xFFE08607)),
@@ -394,323 +369,346 @@ fun AttendanceComposable(
     )
     val dotRadius = 8f
 
-    Column(modifier = Modifier
-        .fillMaxSize()
-    ) {
-        IconButton(
-            onClick = {
-                viewModel.toggleAttendanceFilterShowBottomSheet()
-            },
-            colors = IconButtonDefaults.iconButtonColors(
-                containerColor = Color.White,
-                contentColor = Color.Black
-            ),
+    if (isViewLoading.value) {
+        Column(
             modifier = Modifier
-                .width(110.dp)
-                .height(35.dp)
-                .padding(3.dp)
+                .fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Row (
-                verticalAlignment = Alignment.CenterVertically
-            ){
-                Text(
-                    text = "${attendanceSelectedViewType.value}  ",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier
-                        .width(60.dp)
-                        .height(25.dp)
-//                    .align(Alignment.Center)
-                        .background(Color.White, shape = RoundedCornerShape(16.dp)),
-                    textAlign = TextAlign.Center
-                )
-                Icon(
-                    imageVector = ImageVector.vectorResource(R.drawable.filter_list_24dp),
-                    contentDescription = "Change attendance view"
-                )
-            }
+            CircularProgressIndicatorComposable()
         }
-        Spacer(modifier = Modifier.height(15.dp))
-        if (attendanceSelectedViewType.value=="Week") {
-            Row(
+    } else {
+        Column(modifier = Modifier
+            .fillMaxSize()
+        ) {
+            IconButton(
+                onClick = {
+                    viewModel.toggleAttendanceFilterShowBottomSheet()
+                },
+                colors = IconButtonDefaults.iconButtonColors(
+                    containerColor = Color.White,
+                    contentColor = Color.Black
+                ),
                 modifier = Modifier
-                    .padding(16.dp)
-                    .background(Color.White)
-                    .clip(RoundedCornerShape(25.dp))
-                    .fillMaxWidth()
-                    .padding(5.dp),
-                //verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                    .width(110.dp)
+                    .height(35.dp)
+                    .padding(3.dp)
             ) {
-                IconButton(
-                    onClick = {
-                        viewModel.decrementAttendanceWeek()
-                        viewModel.getAttendanceDetails()
-                    },
-                    colors = IconButtonDefaults.iconButtonColors(
-                        containerColor = Color.White,
-                        contentColor = Color.Black
-                    ),
-                    modifier = Modifier
-                        .size(40.dp)
-                        .padding(2.dp)
-//                    .background(Color.Red)
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                        contentDescription = "Previous Year"
+                Row (
+                    verticalAlignment = Alignment.CenterVertically
+                ){
+                    Text(
+                        text = "${attendanceSelectedViewType.value}  ",
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier
+                            .width(60.dp)
+                            .height(25.dp)
+//                    .align(Alignment.Center)
+                            .background(Color.White, shape = RoundedCornerShape(16.dp)),
+                        textAlign = TextAlign.Center
                     )
-                }
-                Text(
-                    "${attendanceStartDate.value} to ${attendanceEndDate.value}",
-                    style = MaterialTheme.typography.titleSmall,
-                    modifier = Modifier.padding(5.dp)
-                )
-                IconButton(
-                    onClick = {
-                        viewModel.incrementAttendanceWeek()
-                        viewModel.getAttendanceDetails()
-                    },
-                    colors = IconButtonDefaults.iconButtonColors(
-                        containerColor = Color.White,
-                        contentColor = Color.Black
-                    ),
-                    modifier = Modifier
-                        .size(40.dp)
-                        .padding(2.dp)
-                ) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = "Next Year"
+                        imageVector = ImageVector.vectorResource(R.drawable.filter_list_24dp),
+                        contentDescription = "Change attendance view"
                     )
                 }
             }
             Spacer(modifier = Modifier.height(15.dp))
-            attendanceDataQuerySnapshot.value?.forEach { attendanceLog ->
-                val attendanceData = attendanceLog.toObject(AttendanceData::class.java)
-                val calendar = Calendar.getInstance()
-                calendar.timeInMillis = attendanceData.date
-                val dayOfTheWeek = calendar.getDisplayName(Calendar.DAY_OF_WEEK, Calendar.SHORT, Locale.getDefault())
+            if (attendanceSelectedViewType.value=="Week") {
                 Row(
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = dayOfTheWeek?: "",
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                        Text(
-                            text = "${attendanceData.friendlyDateValue}",
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                    }
-                    when(attendanceData.leaveType) {
-                        in listOf("Casual Leave", "Sick Leave", "On Duty", "Optional Holidays", "Comp Off") -> {
-                            Column(
-                                verticalArrangement = Arrangement.Center,
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .padding(18.dp, 0.dp)
-                            ) {
-                                Text(
-                                    text = attendanceData.leaveType,
-                                    style = MaterialTheme.typography.bodySmall,
-                                )
-                                LinearProgressIndicator(
-                                    progress = { 1f },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(4.dp) ,
-                                    color = Color(0xFFFFAC1C),
-                                    trackColor = Color.LightGray,
-                                    strokeCap = StrokeCap.Round
-                                )
-                            }
-                        }
-                        "Holidays" -> {
-                            Column(
-                                verticalArrangement = Arrangement.Center,
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .padding(18.dp, 0.dp)
-                            ) {
-                                Text(
-                                    text = attendanceData.leaveType,
-                                    style = MaterialTheme.typography.bodySmall,
-                                )
-                                LinearProgressIndicator(
-                                    progress = { 1f },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(4.dp) ,
-                                    color = Color.Blue,
-                                    trackColor = Color.LightGray
-                                )
-                            }
-                        }
-                        "" -> {
-                            Column(
-                                verticalArrangement = Arrangement.Center,
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .padding(15.dp, 0.dp)
-                            ) {
-                                if(((dayOfTheWeek=="Sat")||(dayOfTheWeek=="Sun"))&&(attendanceData.checkInTime <= 0L)){
-                                    Text(
-                                        text = "Weekend",
-                                        style = MaterialTheme.typography.bodySmall,
-                                    )
-                                    LinearProgressIndicator(
-                                        progress = { 1f },
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(4.dp) ,
-                                        color = Color(0xFF800020),
-                                        trackColor = Color.LightGray
-                                    )
-                                } else {
-                                    Text(
-                                        text = attendanceData.leaveType,
-                                        style = MaterialTheme.typography.bodySmall,
-                                    )
-                                    Row {
-                                        Canvas(
-                                            modifier = Modifier
-                                                .size((dotRadius * 2).dp)
-                                                .offset(x = 6.dp, y = (-6).dp)
-                                        ) {
-                                            drawCircle(
-                                                color = if (attendanceData.status=="Present") Color.Green else Color.Red,
-                                                radius = dotRadius
-                                            )
-                                        }
-                                        LinearProgressIndicator(
-                                            progress = { attendanceData.totalHours.toFloat() / 9 },
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .height(4.dp) ,
-                                            color = if (attendanceData.status=="Present") Color.Green else Color.Red,
-                                            trackColor = Color.LightGray
-                                        )
-                                        Canvas(
-                                            modifier = Modifier
-                                                .size((dotRadius * 2).dp)
-                                                .offset(x = (-1).dp, y = (-6).dp)
-                                        ) {
-                                            drawCircle(
-                                                color = Color.Red,
-                                                radius = dotRadius
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                    }
-                    Column(
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "Hrs",
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                        Text(
-                            text = "${attendanceData.totalHours}",
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.height(20.dp))
-            }
-        } else {
-            Column(
-                modifier = Modifier.fillMaxSize()
-            ) {
-                Row(
-                    modifier = Modifier.background(Color.White)
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .background(Color.White)
+                        .clip(RoundedCornerShape(25.dp))
                         .fillMaxWidth()
                         .padding(5.dp),
+                    //verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    IconButton(onClick = {
-                        viewModel.decrementAttendanceMonth()
-                        viewModel.fillAttendanceCalendarMetadata()
-                        viewModel.getAttendanceDetails()
-                    }) {
+                    IconButton(
+                        onClick = {
+                            viewModel.decrementAttendanceWeek()
+                            viewModel.getAttendanceDetails()
+                        },
+                        colors = IconButtonDefaults.iconButtonColors(
+                            containerColor = Color.White,
+                            contentColor = Color.Black
+                        ),
+                        modifier = Modifier
+                            .size(40.dp)
+                            .padding(2.dp)
+//                    .background(Color.Red)
+                    ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                            contentDescription = "Previous month"
+                            contentDescription = "Previous Year"
                         )
                     }
                     Text(
-                        text = "${monthMap.getValue(attendanceSelectedMonth.value)} ${attendanceSelectedYear.value}",
-                        textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier
-                            .weight(1f)
-                            .align(Alignment.CenterVertically)
+                        "${attendanceStartDate.value} to ${attendanceEndDate.value}",
+                        style = MaterialTheme.typography.titleSmall,
+                        modifier = Modifier.padding(5.dp)
                     )
-                    IconButton(onClick = {
-                        viewModel.incrementAttendanceMonth()
-                        viewModel.fillAttendanceCalendarMetadata()
-                        viewModel.getAttendanceDetails()
-                    }) {
+                    IconButton(
+                        onClick = {
+                            viewModel.incrementAttendanceWeek()
+                            viewModel.getAttendanceDetails()
+                        },
+                        colors = IconButtonDefaults.iconButtonColors(
+                            containerColor = Color.White,
+                            contentColor = Color.Black
+                        ),
+                        modifier = Modifier
+                            .size(40.dp)
+                            .padding(2.dp)
+                    ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                            contentDescription = "Next month"
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.height(25.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    viewModel.daysOfWeek.forEach { day ->
-                        Text(
-                            text = day,
-                            style = MaterialTheme.typography.bodySmall,
+                            contentDescription = "Next Year"
                         )
                     }
                 }
                 Spacer(modifier = Modifier.height(15.dp))
-                var tempDayOfTheWeekIndex = attendanceDayOfTheWeekIndex.value
-                var currentAttendanceDataIndex = 0
-                var attendanceDataEndIndex = attendanceDataQuerySnapshot.value?.size() ?: 0
-                if (attendanceDataEndIndex == 0) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Text(
-                            text = "No Data",
-                            style = MaterialTheme.typography.titleLarge,
+                    attendanceDataQuerySnapshot.value?.forEach { attendanceLog ->
+                        val attendanceData = attendanceLog.toObject(AttendanceData::class.java)
+                        val calendar = Calendar.getInstance()
+                        calendar.timeInMillis = attendanceData.date
+                        val dayOfTheWeek = calendar.getDisplayName(
+                            Calendar.DAY_OF_WEEK,
+                            Calendar.SHORT,
+                            Locale.getDefault()
                         )
-
-                    }
-                } else {
-                    repeat(6) {
                         Row(
-                            horizontalArrangement = Arrangement.SpaceBetween,
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            repeat(7) {
-                                if (tempDayOfTheWeekIndex > 0) {
-                                    Text("         ")
-                                    tempDayOfTheWeekIndex--
-                                } else if(currentAttendanceDataIndex < attendanceDataEndIndex){
-                                    val documentSnapshot = attendanceDataQuerySnapshot.value?.elementAt(currentAttendanceDataIndex)
-                                    val attendanceData = documentSnapshot?.toObject(AttendanceData::class.java)
-                                    attendanceData?.let {
-                                        Box(
+                            Column(
+                                verticalArrangement = Arrangement.Center,
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = dayOfTheWeek ?: "",
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                                Text(
+                                    text = "${attendanceData.friendlyDateValue}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                            }
+                            when (attendanceData.leaveType) {
+                                in listOf(
+                                    "Casual Leave",
+                                    "Sick Leave",
+                                    "On Duty",
+                                    "Optional Holidays",
+                                    "Comp Off"
+                                ) -> {
+                                    Column(
+                                        verticalArrangement = Arrangement.Center,
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .padding(18.dp, 0.dp)
+                                    ) {
+                                        Text(
+                                            text = attendanceData.leaveType,
+                                            style = MaterialTheme.typography.bodySmall,
+                                        )
+                                        LinearProgressIndicator(
+                                            progress = { 1f },
                                             modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(4.dp),
+                                            color = Color(0xFFFFAC1C),
+                                            trackColor = Color.LightGray,
+                                            strokeCap = StrokeCap.Round
+                                        )
+                                    }
+                                }
+
+                                "Holidays" -> {
+                                    Column(
+                                        verticalArrangement = Arrangement.Center,
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .padding(18.dp, 0.dp)
+                                    ) {
+                                        Text(
+                                            text = attendanceData.leaveType,
+                                            style = MaterialTheme.typography.bodySmall,
+                                        )
+                                        LinearProgressIndicator(
+                                            progress = { 1f },
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(4.dp),
+                                            color = Color.Blue,
+                                            trackColor = Color.LightGray
+                                        )
+                                    }
+                                }
+
+                                "" -> {
+                                    Column(
+                                        verticalArrangement = Arrangement.Center,
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .padding(15.dp, 0.dp)
+                                    ) {
+                                        if (((dayOfTheWeek == "Sat") || (dayOfTheWeek == "Sun")) && (attendanceData.checkInTime <= 0L)) {
+                                            Text(
+                                                text = "Weekend",
+                                                style = MaterialTheme.typography.bodySmall,
+                                            )
+                                            LinearProgressIndicator(
+                                                progress = { 1f },
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .height(4.dp),
+                                                color = Color(0xFF800020),
+                                                trackColor = Color.LightGray
+                                            )
+                                        } else {
+                                            Text(
+                                                text = attendanceData.leaveType,
+                                                style = MaterialTheme.typography.bodySmall,
+                                            )
+                                            Row {
+                                                Canvas(
+                                                    modifier = Modifier
+                                                        .size((dotRadius * 2).dp)
+                                                        .offset(x = 6.dp, y = (-6).dp)
+                                                ) {
+                                                    drawCircle(
+                                                        color = if (attendanceData.status == "Present") Color.Green else Color.Red,
+                                                        radius = dotRadius
+                                                    )
+                                                }
+                                                LinearProgressIndicator(
+                                                    progress = { attendanceData.totalHours.toFloat() / 9 },
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .height(4.dp),
+                                                    color = if (attendanceData.status == "Present") Color.Green else Color.Red,
+                                                    trackColor = Color.LightGray
+                                                )
+                                                Canvas(
+                                                    modifier = Modifier
+                                                        .size((dotRadius * 2).dp)
+                                                        .offset(x = (-1).dp, y = (-6).dp)
+                                                ) {
+                                                    drawCircle(
+                                                        color = Color.Red,
+                                                        radius = dotRadius
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                            }
+                            Column(
+                                verticalArrangement = Arrangement.Center,
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = "Hrs",
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                                Text(
+                                    text = "${attendanceData.totalHours}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(20.dp))
+                    }
+
+            } else {
+                Column(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    Row(
+                        modifier = Modifier.background(Color.White)
+                            .fillMaxWidth()
+                            .padding(5.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        IconButton(onClick = {
+                            viewModel.decrementAttendanceMonth()
+                            viewModel.fillAttendanceCalendarMetadata()
+                            viewModel.getAttendanceDetails()
+                        }) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                                contentDescription = "Previous month"
+                            )
+                        }
+                        Text(
+                            text = "${monthMap.getValue(attendanceSelectedMonth.value)} ${attendanceSelectedYear.value}",
+                            textAlign = TextAlign.Center,
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier
+                                .weight(1f)
+                                .align(Alignment.CenterVertically)
+                        )
+                        IconButton(onClick = {
+                            viewModel.incrementAttendanceMonth()
+                            viewModel.fillAttendanceCalendarMetadata()
+                            viewModel.getAttendanceDetails()
+                        }) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                contentDescription = "Next month"
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(25.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        viewModel.daysOfWeek.forEach { day ->
+                            Text(
+                                text = day,
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(15.dp))
+                    var tempDayOfTheWeekIndex = attendanceDayOfTheWeekIndex.value
+                    var currentAttendanceDataIndex = 0
+                    var attendanceDataEndIndex = attendanceDataQuerySnapshot.value?.size() ?: 0
+                    if (attendanceDataEndIndex == 0) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = "No Data",
+                                style = MaterialTheme.typography.titleLarge,
+                            )
+
+                        }
+                    } else {
+                        repeat(6) {
+                            Row(
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                repeat(7) {
+                                    if (tempDayOfTheWeekIndex > 0) {
+                                        Text("         ")
+                                        tempDayOfTheWeekIndex--
+                                    } else if(currentAttendanceDataIndex < attendanceDataEndIndex){
+                                        val documentSnapshot = attendanceDataQuerySnapshot.value?.elementAt(currentAttendanceDataIndex)
+                                        val attendanceData = documentSnapshot?.toObject(AttendanceData::class.java)
+                                        attendanceData?.let {
+                                            Box(
+                                                modifier = Modifier
 //                                            .background(
 //                                                color = if (attendanceModalSelectedDate.value == attendanceData?.friendlyDateValue) {
 //                                                    MaterialTheme.colorScheme.secondaryContainer
@@ -718,106 +716,107 @@ fun AttendanceComposable(
 //                                                    Color.Transparent
 //                                                }
 //                                            )
-                                                .clickable {
-                                                    viewModel.changeAttendanceMonthSelectedDate(
-                                                        attendanceData.friendlyDateValue
-                                                    )
-                                                    viewModel.toggleAttendanceMonthShowModal()
-                                                }
-                                        ) {
-                                            Column(
-                                                horizontalAlignment = Alignment.CenterHorizontally
+                                                    .clickable {
+                                                        viewModel.changeAttendanceMonthSelectedDate(
+                                                            attendanceData.friendlyDateValue
+                                                        )
+                                                        viewModel.toggleAttendanceMonthShowModal()
+                                                    }
                                             ) {
-                                                Text(
-                                                    text = "${attendanceData.friendlyDateValue}",
-                                                    style = MaterialTheme.typography.titleSmall,
-                                                    textAlign = TextAlign.Center
-                                                )
-                                                Row(
-                                                    horizontalArrangement = Arrangement.Center,
-                                                    verticalAlignment = Alignment.CenterVertically
+                                                Column(
+                                                    horizontalAlignment = Alignment.CenterHorizontally
                                                 ) {
-                                                    Canvas(
-                                                        modifier = Modifier
-                                                            .size((5f * 2).dp)
-//                                                          .offset(x = (-1).dp)
+                                                    Text(
+                                                        text = "${attendanceData.friendlyDateValue}",
+                                                        style = MaterialTheme.typography.titleSmall,
+                                                        textAlign = TextAlign.Center
+                                                    )
+                                                    Row(
+                                                        horizontalArrangement = Arrangement.Center,
+                                                        verticalAlignment = Alignment.CenterVertically
                                                     ) {
-                                                        drawCircle(
-                                                            color = if (attendanceData.checkInTime > 0) {
-                                                                Color.Green
-                                                            } else if (attendanceData.leaveType.isNotBlank()) {
-                                                                leaveTypeColorMap.getValue((attendanceData.leaveType.toString()))
-                                                            } else {
-                                                                Color(0xFF800020)
-                                                            },
-                                                            radius = 5f
+                                                        Canvas(
+                                                            modifier = Modifier
+                                                                .size((5f * 2).dp)
+//                                                          .offset(x = (-1).dp)
+                                                        ) {
+                                                            drawCircle(
+                                                                color = if (attendanceData.checkInTime > 0) {
+                                                                    Color.Green
+                                                                } else if (attendanceData.leaveType.isNotBlank()) {
+                                                                    leaveTypeColorMap.getValue((attendanceData.leaveType.toString()))
+                                                                } else {
+                                                                    Color(0xFF800020)
+                                                                },
+                                                                radius = 5f
+                                                            )
+                                                        }
+                                                        Text(
+                                                            text = "${attendanceData.totalHours}",
+                                                            style = MaterialTheme.typography.bodySmall
                                                         )
                                                     }
-                                                    Text(
-                                                        text = "${attendanceData.totalHours}",
-                                                        style = MaterialTheme.typography.bodySmall
-                                                    )
                                                 }
                                             }
                                         }
+                                        currentAttendanceDataIndex++
+                                    } else {
+                                        Text("         ")
                                     }
-                                    currentAttendanceDataIndex++
-                                } else {
-                                    Text("         ")
                                 }
                             }
+                            Spacer(modifier = Modifier.height(20.dp))
                         }
-                        Spacer(modifier = Modifier.height(20.dp))
                     }
-                }
 
+                }
             }
-        }
-        Button(
-            onClick = {
-                viewModel.updateUserSignInStatus()
-            },
-            modifier = Modifier
-                .align(Alignment.CenterHorizontally),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF0E7305),
-            ),
-        ) {
-            Text(
-                text = if (userSignInStatus=="Checked-In") "Check Out" else "Check In",
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.White,
+            Button(
+                onClick = {
+                    viewModel.updateUserSignInStatus()
+                },
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF0E7305),
+                ),
+            ) {
+                Text(
+                    text = if (userSignInStatus.value=="Checked-In") "Check Out" else "Check In",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.White,
 //                modifier = Modifier
 //                    .background(
 //                        color = Color(0xFF10570A),
 //                        shape = RoundedCornerShape(20.dp)
 //                    )
 //                    .padding(10.dp),
-                fontWeight = FontWeight.Bold
-            )
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            Spacer(modifier = Modifier.height(20.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(45.dp)
+                    .background(Color.White)
+                    .padding(10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = ImageVector.vectorResource(R.drawable.clock_24dp),
+                    contentDescription = "Clock"
+                )
+                Spacer(modifier = Modifier.width(20.dp))
+                Text(
+                    text = "Total Hours ${"%.2f".format(attendanceTotalHours.value)} HRS",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = Color.Black,
+                )
+            }
+            if (attendanceFilterShowBottomSheet.value) AttendanceFilterShowModalSheet(viewModel)
+            if (attendanceMonthShowModal.value) AttendanceMonthInfoModal(attendanceDataQuerySnapshot.value,attendanceModalSelectedDate.value,attendanceSelectedYear.value,attendanceSelectedMonth.value,viewModel)
         }
-        Spacer(modifier = Modifier.height(20.dp))
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(45.dp)
-                .background(Color.White)
-                .padding(10.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = ImageVector.vectorResource(R.drawable.clock_24dp),
-                contentDescription = "Clock"
-            )
-            Spacer(modifier = Modifier.width(20.dp))
-            Text(
-                text = "Total Hours ${"%.2f".format(attendanceTotalHours.value)} HRS",
-                style = MaterialTheme.typography.titleSmall,
-                color = Color.Black,
-            )
-        }
-        if (attendanceFilterShowBottomSheet.value) AttendanceFilterShowModalSheet(viewModel)
-        if (attendanceMonthShowModal.value) AttendanceMonthInfoModal(attendanceDataQuerySnapshot.value,attendanceModalSelectedDate.value,attendanceSelectedYear.value,attendanceSelectedMonth.value,viewModel)
     }
 }
 
@@ -828,7 +827,7 @@ fun AttendanceMonthInfoModal(
     attendanceModalSelectedDate: Int,
     attendanceSelectedYear: Int,
     attendanceSelectedMonth: Int,
-    viewModel: UserInfoScreenViewModel
+    viewModel: AttendanceViewModel
 ){
     val sheetState = rememberModalBottomSheetState()
     val documentSnapshot = attendanceDataQuerySnapshot?.elementAt(attendanceModalSelectedDate-1)
@@ -962,7 +961,7 @@ fun AttendanceMonthInfoModal(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AttendanceFilterShowModalSheet(
-    viewModel: UserInfoScreenViewModel
+    viewModel: AttendanceViewModel
 ){
     val sheetState = rememberModalBottomSheetState()
     val selectedViewType = viewModel.attendanceSelectedViewType.collectAsStateWithLifecycle()
@@ -1021,9 +1020,8 @@ fun AttendanceFilterShowModalSheet(
 }
 
 @Composable
-fun GoalsComposable(goalsQuerySnapshot: QuerySnapshot?)
+fun GoalsComposable(viewModel: GoalsViewModel = viewModel())
 {
-
     val goalsList = listOf("Low", "Medium", "High", "Highest", "None")
     val goalTypeColor: Map<String, Color> = mapOf(
         Pair("Low", Color.Green),
@@ -1032,6 +1030,7 @@ fun GoalsComposable(goalsQuerySnapshot: QuerySnapshot?)
         Pair("Highest", Color.Red),
         Pair("None", Color.Gray),
     )
+    val goalsQuerySnapshot = viewModel.goalsQuerySnapshot.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier
         .fillMaxSize()
@@ -1092,7 +1091,7 @@ fun GoalsComposable(goalsQuerySnapshot: QuerySnapshot?)
                 )
             }
         }
-        goalsQuerySnapshot?.forEach { document ->
+        goalsQuerySnapshot.value?.forEach { document ->
             val goal = document.toObject(GoalData::class.java)
             Column(
                 modifier = Modifier
@@ -1170,7 +1169,7 @@ fun GoalsComposable(goalsQuerySnapshot: QuerySnapshot?)
                         progress = { goal.progress.toFloat() / 100 },
                             modifier = Modifier
                                 .width(70.dp)
-                                .height(15.dp)
+                                .height(10.dp)
                         )
                     }
                 }
@@ -1184,11 +1183,10 @@ fun GoalsComposable(goalsQuerySnapshot: QuerySnapshot?)
 @Composable
 fun LeaveTrackerComposable(
     navController: NavController,
-    leaveTrackerData: LeaveTrackerData,
-    viewModel: UserInfoScreenViewModel
+    viewModel: LeaveTrackerViewModel = viewModel()
 ){
+    val isViewLoading = viewModel.isViewLoading.collectAsStateWithLifecycle()
     val calendarYear = viewModel.calendarYear.collectAsStateWithLifecycle()
-    val leaveTrackerShowBottomSheet = viewModel.leaveTrackerShowBottomSheet.collectAsStateWithLifecycle()
     val leaveTypes = listOf("Casual Leave", "Sick Leave", "On Duty", "Optional Holidays", "Comp Off")
     val leaveTypeIcons: Map<String, ImageVector> = mapOf(
         Pair("Casual Leave",ImageVector.vectorResource(id = R.drawable.calendar_mark)),
@@ -1207,157 +1205,185 @@ fun LeaveTrackerComposable(
         Pair("Optional HolidaysBalance","optionalLeaveBalance"),
         Pair("Comp OffBooked","compOffLeaveBooked"),
         Pair("Comp OffBalance","compOffLeaveBalance"))
+    val leaveTrackerData = viewModel.liveLeaveTrackerDetails.collectAsStateWithLifecycle()
+    val sheetState = rememberModalBottomSheetState()
+    val lifecycleOwner = LocalLifecycleOwner.current
 
-    Column(modifier = Modifier
-        .fillMaxSize()
-    ) {
-        Row(
-            modifier = Modifier
-                .padding(16.dp)
-                .background(Color.White)
-                .clip(RoundedCornerShape(25.dp))
-                .fillMaxWidth()
-                .padding(5.dp),
-            //verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            IconButton(
-                onClick = {
-                    viewModel.decrementCalendarYear()
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_START -> {
                     viewModel.getLeaveTrackerDetails()
-                },
-                colors = IconButtonDefaults.iconButtonColors(
-                    containerColor = Color.White,
-                    contentColor = Color.Black
-                ),
-                modifier = Modifier
-                    .size(40.dp)
-                    .padding(2.dp)
-//                    .background(Color.Red)
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                    contentDescription = "Previous Year"
-                )
-            }
-            Text(
-                "01 Jan ${calendarYear.value} to 31 Dec ${calendarYear.value}",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(5.dp)
-            )
-            IconButton(
-                onClick = {
-                    viewModel.incrementCalendarYear()
-                    viewModel.getLeaveTrackerDetails()
-                },
-                colors = IconButtonDefaults.iconButtonColors(
-                    containerColor = Color.White,
-                    contentColor = Color.Black
-                ),
-                modifier = Modifier
-                    .size(40.dp)
-                    .padding(2.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = "Next Year"
-                )
+//                    viewModel.getGoals()
+//                    viewModel.getAttendanceDetails()
+                }
+                else -> {}
             }
         }
-        Row(
-            Modifier.horizontalScroll(rememberScrollState())
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
+    if (isViewLoading.value) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            leaveTypes.forEach { leaveType ->
+            CircularProgressIndicatorComposable()
+        }
+    } else {
+        Column(modifier = Modifier
+            .fillMaxSize()
+        ) {
+            Row(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .background(Color.White)
+                    .clip(RoundedCornerShape(25.dp))
+                    .fillMaxWidth()
+                    .padding(5.dp),
+                //verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                IconButton(
+                    onClick = {
+                        viewModel.decrementCalendarYear()
+                        viewModel.getLeaveTrackerDetails()
+                    },
+                    colors = IconButtonDefaults.iconButtonColors(
+                        containerColor = Color.White,
+                        contentColor = Color.Black
+                    ),
+                    modifier = Modifier
+                        .size(40.dp)
+                        .padding(2.dp)
+//                    .background(Color.Red)
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                        contentDescription = "Previous Year"
+                    )
+                }
+                Text(
+                    "01 Jan ${calendarYear.value} to 31 Dec ${calendarYear.value}",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(5.dp)
+                )
+                IconButton(
+                    onClick = {
+                        viewModel.incrementCalendarYear()
+                        viewModel.getLeaveTrackerDetails()
+                    },
+                    colors = IconButtonDefaults.iconButtonColors(
+                        containerColor = Color.White,
+                        contentColor = Color.Black
+                    ),
+                    modifier = Modifier
+                        .size(40.dp)
+                        .padding(2.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = "Next Year"
+                    )
+                }
+            }
+            Row(
+                Modifier.horizontalScroll(rememberScrollState())
+            ) {
+                leaveTypes.forEach { leaveType ->
+                    Column(
+                        modifier = Modifier
+                            .background(Color.White)
+                            .clip(RoundedCornerShape(16.dp))
+                            .padding(16.dp)
+                            .clickable {
+                                viewModel.changeShowBottomSheetLeaveType(leaveType)
+                            }
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = leaveTypeIcons.getValue(leaveType), //Icons.Default.Share,
+                                contentDescription = "Leave type icon",
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Text(
+                                leaveType,
+                                style = MaterialTheme.typography.titleSmall,
+                                modifier = Modifier.padding(5.dp, 5.dp, 5.dp, 0.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Row(horizontalArrangement = Arrangement.SpaceBetween) {
+                            Column {
+                                Text(
+                                    getPropertyValue(
+                                        leaveTrackerData.value,
+                                        leaveTypeDataClassMap.getValue("${leaveType}Balance")
+                                    ).toString(),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text("Balance", style = MaterialTheme.typography.bodySmall)
+                            }
+                            Spacer(modifier = Modifier.width(20.dp))
+                            Column {
+                                Text(
+                                    getPropertyValue(
+                                        leaveTrackerData.value,
+                                        leaveTypeDataClassMap.getValue("${leaveType}Booked")
+                                    ).toString(),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text("Booked", style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(20.dp))
+                    LeaveTrackerShowModalSheet(leaveTypeDataClassMap,sheetState, viewModel)
+                }
+            }
+            Spacer(modifier = Modifier.height(20.dp))
+            leaveTrackerData.value.annualLeaveData.forEach { allLeaves ->
                 Column(
                     modifier = Modifier
                         .background(Color.White)
-                        .clip(RoundedCornerShape(16.dp))
-                        .padding(16.dp)
+                        .padding(20.dp)
+                        .fillMaxWidth()
                         .clickable {
-                            viewModel.changeShowBottomSheetLeaveType(leaveType)
-                            viewModel.toggleLeaveTrackerShowBottomSheet()
+                            val userJson = Json.encodeToString(allLeaves.value)
+                            val encodedUserJson =
+                                URLEncoder.encode(userJson, StandardCharsets.UTF_8.toString())
+                            navController.navigate("LeaveDetailsScreen/${encodedUserJson}")
                         }
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = leaveTypeIcons.getValue(leaveType), //Icons.Default.Share,
-                            contentDescription = "Leave type icon",
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Text(
-                            leaveType,
-                            style = MaterialTheme.typography.titleSmall,
-                            modifier = Modifier.padding(5.dp, 5.dp, 5.dp, 0.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Row(horizontalArrangement = Arrangement.SpaceBetween) {
-                        Column {
-                            Text(
-                                getPropertyValue(
-                                    leaveTrackerData,
-                                    leaveTypeDataClassMap.getValue("${leaveType}Balance")
-                                ).toString(),
-                                style = MaterialTheme.typography.bodySmall,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text("Balance", style = MaterialTheme.typography.bodySmall)
-                        }
-                        Spacer(modifier = Modifier.width(20.dp))
-                        Column {
-                            Text(
-                                getPropertyValue(
-                                    leaveTrackerData,
-                                    leaveTypeDataClassMap.getValue("${leaveType}Booked")
-                                ).toString(),
-                                style = MaterialTheme.typography.bodySmall,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text("Booked", style = MaterialTheme.typography.bodySmall)
-                        }
-                    }
+                    Text(
+                        "${allLeaves.value.getValue("Leave Type")} - ${allLeaves.value.getValue("Number Of Days")} Day(s)",
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(5.dp)
+                    )
+                    Text(
+                        "${allLeaves.value.getValue("Start Date")} To ${allLeaves.value.getValue("End Date")}",
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(5.dp)
+                    )
+                    Text(
+                        allLeaves.value.getValue("Status"),
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(5.dp)
+                    )
                 }
-                Spacer(modifier = Modifier.width(20.dp))
-                if (leaveTrackerShowBottomSheet.value) {
-                    LeaveTrackerShowModalSheet(leaveTrackerData, leaveTypeDataClassMap, viewModel)
-                }
+                Spacer(modifier = Modifier.height(10.dp))
             }
-        }
-        Spacer(modifier = Modifier.height(20.dp))
-        leaveTrackerData.annualLeaveData.forEach { allLeaves ->
-            Column(
-                modifier = Modifier
-                    .background(Color.White)
-                    .padding(20.dp)
-                    .fillMaxWidth()
-                    .clickable {
-                        val userJson = Json.encodeToString(allLeaves.value)
-                        val encodedUserJson =
-                            URLEncoder.encode(userJson, StandardCharsets.UTF_8.toString())
-                        navController.navigate("LeaveDetailsScreen/${encodedUserJson}")
-                    }
-            ) {
-                Text(
-                    "${allLeaves.value.getValue("Leave Type")} - ${allLeaves.value.getValue("Number Of Days")} Day(s)",
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(5.dp)
-                )
-                Text(
-                    "${allLeaves.value.getValue("Start Date")} To ${allLeaves.value.getValue("End Date")}",
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(5.dp)
-                )
-                Text(
-                    allLeaves.value.getValue("Status"),
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(5.dp)
-                )
-            }
-            Spacer(modifier = Modifier.height(10.dp))
-        }
 
+        }
     }
 }
 
@@ -1399,10 +1425,13 @@ fun TeamComposable(
                     .fillMaxWidth()
                     .clickable {
                         navController.navigate("ColleagueInfoScreen/${teamMemberInfo.email}")
-                    }
+                    },
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 UserProfileImage(teamMemberInfo.imageUrl)
-                Column (modifier = Modifier.padding(30.dp,0.dp,5.dp,20.dp))
+                Column (
+                    modifier = Modifier.padding(30.dp,0.dp,5.dp,0.dp)
+                )
                 {
                     Text(
                         teamMemberInfo.username,
@@ -1419,10 +1448,9 @@ fun TeamComposable(
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
-
                 }
-                Spacer(modifier = Modifier.height(4.dp))
             }
+            Spacer(modifier = Modifier.height(10.dp))
         }
     }
 }
@@ -1430,17 +1458,21 @@ fun TeamComposable(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LeaveTrackerShowModalSheet(
-    leaveTrackerData: LeaveTrackerData,
     leaveTypeDataClassMap: Map<String,String>,
-    viewModel: UserInfoScreenViewModel
+    sheetState: SheetState,
+    viewModel: LeaveTrackerViewModel
 ){
-    val sheetState = rememberModalBottomSheetState()
-    val leaveType = viewModel.showBottomSheetLeaveType.collectAsStateWithLifecycle()
+    val coroutineScope = rememberCoroutineScope()
+    val leaveTrackerData = viewModel.liveLeaveTrackerDetails.collectAsStateWithLifecycle()
+    val leaveTrackerShowBottomSheet = viewModel.leaveTrackerShowBottomSheet.collectAsStateWithLifecycle()
 
-    Column{
+    if (leaveTrackerShowBottomSheet.value) {
         ModalBottomSheet(
             onDismissRequest = {
-                viewModel.toggleLeaveTrackerShowBottomSheet()
+                coroutineScope.launch {
+                    sheetState.hide() // animate out
+                    viewModel.toggleLeaveTrackerShowBottomSheet() // update state after animation
+                }
             },
             sheetState = sheetState
         ) {
@@ -1449,7 +1481,7 @@ fun LeaveTrackerShowModalSheet(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    leaveType.value,
+                    viewModel.showBottomSheetLeaveType,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center,
@@ -1467,8 +1499,8 @@ fun LeaveTrackerShowModalSheet(
                     )
                     Text(
                         getPropertyValue(
-                            leaveTrackerData,
-                            leaveTypeDataClassMap.getValue("${leaveType.value}Balance")
+                            leaveTrackerData.value,
+                            leaveTypeDataClassMap.getValue("${viewModel.showBottomSheetLeaveType}Balance")
                         ).toString(),
                         style = MaterialTheme.typography.bodyMedium
                     )
@@ -1485,8 +1517,8 @@ fun LeaveTrackerShowModalSheet(
                     )
                     Text(
                         getPropertyValue(
-                            leaveTrackerData,
-                            leaveTypeDataClassMap.getValue("${leaveType.value}Booked")
+                            leaveTrackerData.value,
+                            leaveTypeDataClassMap.getValue("${viewModel.showBottomSheetLeaveType}Booked")
                         ).toString(),
                         style = MaterialTheme.typography.bodyMedium
                     )
@@ -1494,13 +1526,14 @@ fun LeaveTrackerShowModalSheet(
             }
         }
     }
-
 }
 
 @Composable
-fun ProfileComposable(userLoginData: UserLoginData)
+fun ProfileComposable(
+    userLoginData: UserLoginData,
+    navController: NavController
+)
 {
-
     Column {
         Text("About",
             style = MaterialTheme.typography.titleLarge,
@@ -1530,7 +1563,7 @@ fun ProfileComposable(userLoginData: UserLoginData)
             style = MaterialTheme.typography.bodyMedium
         )
         Spacer(modifier = Modifier.height(5.dp))
-        Text("Department Name", style = MaterialTheme.typography.titleSmall)
+        Text(userLoginData.departmentName, style = MaterialTheme.typography.titleSmall)
         Spacer(modifier = Modifier.height(15.dp))
 
         Text(
@@ -1551,9 +1584,49 @@ fun ProfileComposable(userLoginData: UserLoginData)
         Spacer(modifier = Modifier.height(5.dp))
         Text("Block 1", style = MaterialTheme.typography.titleSmall)
         Spacer(modifier = Modifier.height(15.dp))
+        Text(
+            "Reporting To",
+            style = MaterialTheme.typography.titleMedium
+        )
+        Spacer(modifier = Modifier.height(15.dp))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable {
+                    navController.navigate("ColleagueInfoScreen/${userLoginData.reportingTo.getValue("emailId")}")
+                },
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            UserProfileImage(userLoginData.reportingTo.getValue("imageUrl"))
+            Column (
+                modifier = Modifier.padding(30.dp,0.dp,5.dp,0.dp)
+            )
+            {
+                Text(
+                    userLoginData.reportingTo.getValue("username"),
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Text(
+                    userLoginData.reportingTo.getValue("designation"),
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Row {
+                    Icon(
+                        imageVector = ImageVector.vectorResource(R.drawable.id_card_svg),
+                        contentDescription = "ID",
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Text(
+                        userLoginData.reportingTo.getValue("employeeId"),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
 
+            }
+        }
+        Spacer(modifier = Modifier.height(15.dp))
         getAllFieldsAndValues(userLoginData).forEach { value ->
-            if (value.first != "token") {
+            if ((value.first != "token")&&(value.first != "reportingTo")) {
                 Text(
                     value.first,
                     style = MaterialTheme.typography.bodyMedium

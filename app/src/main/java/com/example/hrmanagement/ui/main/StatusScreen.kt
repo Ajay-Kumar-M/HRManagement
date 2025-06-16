@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
@@ -186,6 +187,7 @@ fun StatusScreen(
                 .fillMaxSize()
                 .background(Color.White)
                 .padding(innerPadding)
+                .imePadding()
         ) {
             if (isViewLoading.value){
                 Column(
@@ -242,7 +244,6 @@ fun StatusScreen(
                                 lastIndex = idx + 1
                             }
                             builder.append(text.text.substring(lastIndex))
-                            println("statusscreen builder 2 - ${builder.toAnnotatedString()}")
                             TransformedText(builder.toAnnotatedString(), DollarReplacementOffsetMapping(text.text,dollorMapData.value))
                         }
 

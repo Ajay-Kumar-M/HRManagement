@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
@@ -39,6 +40,8 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -67,7 +70,7 @@ import kotlin.time.Duration.Companion.milliseconds
 fun ApplyLeaveScreen(
     modifier: Modifier,
     navController: NavController,
-    leaveTrackerData: LeaveTrackerData,
+    personEmailId: String,
     leaveType: String,
     viewModel: ApplyLeaveViewModel = viewModel()
 ) {
@@ -109,7 +112,7 @@ fun ApplyLeaveScreen(
                         navController.popBackStack()
                     },
                     colors = IconButtonDefaults.iconButtonColors(
-                        containerColor = Color.White,
+                        containerColor = Color.Transparent,
                         contentColor = Color.Black
                     ),
                     modifier = Modifier
@@ -133,7 +136,6 @@ fun ApplyLeaveScreen(
                     modifier = Modifier
                         .navigationBarsPadding()
                         .height(55.dp)
-                        .background(Color.White)
                         .fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
@@ -159,7 +161,7 @@ fun ApplyLeaveScreen(
                             val durationDiff = toDateViewModel.value.minus(fromDateViewModel.value)
                             val differenceInDays = durationDiff.milliseconds.inWholeDays.toInt() + 1
                             if ((differenceInDays>0)&&(leaveTypeSelected.value!="Select Leave Type from Dropdown")){
-                                viewModel.addAnnualLeaveData(leaveTrackerData)
+                                viewModel.addAnnualLeaveData(personEmailId)
                             } else {
                                 if (differenceInDays <= 0) {
                                     Toast.makeText(context, "End date should not be lesser than start date!", Toast.LENGTH_LONG).show()
@@ -202,6 +204,7 @@ fun ApplyLeaveScreen(
                     .padding(innerPadding)
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
+                    .imePadding()
             ) {
                 Text(
                     "Employee Mail",
@@ -210,7 +213,7 @@ fun ApplyLeaveScreen(
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    leaveTrackerData.emailId,
+                    personEmailId,
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(20.dp, 2.dp, 5.dp, 15.dp)
                 )
@@ -218,14 +221,14 @@ fun ApplyLeaveScreen(
                     Text(
                         "From",
                         style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(20.dp, 15.dp, 5.dp, 2.dp),
+                        modifier = Modifier.padding(20.dp, 15.dp, 2.dp, 2.dp),
                         fontWeight = FontWeight.Bold
                     )
                     Text(
                         "*",
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier
-                            .padding(5.dp, 15.dp, 5.dp, 2.dp),
+                            .padding(0.dp, 15.dp, 5.dp, 2.dp),
                         color = Color.Red
                     )
                 }
@@ -235,10 +238,11 @@ fun ApplyLeaveScreen(
                         fromShowDatePicker = !fromShowDatePicker
                     }
                 ) {
-                    OutlinedTextField(
+                    TextField(
                         value = fromSelectedDate,
                         onValueChange = {},
-                        label = { Text("Select Date") },
+//                        label = { Text("Select Date") },
+                        placeholder = { Text("Select Date") },
                         readOnly = true,
                         trailingIcon = {
                             IconButton(onClick = { fromShowDatePicker = !fromShowDatePicker }) {
@@ -246,6 +250,16 @@ fun ApplyLeaveScreen(
                             }
                         },
                         modifier = Modifier.fillMaxWidth()
+                            .height(50.dp)
+                            .clickable{
+                                fromShowDatePicker = !fromShowDatePicker
+                            },
+                        colors = TextFieldDefaults.colors(
+                            unfocusedContainerColor = Color.Transparent,
+                            focusedContainerColor = Color.Transparent,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent
+                        ),
                     )
                     if(fromShowDatePicker){
                         DatePickerDialog(
@@ -274,14 +288,14 @@ fun ApplyLeaveScreen(
                     Text(
                         "To",
                         style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(20.dp, 15.dp, 5.dp, 2.dp),
+                        modifier = Modifier.padding(20.dp, 15.dp, 2.dp, 2.dp),
                         fontWeight = FontWeight.Bold
                     )
                     Text(
                         "*",
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier
-                            .padding(5.dp, 15.dp, 5.dp, 2.dp),
+                            .padding(0.dp, 15.dp, 5.dp, 2.dp),
                         color = Color.Red
                     )
                 }
@@ -291,17 +305,25 @@ fun ApplyLeaveScreen(
                         toShowDatePicker = !toShowDatePicker
                     }
                 ) {
-                    OutlinedTextField(
+                    TextField(
                         value = toSelectedDate,
                         onValueChange = {},
-                        label = { Text("Select Date") },
+//                        label = { Text("Select Date") },
+                        placeholder = { Text("Select Date") },
                         readOnly = true,
                         trailingIcon = {
                             IconButton(onClick = { toShowDatePicker = !toShowDatePicker }) {
                                 Icon(imageVector = Icons.Default.DateRange, contentDescription = "Select date")
                             }
                         },
+                        colors = TextFieldDefaults.colors(
+                            unfocusedContainerColor = Color.Transparent,
+                            focusedContainerColor = Color.Transparent,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent
+                        ),
                         modifier = Modifier.fillMaxWidth()
+                            .height(50.dp)
                     )
                     if(toShowDatePicker){
                         DatePickerDialog(
@@ -342,14 +364,14 @@ fun ApplyLeaveScreen(
                     Text(
                         "Leave Type",
                         style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(20.dp, 15.dp, 5.dp, 2.dp),
+                        modifier = Modifier.padding(20.dp, 15.dp, 2.dp, 2.dp),
                         fontWeight = FontWeight.Bold
                     )
                     Text(
                         "*",
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier
-                            .padding(5.dp, 15.dp, 5.dp, 2.dp),
+                            .padding(0.dp, 15.dp, 5.dp, 2.dp),
                         color = Color.Red
                     )
                 }
@@ -359,18 +381,26 @@ fun ApplyLeaveScreen(
                         .padding(20.dp,0.dp)
                 ) {
                     Row{
-                        OutlinedTextField(
+                        TextField(
                             value = leaveTypeSelected.value,
                             onValueChange = {},
-                            label = { Text("Select Leave Type") },
+//                            label = { Text("Select Leave Type") },
+                            placeholder = { Text("Select Leave Type") },
                             readOnly = true,
                             trailingIcon = {
                                 IconButton(onClick = { leaveTypeExpanded = !leaveTypeExpanded }) {
                                     Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Leave type options")
                                 }
                             },
+                            colors = TextFieldDefaults.colors(
+                                unfocusedContainerColor = Color.Transparent,
+                                focusedContainerColor = Color.Transparent,
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent
+                            ),
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .height(55.dp)
                                 .clickable {
                                     leaveTypeExpanded = !leaveTypeExpanded
                                 }
@@ -400,14 +430,20 @@ fun ApplyLeaveScreen(
                     modifier = Modifier.padding(20.dp, 15.dp, 5.dp, 2.dp),
                     fontWeight = FontWeight.Bold
                 )
-                OutlinedTextField(
+                TextField(
                     value = leaveReason.value,
                     onValueChange = {
                         viewModel.onLeaveReasonUpdated(it)
                     },
-                    label = { Text("Reason for leave") },
-                    modifier = Modifier.padding(10.dp)
-                        .fillMaxWidth()
+                    label = { Text("Enter value...") },
+                    modifier = Modifier.padding(5.dp)
+                        .fillMaxWidth(),
+                    colors = TextFieldDefaults.colors(
+                        unfocusedContainerColor = Color.Transparent,
+                        focusedContainerColor = Color.Transparent,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent
+                    ),
                 )
 
             }

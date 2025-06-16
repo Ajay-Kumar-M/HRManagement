@@ -17,7 +17,7 @@ class GoogleAuthenticationService {
 
     lateinit var result: CredentialManager
 
-    suspend fun signIn(context: Context): GoogleAuth {
+    suspend fun signIn(context: Context): GoogleAuth? {
 
         try {
             val signInWithGoogleOption = GetSignInWithGoogleOption
@@ -53,14 +53,19 @@ class GoogleAuthenticationService {
                 email = email.orEmpty(),
                 imageUrl = photoUrl.toString(),
                 mobileNumber = mobileNumber.orEmpty(),
-                "Success",
+                "Active",
                 "www.google.com",
-                "Department1"
+                "Department1",
+                mapOf(
+                    ("username" to "Dummy User 1"),
+                    ("imageUrl" to "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c"),
+                    ("employeeId" to "3456"),
+                    ("emailId" to "dummyuser1@gmail.com"),
+                    ("designation" to "Employee"),
+                )
             )
         }catch (e: Exception){
-            return GoogleAuth(
-                "","","","","","","Error $e","",""
-            )
+            return null
         }
 
     }

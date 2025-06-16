@@ -1,5 +1,6 @@
 package com.example.hrmanagement.ui.services
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -34,11 +35,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.example.hrmanagement.component.CircularProgressIndicatorComposable
 import com.example.hrmanagement.data.UserLoginData
 import com.example.hrmanagement.ui.main.UserProfileImage
@@ -52,7 +55,7 @@ fun EmployeeDetailsScreen(
 ) {
 
     val isViewLoading = viewModel.isViewLoading.collectAsStateWithLifecycle()
-    val liveUserDetails: State<UserLoginData> = viewModel.liveUserDetails.collectAsStateWithLifecycle()
+    val liveUserDetails = viewModel.liveUserDetails.collectAsStateWithLifecycle()
 
     Scaffold(
         modifier = Modifier.padding(5.dp),
@@ -78,7 +81,7 @@ fun EmployeeDetailsScreen(
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Next Year"
+                        contentDescription = "Previous page"
                     )
                 }
                 Text("Employee Details",
@@ -113,14 +116,36 @@ fun EmployeeDetailsScreen(
                         .fillMaxSize(),
                 ) {
                     Spacer(Modifier.height(10.dp))
-                    ProfileComposable(liveUserDetails.value)
+
+                    ProfileComposable(liveUserDetails.value,navController)
                     Spacer(modifier = Modifier.height(15.dp))
                     Text(
                         "Employee Photo",
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Spacer(modifier = Modifier.height(5.dp))
-                    UserProfileImage(liveUserDetails.value.imageUrl)
+                    if (liveUserDetails.value.imageUrl.isBlank()) {
+                        Image(
+                            painter = rememberVectorPainter(Icons.Filled.AccountCircle),
+                            alpha = 0.5f,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(45.dp)
+                                .clip(CircleShape)
+                        )
+                    } else {
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(liveUserDetails.value.imageUrl)
+                                .crossfade(true)
+                                .build(),
+                            contentDescription = null,
+                            placeholder = rememberVectorPainter(Icons.Filled.AccountCircle),
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .size(100.dp)
+                        )
+                    }
                 }
             }
             Spacer(Modifier.height(20.dp))

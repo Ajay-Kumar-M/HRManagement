@@ -76,9 +76,9 @@ class ApplyLeaveViewModel(
         }
     }
 
-    fun addAnnualLeaveData(leaveTrackerData: LeaveTrackerData) {
+    fun addAnnualLeaveData(personEmailId: String) {
         toggleIsViewLoading()
-        appDataManager.getFirebaseLeaveTrackerData(year, leaveTrackerData.emailId,::processLeaveRequest)
+        appDataManager.getFirebaseLeaveTrackerData(year, personEmailId,::processLeaveRequest)
     }
 
     fun processLeaveRequest(responseLeaveTrackerData: LeaveTrackerData, response: String) {

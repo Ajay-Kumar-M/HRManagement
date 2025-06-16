@@ -41,10 +41,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -110,7 +112,6 @@ fun ColleagueInfoScreen(
                 Box(
                     modifier = Modifier
                         .height(300.dp)
-                        .background(Color.Red)
                         .fillMaxWidth())
                 {
                     if (liveColleagueDetails.value.imageUrl.isBlank()) {
@@ -293,7 +294,14 @@ fun ColleagueInfoScreen(
         }
         if (isViewLoading.value){
             item {
-                CircularProgressIndicatorComposable()
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    CircularProgressIndicatorComposable()
+                }
             }
         } else {
             item {
@@ -373,7 +381,7 @@ fun ColleagueInfoScreen(
                                     style = MaterialTheme.typography.bodyMedium
                                 )
                                 Spacer(modifier = Modifier.height(5.dp))
-                                Text("Department Name", style = MaterialTheme.typography.titleSmall)
+                                Text(liveColleagueDetails.value.departmentName, style = MaterialTheme.typography.titleSmall)
                                 Spacer(modifier = Modifier.height(15.dp))
 
                                 Text(
@@ -395,6 +403,45 @@ fun ColleagueInfoScreen(
                                 Text("Block 1", style = MaterialTheme.typography.titleSmall)
                                 Spacer(modifier = Modifier.height(15.dp))
 
+                                Text(
+                                    "Reporting To",
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                                Spacer(modifier = Modifier.height(15.dp))
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            navController.navigate("ColleagueInfoScreen/${liveColleagueDetails.value.reportingTo.getValue("emailId")}")
+                                        },
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    UserProfileImage(liveColleagueDetails.value.reportingTo.getValue("imageUrl"))
+                                    Column (modifier = Modifier.padding(30.dp,0.dp,5.dp,0.dp))
+                                    {
+                                        Text(
+                                            liveColleagueDetails.value.reportingTo.getValue("username"),
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                        Text(
+                                            liveColleagueDetails.value.reportingTo.getValue("designation"),
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                        Row {
+                                            Icon(
+                                                imageVector = ImageVector.vectorResource(R.drawable.id_card_svg),
+                                                contentDescription = "ID",
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                            Text(
+                                                liveColleagueDetails.value.reportingTo.getValue("employeeId"),
+                                                style = MaterialTheme.typography.bodySmall
+                                            )
+                                        }
+
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(15.dp))
                                 getAllFieldsAndValues(liveColleagueDetails.value).forEach { value ->
                                     if (value.first != "token") {
                                         Text(
@@ -446,7 +493,7 @@ fun ColleagueInfoScreen(
                                         }
                                     ) {
                                         UserProfileImage(teamMemberInfo.imageUrl)
-                                        Column (modifier = Modifier.padding(30.dp,0.dp,5.dp,20.dp)){
+                                        Column (modifier = Modifier.padding(30.dp,0.dp,5.dp,0.dp)){
                                             Text(
                                                 teamMemberInfo.username,
                                                 style = MaterialTheme.typography.bodyMedium
@@ -464,6 +511,7 @@ fun ColleagueInfoScreen(
 
                                         }
                                     }
+                                    Spacer(modifier = Modifier.height(10.dp))
                                 }
                             }
                         }

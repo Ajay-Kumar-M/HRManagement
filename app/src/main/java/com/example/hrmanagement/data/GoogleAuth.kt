@@ -12,5 +12,6 @@ data class GoogleAuth(
     val mobileNumber: String = "",
     val status: String = "",
     val profileUrl: String = "",
-    val departmentName: String = ""
+    val departmentName: String = "",
+    val reportingTo: Map<String,String> = mapOf()
 )

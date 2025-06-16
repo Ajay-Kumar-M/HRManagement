@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
@@ -49,6 +50,7 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TimePickerState
 import androidx.compose.material3.rememberDatePickerState
@@ -232,6 +234,7 @@ fun LeaveRegularisationScreen(
                     .padding(innerPadding)
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
+                    .imePadding()
             ) {
                 Text(
                     "Employee",
@@ -277,10 +280,10 @@ fun LeaveRegularisationScreen(
                         .padding(20.dp, 2.dp, 20.dp, 15.dp),
                 ) {
                     Row{
-                        OutlinedTextField(
+                        TextField(
                             value = periodTypeSelected.value,
                             onValueChange = {},
-                            label = { Text("Select Leave Type") },
+                            placeholder = { Text("Select Leave Type") },
                             readOnly = true,
                             trailingIcon = {
                                 IconButton(onClick = { periodTypeExpanded = !periodTypeExpanded }) {
@@ -289,9 +292,16 @@ fun LeaveRegularisationScreen(
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .height(55.dp)
                                 .clickable {
                                     periodTypeExpanded = !periodTypeExpanded
-                                }
+                                },
+                            colors = TextFieldDefaults.colors(
+                                unfocusedContainerColor = Color.Transparent,
+                                focusedContainerColor = Color.Transparent,
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent
+                            )
                         )
                     }
                     DropdownMenu(
@@ -542,7 +552,6 @@ fun LeaveRegularisationScreen(
                 Spacer(modifier = Modifier.height(20.dp))
 
                 attendanceData.value.forEach { //attendanceDataValue ->
-                        println("screen $attendanceData")
                     val day = dayOfDate(it.date)
                     Row(
                         modifier = Modifier.fillMaxWidth()
@@ -758,7 +767,6 @@ fun DateTimePickerDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
-        println("startof the day $startOfDay")
         val initialDateTime = if(timestamp==0L){
             timestampToLocalDateTime(midnightMillis)
         } else{

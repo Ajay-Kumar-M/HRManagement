@@ -36,16 +36,18 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 
 @Composable
-fun EmployeeInformationScreen(
-    modifier: Modifier,
+fun AttendanceInformationScreen(
     navController: NavController,
-    emailId: String,
-    viewModel: EmployeeInformationViewModel = viewModel()
+    userEmailId: String,
+    username: String,
+    userEmployeeId: String?,
+    viewModel: AttendanceInformationViewModel = viewModel()
 ) {
     val listOfActions: List<Pair<String,String>> = listOf(
-        "Colleagues" to "ColleaguesScreen",
-        "Employee Details" to "EmployeeDetailsScreen",
+        "View" to "AttendanceComposableView",
+        "Regularization" to "LeaveRegularisationScreen",
     )
+
 
     Scaffold(
         modifier = Modifier.padding(5.dp),
@@ -74,7 +76,7 @@ fun EmployeeInformationScreen(
                         contentDescription = "Next Year"
                     )
                 }
-                Text("Employee Information",
+                Text("Attendance",
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(20.dp,5.dp)
                 )
@@ -96,11 +98,11 @@ fun EmployeeInformationScreen(
                         .padding(15.dp)
                         .clickable{
                             when(action.first) {
-                                "Colleagues" -> {
-                                    navController.navigate("${action.second}/$emailId")
+                                "View" -> {
+                                    navController.navigate(action.second)
                                 }
-                                "Employee Details" -> {
-                                    navController.navigate("${action.second}/$emailId")
+                                "Regularization" -> {
+                                    navController.navigate("${action.second}/${userEmailId}/${username}/${userEmployeeId?:""}")
                                 }
                             }
                         }

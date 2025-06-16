@@ -24,10 +24,20 @@ import com.example.hrmanagement.ui.userinfo.ColleagueInfoScreen
 import com.example.hrmanagement.ui.leave.LeaveDetailsScreen
 import com.example.hrmanagement.ui.leave.LeaveRegularisationScreen
 import com.example.hrmanagement.ui.leave.LeaveReportScreen
+import com.example.hrmanagement.ui.main.NotificationScreen
 import com.example.hrmanagement.ui.main.StatusScreen
+import com.example.hrmanagement.ui.services.AttendanceComposableView
+import com.example.hrmanagement.ui.services.AttendanceInformationScreen
 import com.example.hrmanagement.ui.services.ColleaguesScreen
 import com.example.hrmanagement.ui.services.EmployeeDetailsScreen
 import com.example.hrmanagement.ui.services.EmployeeInformationScreen
+import com.example.hrmanagement.ui.services.GoalsComposableView
+import com.example.hrmanagement.ui.services.LeaveTrackerComposableView
+import com.example.hrmanagement.ui.services.LeaveTrackerInformationScreen
+import com.example.hrmanagement.ui.services.PerformanceInformationScreen
+import com.example.hrmanagement.ui.userinfo.AttendanceComposable
+import com.example.hrmanagement.ui.userinfo.GoalsComposable
+import com.example.hrmanagement.ui.userinfo.LeaveTrackerComposable
 import com.example.hrmanagement.ui.userinfo.UserInfoScreen
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.runBlocking
@@ -92,25 +102,69 @@ fun AppNavigation(modifier: Modifier = Modifier) {
         }
 
         composable (
-            route = "ApplyLeaveScreen/{leaveTrackerData}/{leaveType}",
+            route = "ApplyLeaveScreen/{personEmailId}/{leaveType}",
             arguments = listOf(
-                navArgument("leaveTrackerData") { type = NavType.StringType },
+                navArgument("personEmailId") { type = NavType.StringType },
                 navArgument("leaveType") { type = NavType.StringType }
                 )
         ){ backStackEntry ->
             val leaveType = backStackEntry.arguments?.getString("leaveType")
-            val encodedLeaveJson = backStackEntry.arguments?.getString("leaveTrackerData")
-            val leaveData = encodedLeaveJson?.let {
-                val decodedJson = URLDecoder.decode(it, StandardCharsets.UTF_8.toString())
-                Json.decodeFromString<LeaveTrackerData>(decodedJson)
+            val personEmailId = backStackEntry.arguments?.getString("personEmailId")
+            if ((personEmailId != null) && (leaveType != null)) {
+                ApplyLeaveScreen(modifier,navController, personEmailId, leaveType)
             }
-            if ((leaveData != null) && (leaveType != null)) {
-                ApplyLeaveScreen(modifier,navController, leaveData, leaveType)
+        }
+
+        composable (
+            route = "AttendanceInformationScreen/{email}/{username}/{employeeId}",
+            arguments = listOf(
+                navArgument("email") { type = NavType.StringType },
+                navArgument("username") { type = NavType.StringType },
+                navArgument("employeeId") { type = NavType.StringType }
+                )
+        ){ backStackEntry ->
+            val email = backStackEntry.arguments?.getString("email")
+            val username = backStackEntry.arguments?.getString("username")
+            val employeeId = backStackEntry.arguments?.getString("employeeId")
+            if ((username != null) && (email != null)) {
+                AttendanceInformationScreen(navController, email, username,employeeId)
+            }
+        }
+
+        composable (
+            route = "LeaveTrackerInformationScreen/{email}",
+            arguments = listOf(
+                navArgument("email") { type = NavType.StringType }
+                )
+        ){ backStackEntry ->
+            val email = backStackEntry.arguments?.getString("email")
+            if (email != null) {
+                LeaveTrackerInformationScreen(email,navController)
             }
         }
 
         composable(route = "QuickLinksScreen") {
             QuickLinksScreen(modifier,navController)
+        }
+
+        composable(route = "GoalsComposableView") {
+            GoalsComposableView(modifier,navController)
+        }
+
+        composable (
+            route = "LeaveTrackerComposableView/{email}",
+            arguments = listOf(
+                navArgument("email") { type = NavType.StringType }
+            )
+        ){ backStackEntry ->
+            val email = backStackEntry.arguments?.getString("email")
+            if (email != null) {
+                LeaveTrackerComposableView(email,navController)
+            }
+        }
+
+        composable(route = "AttendanceComposableView") {
+            AttendanceComposableView(navController)
         }
 
         composable(route = "AnnouncementsScreen") {
@@ -156,6 +210,21 @@ fun AppNavigation(modifier: Modifier = Modifier) {
             val userEmailId = backStackEntry.arguments?.getString("userEmailId")
             if (userEmailId != null)
                 EmployeeDetailsScreen(navController, userEmailId)
+        }
+
+        composable(
+            route = "PerformanceInformationScreen"
+        ) {
+                PerformanceInformationScreen(navController)
+        }
+
+        composable(
+            route = "NotificationScreen/{userEmailId}",
+            arguments = listOf(navArgument("userEmailId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val userEmailId = backStackEntry.arguments?.getString("userEmailId")
+            if (userEmailId != null)
+                NotificationScreen(modifier,navController, userEmailId)
         }
 
         composable(

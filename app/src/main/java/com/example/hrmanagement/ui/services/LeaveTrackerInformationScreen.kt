@@ -32,20 +32,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 
 @Composable
-fun EmployeeInformationScreen(
-    modifier: Modifier,
-    navController: NavController,
+fun LeaveTrackerInformationScreen (
     emailId: String,
-    viewModel: EmployeeInformationViewModel = viewModel()
-) {
+    navController: NavController
+){
     val listOfActions: List<Pair<String,String>> = listOf(
-        "Colleagues" to "ColleaguesScreen",
-        "Employee Details" to "EmployeeDetailsScreen",
+        "View" to "LeaveTrackerComposableView",
+        "Compensatory Request" to "ApplyCompOffScreen",
+        "Holidays" to "UpcomingHolidaysScreen",
     )
+
 
     Scaffold(
         modifier = Modifier.padding(5.dp),
@@ -74,7 +73,7 @@ fun EmployeeInformationScreen(
                         contentDescription = "Next Year"
                     )
                 }
-                Text("Employee Information",
+                Text("Leave Tracker",
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(20.dp,5.dp)
                 )
@@ -96,11 +95,11 @@ fun EmployeeInformationScreen(
                         .padding(15.dp)
                         .clickable{
                             when(action.first) {
-                                "Colleagues" -> {
-                                    navController.navigate("${action.second}/$emailId")
+                                "Holidays" -> {
+                                    navController.navigate(action.second)
                                 }
-                                "Employee Details" -> {
-                                    navController.navigate("${action.second}/$emailId")
+                                "View","Compensatory Request" -> {
+                                    navController.navigate("${action.second}/${emailId}")
                                 }
                             }
                         }

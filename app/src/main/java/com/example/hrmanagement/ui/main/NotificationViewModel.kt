@@ -1,38 +1,39 @@
-package com.example.hrmanagement.ui.quickLink
+package com.example.hrmanagement.ui.main
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
+import com.example.hrmanagement.data.NotificationData
 import com.google.firebase.firestore.QuerySnapshot
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class QuickLinksViewModel: ViewModel() {
+class NotificationViewModel: ViewModel() {
 
-    private var _quickLinksData: MutableStateFlow<QuerySnapshot?> = MutableStateFlow(null)
-    val quickLinksData = _quickLinksData.asStateFlow()
+    private var _notificationData: MutableStateFlow<List<NotificationData>> = MutableStateFlow(listOf())
+    val notificationData = _notificationData.asStateFlow()
     private var _isViewLoading: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val isViewLoading = _isViewLoading.asStateFlow()
     private var numberOfFeatchProcess: Int = 0
 
     init {
-        fetchQuickLinks()
+        fetchNotification()
     }
 
-    fun fetchQuickLinks(){
+    fun fetchNotification(){
         if (!_isViewLoading.value) {
             toggleIsViewLoading()
         }
         numberOfFeatchProcess++
-        appDataManager.getAllQuickLinks(::updateQuickLinksData)
+        appDataManager.getNotificationData(::updateNotificationData)
     }
 
-    fun updateQuickLinksData(quickLinksData: QuerySnapshot?,response: String){
+    fun updateNotificationData(notificationData: QuerySnapshot?,response: String){
         if(response == "Success"){
-            Log.d("MainScreenViewModel","updateQuickLinksData called $quickLinksData")
-            quickLinksData?.count()?.let {
+            Log.d("NotificationViewModel","updateNotificationData called $notificationData")
+            notificationData?.count()?.let {
                 if(it > 0) {
-                    _quickLinksData.value = quickLinksData
+                    _notificationData.value = notificationData.toObjects(NotificationData::class.java)
                 }
             }
         } else {

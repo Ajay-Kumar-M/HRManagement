@@ -40,16 +40,15 @@ fun LeaveDetailsScreen(
             Row(
                 modifier = Modifier
                     .statusBarsPadding()
-                    .background(Color.White),
             ) {
                 IconButton(
                     onClick = {
                         navController.popBackStack()
                     },
-                    colors = IconButtonDefaults.iconButtonColors(
-                        containerColor = Color.White,
-                        contentColor = Color.Black
-                    ),
+//                    colors = IconButtonDefaults.iconButtonColors(
+//                        containerColor = Color.White,
+//                        contentColor = Color.Black
+//                    ),
                     modifier = Modifier
                         .size(40.dp)
                         .padding(2.dp)

@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
@@ -185,7 +186,8 @@ fun ColleaguesScreen(
             } else {
                 Column(
                     modifier = Modifier
-                        .fillMaxSize(),
+                        .fillMaxSize()
+                        .imePadding(),
                 ) {
                     PrimaryScrollableTabRow(
                         selectedTabIndex = selectedTabIndex,
@@ -334,8 +336,7 @@ fun ColleaguesGridView(
                 ) {
                     UserProfileImage(userData.imageUrl)
                     Spacer(Modifier.width(15.dp))
-                    Column (
-                    ){
+                    Column{
                         Text(
                             userData.username.truncate(15),
                             fontSize = 12.sp,

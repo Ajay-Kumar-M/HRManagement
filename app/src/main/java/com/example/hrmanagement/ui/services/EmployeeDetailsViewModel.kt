@@ -20,9 +20,7 @@ class EmployeeDetailsViewModel(
     var emailId: String = checkNotNull(savedStateHandle["userEmailId"])
 
     init {
-        toggleIsViewLoading()
         fetchUserDetails()
-        toggleIsViewLoading()
     }
 
     fun fetchUserDetails() {
@@ -37,7 +35,7 @@ class EmployeeDetailsViewModel(
 
     fun updateUserDetails(userDetails: UserLoginData?, response: String){
         numberOfFeatchProcess--
-        Log.d("MainScreenViewModel","updateUserDetails called $userDetails")
+        Log.d("EmployeeDetailsViewModel","updateUserDetails called $userDetails")
         if((response == "Success")&&(userDetails!=null)){
             _liveUserDetails.value = userDetails
         } else {

@@ -40,6 +40,7 @@ import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material3.BottomAppBar
@@ -74,6 +75,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -108,6 +110,7 @@ import com.example.hrmanagement.data.HolidayData
 import com.example.hrmanagement.data.LinkData
 import com.example.hrmanagement.data.UserLoginData
 import com.example.hrmanagement.ui.userinfo.getPropertyValue
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
@@ -132,23 +135,36 @@ fun MainScreen(
 
     val userImageUri = viewModel.userImageUriUiState.collectAsStateWithLifecycle()
     val isViewLoading = viewModel.isViewLoading.collectAsStateWithLifecycle()
-    val liveUserDetails: State<UserLoginData> = viewModel.liveUserDetails.collectAsStateWithLifecycle()
-    var selectedItem by remember { mutableIntStateOf(0) }
+    val liveUserDetails: State<UserLoginData> =
+        viewModel.liveUserDetails.collectAsStateWithLifecycle()
+    var selectedItem by rememberSaveable { mutableIntStateOf(1) }
     val tabItems = listOf("Services", "Home", "", "Approvals", "More")
-    val selectedIcons = listOf(ImageVector.vectorResource(id = R.drawable.apps),Icons.Filled.Home,Icons.Filled.AddCircle, Icons.Rounded.CheckCircle, Icons.Rounded.MoreVert)
-    val unselectedIcons = listOf(ImageVector.vectorResource(id = R.drawable.drag_indicator),Icons.Outlined.Home,Icons.Outlined.AddCircle, Icons.Outlined.CheckCircle, Icons.Outlined.MoreVert)
+    val selectedIcons = listOf(
+        ImageVector.vectorResource(id = R.drawable.apps),
+        Icons.Filled.Home,
+        Icons.Filled.AddCircle,
+        Icons.Rounded.CheckCircle,
+        Icons.Rounded.MoreVert
+    )
+    val unselectedIcons = listOf(
+        ImageVector.vectorResource(id = R.drawable.drag_indicator),
+        Icons.Outlined.Home,
+        Icons.Outlined.AddCircle,
+        Icons.Outlined.CheckCircle,
+        Icons.Outlined.MoreVert
+    )
     val addTaskShowBottomSheet = viewModel.addTaskShowBottomSheet.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Row (
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(5.dp, 0.dp),
                         horizontalArrangement = Arrangement.SpaceBetween
-                    ){
+                    ) {
                         Row {
                             if (userImageUri.value?.isBlank() == true) {
                                 Image(
@@ -170,10 +186,10 @@ fun MainScreen(
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier
                                         .size(40.dp)
-                                        .clip(CircleShape)
-                                        .clickable(onClick = {
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .singleClick{
                                             navController.navigate("UserInfoScreen/${liveUserDetails.value.email}")
-                                        })
+                                        }
                                 )
                             }
 
@@ -181,41 +197,87 @@ fun MainScreen(
                             Text(
                                 text = tabItems[selectedItem],
                                 textAlign = TextAlign.Center,
-                                modifier = Modifier.padding(10.dp,5.dp,0.dp,0.dp)
+                                modifier = Modifier.padding(10.dp, 5.dp, 0.dp, 0.dp)
                             )
                         }
-                        Row {
-                            IconButton(
-                                onClick = {  },
-                                colors = IconButtonDefaults.iconButtonColors(
-                                    containerColor = Color(0xFFF2F2F2),
-                                    contentColor = Color.Black
-                                ),
-                                modifier = Modifier
-                                    .size(40.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Search,
-                                    contentDescription = "Favorite"
-                                )
+                        when(selectedItem) {
+                            0,1 -> {
+                                Row {
+                                    IconButton(
+                                        onClick = {
+                                            navController.navigate("ColleaguesScreen/${liveUserDetails.value.email}")
+                                        },
+                                        colors = IconButtonDefaults.iconButtonColors(
+                                            containerColor = Color(0xFFF2F2F2),
+                                            contentColor = Color.Black
+                                        ),
+                                        modifier = Modifier
+                                            .size(40.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Search,
+                                            contentDescription = "Search"
+                                        )
+                                    }
+                                    IconButton(
+                                        onClick = {
+                                            navController.navigate("NotificationScreen/${liveUserDetails.value.email}")
+                                        },
+                                        colors = IconButtonDefaults.iconButtonColors(
+                                            containerColor = Color(0xFFF2F2F2),
+                                            contentColor = Color.Black
+                                        ),
+                                        modifier = Modifier
+                                            .size(40.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Outlined.Notifications,
+                                            contentDescription = "Notifications"
+                                        )
+                                    }
+                                }
                             }
-                            IconButton(
-                                onClick = {  },
-                                colors = IconButtonDefaults.iconButtonColors(
-                                    containerColor = Color(0xFFF2F2F2),
-                                    contentColor = Color.Black
-                                ),
-                                modifier = Modifier
-                                    .size(40.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Outlined.Notifications,
-                                    contentDescription = "Favorite"
-                                )
+                            3 -> {
+                                IconButton(
+                                    onClick = {
+//                                        navController.navigate("ColleaguesScreen/${liveUserDetails.value.email}")
+                                    },
+                                    colors = IconButtonDefaults.iconButtonColors(
+                                        containerColor = Color(0xFFF2F2F2),
+                                        contentColor = Color.Black
+                                    ),
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .padding(5.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = ImageVector.vectorResource(R.drawable.filter),
+                                        contentDescription = "Filter",
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
+                            4 -> {
+                                IconButton(
+                                    onClick = {
+//                                        navController.navigate("ColleaguesScreen/${liveUserDetails.value.email}")
+                                    },
+                                    colors = IconButtonDefaults.iconButtonColors(
+                                        containerColor = Color(0xFFF2F2F2),
+                                        contentColor = Color.Black
+                                    ),
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.Settings,
+                                        contentDescription = "Settings"
+                                    )
+                                }
                             }
                         }
                     }
-                        },
+                },
 //                    navigationIcon = {
 //                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
 //                            Icon(Icons.Default.Menu, contentDescription = "Menu")
@@ -239,13 +301,15 @@ fun MainScreen(
                                 Icon(
                                     if (selectedItem == index) selectedIcons[index] else unselectedIcons[index],
                                     contentDescription = item,
-                                    modifier = if (index == 2) Modifier.size(30.dp) else Modifier.size(20.dp)
+                                    modifier = if (index == 2) Modifier.size(30.dp) else Modifier.size(
+                                        20.dp
+                                    )
                                 )
                             },
                             label = { Text(item) },
                             selected = selectedItem == index,
                             onClick = {
-                                if (index==2){
+                                if (index == 2) {
                                     viewModel.toggleAddTaskShowBottomSheet()
                                 } else {
                                     selectedItem = index
@@ -254,18 +318,22 @@ fun MainScreen(
                         )
                     }
                 }
-                if (addTaskShowBottomSheet.value) AddTaskShowModalSheet(liveUserDetails.value,navController,viewModel)
+                if (addTaskShowBottomSheet.value) AddTaskShowModalSheet(
+                    liveUserDetails.value,
+                    navController,
+                    viewModel
+                )
             }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { outerPadding ->
-        Column (
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color(0xFFF2F2F2)),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            if (isViewLoading.value){
+            if (isViewLoading.value) {
                 Column(
                     modifier = Modifier
                         .padding(outerPadding)
@@ -276,16 +344,19 @@ fun MainScreen(
                     CircularProgressIndicatorComposable()
                 }
             } else {
-                when(selectedItem){
+                when (selectedItem) {
                     0 -> {
-                        SearvicesScreen(outerPadding,navController,liveUserDetails.value.email,viewModel)
+                        ServicesScreen(outerPadding, navController, liveUserDetails.value)
                     }
+
                     1 -> {
-                        HomeScreen(outerPadding,navController,viewModel)
+                        HomeScreen(outerPadding, navController, viewModel)
                     }
+
                     3 -> {
 
                     }
+
                     4 -> {
 
                     }
@@ -295,29 +366,40 @@ fun MainScreen(
     }
 }
 
-fun handleServiceNavigation(service: String,navController: NavController, emailId: String){
-    when(service) {
+fun handleServiceNavigation(
+    service: String,
+    navController: NavController,
+    userLoginData: UserLoginData
+) {
+    when (service) {
         "Employee Information" -> {
-            navController.navigate("EmployeeInformationScreen/${emailId}")
+            navController.navigate("EmployeeInformationScreen/${userLoginData.email}")
         }
-        "Attendance" -> {
 
+        "Attendance" -> {
+            navController.navigate("AttendanceInformationScreen/${userLoginData.email}/${userLoginData.username}/${userLoginData.emp_Id}")
         }
+
         "Time Tracker" -> {
 
         }
+
         "Performance" -> {
-
+            navController.navigate("PerformanceInformationScreen")
         }
+
         "Announcements" -> {
-
+            navController.navigate("AnnouncementsScreen")
         }
+
         "Leave Tracker" -> {
-
+            navController.navigate("LeaveTrackerInformationScreen/${userLoginData.email}")
         }
+
         "Tasks" -> {
 
         }
+
         "Cases" -> {
 
         }
@@ -326,25 +408,37 @@ fun handleServiceNavigation(service: String,navController: NavController, emailI
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SearvicesScreen(
+fun ServicesScreen(
     outerPadding: PaddingValues,
     navController: NavController,
-    emailId: String,
-    viewModel: MainScreenViewModel
+    userLoginData: UserLoginData
 ) {
 
     val isListView = remember { mutableStateOf(false) }
     val isPullDownRefreshing = remember { mutableStateOf(false) }
-    val listOfServices = listOf("Employee Information","Attendance","Time Tracker","Performance","Announcements","Leave Tracker","Tasks","Cases")
+    val listOfServices = listOf(
+        "Employee Information",
+        "Attendance",
+        "Performance",
+        "Announcements",
+        "Leave Tracker",
+        "Time Tracker",
+        "Tasks",
+        "Cases"
+    )
     val serviceTypeIcons: Map<String, ImageVector> = mapOf(
-        Pair("Employee Information",ImageVector.vectorResource(id = R.drawable.employee_information)),
-        Pair("Attendance",ImageVector.vectorResource(id = R.drawable.attendance)),
-        Pair("Performance",ImageVector.vectorResource(id = R.drawable.performance)),
-        Pair("Announcements",ImageVector.vectorResource(id = R.drawable.announcement)),
-        Pair("Leave Tracker",ImageVector.vectorResource(id = R.drawable.leave_tracker)),
-        Pair("Time Tracker",ImageVector.vectorResource(id = R.drawable.time_tracker)),
-        Pair("Tasks",ImageVector.vectorResource(id = R.drawable.tasks)),
-        Pair("Cases",ImageVector.vectorResource(id = R.drawable.cases)))
+        Pair(
+            "Employee Information",
+            ImageVector.vectorResource(id = R.drawable.employee_information)
+        ),
+        Pair("Attendance", ImageVector.vectorResource(id = R.drawable.attendance)),
+        Pair("Performance", ImageVector.vectorResource(id = R.drawable.performance)),
+        Pair("Announcements", ImageVector.vectorResource(id = R.drawable.announcement)),
+        Pair("Leave Tracker", ImageVector.vectorResource(id = R.drawable.leave_tracker)),
+        Pair("Time Tracker", ImageVector.vectorResource(id = R.drawable.time_tracker)),
+        Pair("Tasks", ImageVector.vectorResource(id = R.drawable.tasks)),
+        Pair("Cases", ImageVector.vectorResource(id = R.drawable.cases))
+    )
     var searchText by remember { mutableStateOf("") }
     var filteredListOfServices = listOfServices.toMutableList()
 
@@ -362,7 +456,8 @@ fun SearvicesScreen(
         ) {
 //            Spacer(Modifier.height(20.dp))
             Row(
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
                     .padding(10.dp)
             ) {
                 TextField(
@@ -371,7 +466,7 @@ fun SearvicesScreen(
                         searchText = it
                         filteredListOfServices.clear()
                         filteredListOfServices.addAll(listOfServices.filter {
-                            it.contains(searchText,true)
+                            it.contains(searchText, true)
                         })
                     },
                     singleLine = true,
@@ -396,11 +491,11 @@ fun SearvicesScreen(
                     ),
                     textStyle = TextStyle(fontSize = 14.sp),
                     trailingIcon = {
-                        if (searchText.isNotEmpty()){
+                        if (searchText.isNotEmpty()) {
                             Icon(
                                 imageVector = Icons.Filled.Clear,
                                 contentDescription = "Clear",
-                                modifier = Modifier.clickable{
+                                modifier = Modifier.clickable {
                                     searchText = ""
                                 }
                             )
@@ -416,30 +511,40 @@ fun SearvicesScreen(
                     ),
                     modifier = Modifier
                         .size(50.dp)
-                        .background(Color.White,RoundedCornerShape(20.dp))
+                        .background(Color.White, RoundedCornerShape(20.dp))
                         .padding(5.dp)
                         .weight(0.15f)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Menu,
-                        contentDescription = "List",
-                    )
+                    if (isListView.value == true) {
+                        Icon(
+                            ImageVector.vectorResource(R.drawable.grid),
+                            contentDescription = "Grid",
+                            modifier = Modifier.size(20.dp)
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Menu,
+                            contentDescription = "List",
+                        )
+                    }
                 }
 
             }
             if (isListView.value) {
                 LazyColumn(
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
                         .padding(20.dp)
                 ) {
                     items(filteredListOfServices) { service ->
                         Row(
-                            modifier = Modifier.fillMaxWidth()
-                                .background(Color.White,RoundedCornerShape(20.dp))
-                                .padding(15.dp)
-                                .clickable{
-                                    handleServiceNavigation(service,navController,emailId)
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color.White, RoundedCornerShape(20.dp))
+                                .clickable {
+                                    handleServiceNavigation(service, navController, userLoginData)
                                 }
+                                .padding(15.dp)
                         ) {
                             Icon(
                                 imageVector = serviceTypeIcons.getValue(service),
@@ -465,26 +570,29 @@ fun SearvicesScreen(
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     items(filteredListOfServices) { service ->
-                        Box (
-                            modifier = Modifier.fillMaxSize()
-                                .background(Color.White,RoundedCornerShape(20.dp))
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.White, RoundedCornerShape(20.dp))
                                 .padding(20.dp)
                                 .height(120.dp)
-                                .clickable{
-                                    handleServiceNavigation(service,navController,emailId)
+                                .clickable {
+                                    handleServiceNavigation(service, navController, userLoginData)
                                 }
-                        ){
+                        ) {
                             Icon(
                                 imageVector = serviceTypeIcons.getValue(service),
                                 contentDescription = "List",
                                 tint = Color.Unspecified,
-                                modifier = Modifier.align(Alignment.Center)
+                                modifier = Modifier
+                                    .align(Alignment.Center)
                                     .size(35.dp)
                             )
                             Text(
                                 service.truncate(15),
                                 fontSize = 12.sp,
-                                modifier = Modifier.align(Alignment.BottomCenter)
+                                modifier = Modifier
+                                    .align(Alignment.BottomCenter)
                                     .offset(y = (-6).dp)
                             )
                         }
@@ -494,8 +602,6 @@ fun SearvicesScreen(
 
         }
     }
-
-
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -512,19 +618,22 @@ fun HomeScreen(
     val leaveTrackerDetails = viewModel.liveLeaveTrackerDetails.collectAsStateWithLifecycle()
     val announcementsLimitedData = viewModel.announcementsLimitedData.collectAsStateWithLifecycle()
     val holidaysData = viewModel.holidaysData.collectAsStateWithLifecycle()
-    val liveUserDetails: State<UserLoginData> = viewModel.liveUserDetails.collectAsStateWithLifecycle()
+    val liveUserDetails: State<UserLoginData> =
+        viewModel.liveUserDetails.collectAsStateWithLifecycle()
     val leaveTypes = listOf("Casual Leave", "Sick Leave", "On Duty")
     val leaveTypeIcons: Map<String, ImageVector> = mapOf(
-        Pair("Casual Leave",ImageVector.vectorResource(id = R.drawable.leave_casual)),
-        Pair("Sick Leave",ImageVector.vectorResource(id = R.drawable.plus_green)),
-        Pair("On Duty",ImageVector.vectorResource(id = R.drawable.icons8_person)))
+        Pair("Casual Leave", ImageVector.vectorResource(id = R.drawable.leave_casual)),
+        Pair("Sick Leave", ImageVector.vectorResource(id = R.drawable.plus_green)),
+        Pair("On Duty", ImageVector.vectorResource(id = R.drawable.icons8_person))
+    )
     val leaveTypeDataClassMap: Map<String, String> = mapOf(
-        Pair("Casual LeaveBooked","casualLeaveBooked"),
-        Pair("Casual LeaveBalance","casualLeaveBalance"),
-        Pair("Sick LeaveBooked","sickLeaveBooked"),
-        Pair("Sick LeaveBalance","sickLeaveBalance"),
-        Pair("On DutyBooked","onDutyLeaveBooked"),
-        Pair("On DutyBalance","onDutyLeaveBalance"))
+        Pair("Casual LeaveBooked", "casualLeaveBooked"),
+        Pair("Casual LeaveBalance", "casualLeaveBalance"),
+        Pair("Sick LeaveBooked", "sickLeaveBooked"),
+        Pair("Sick LeaveBalance", "sickLeaveBalance"),
+        Pair("On DutyBooked", "onDutyLeaveBooked"),
+        Pair("On DutyBalance", "onDutyLeaveBalance")
+    )
 
     PullToRefreshBox(
         isRefreshing = isPullDownRefreshing.value,
@@ -576,16 +685,17 @@ fun HomeScreen(
                 announcementsLimitedData.value?.let {
                     if (it.size() > 0) {
                         it.forEach { announcement ->
-                            val announcementData = announcement.toObject(AnnouncementList::class.java)
-                            Log.d("MainScreen","announcementData $announcementData")
-                            Row (
+                            val announcementData =
+                                announcement.toObject(AnnouncementList::class.java)
+                            Log.d("MainScreen", "announcementData $announcementData")
+                            Row(
                                 modifier = Modifier
                                     .padding(10.dp)
                                     .clickable {
                                         navController.navigate("AnnouncementDetailScreen/${announcementData.announcementID}")
                                     },
                                 verticalAlignment = Alignment.CenterVertically
-                            ){
+                            ) {
                                 UserProfileImage(announcementData.reporterProfileImageUrl)
                                 Spacer(Modifier.width(10.dp))
                                 Column {
@@ -710,20 +820,14 @@ fun HomeScreen(
                 }
                 Spacer(Modifier.height(5.dp))
                 leaveTypes.forEach { leaveType ->
-                    Row (
+                    Row(
                         modifier = Modifier
                             .padding(10.dp)
                             .clickable {
-                                val annualLeaveDataMap = Json.encodeToString(leaveTrackerDetails.value)
-                                val encodedLeaveJson =
-                                    URLEncoder.encode(
-                                        annualLeaveDataMap,
-                                        StandardCharsets.UTF_8.toString()
-                                    )
-                                navController.navigate("ApplyLeaveScreen/${encodedLeaveJson}/${leaveType}")
+                                navController.navigate("ApplyLeaveScreen/${leaveTrackerDetails.value.emailId}/${leaveType}")
                             },
                         verticalAlignment = Alignment.CenterVertically
-                    ){
+                    ) {
                         Icon(
                             imageVector = leaveTypeIcons.getValue(leaveType),
                             contentDescription = "Leave type icon",
@@ -737,7 +841,17 @@ fun HomeScreen(
                                 style = MaterialTheme.typography.titleMedium
                             )
                             Text(
-                                text = "Taken : ${getPropertyValue(leaveTrackerDetails.value,leaveTypeDataClassMap.getValue("${leaveType}Booked"))} Day(s) | Balance : ${getPropertyValue(leaveTrackerDetails.value,leaveTypeDataClassMap.getValue("${leaveType}Balance"))} Day(s)",
+                                text = "Taken : ${
+                                    getPropertyValue(
+                                        leaveTrackerDetails.value,
+                                        leaveTypeDataClassMap.getValue("${leaveType}Booked")
+                                    )
+                                } Day(s) | Balance : ${
+                                    getPropertyValue(
+                                        leaveTrackerDetails.value,
+                                        leaveTypeDataClassMap.getValue("${leaveType}Balance")
+                                    )
+                                } Day(s)",
                                 style = MaterialTheme.typography.bodySmall
                             )
                         }
@@ -795,9 +909,9 @@ fun HomeScreen(
                     if (it.size() > 0) {
                         it.forEach { quickLink ->
                             val linkData = quickLink.toObject(LinkData::class.java)
-                            Row (
+                            Row(
                                 modifier = Modifier.padding(10.dp)
-                            ){
+                            ) {
                                 Icon(
                                     imageVector = ImageVector.vectorResource(R.drawable.link),
                                     contentDescription = "Links",
@@ -881,10 +995,10 @@ fun HomeScreen(
                 Spacer(Modifier.height(5.dp))
                 holidaysData.value?.take(3)?.forEach { holiday ->
                     val holidayData = holiday.toObject(HolidayData::class.java)
-                    Row (
+                    Row(
                         modifier = Modifier.padding(10.dp),
                         verticalAlignment = Alignment.CenterVertically
-                    ){
+                    ) {
                         Box(
                             modifier = Modifier
                                 .size(35.dp)
@@ -964,7 +1078,7 @@ fun HomeScreen(
 @Composable
 fun SignInStatus(
     viewModel: MainScreenViewModel
-){
+) {
     val userSignInStatus = appDataManager.liveUserSignInStatus.collectAsStateWithLifecycle()
     val userAttendanceData = viewModel.userAttendanceData.collectAsStateWithLifecycle()
     var elapsedSigninTime by remember { mutableStateOf(0L) }
@@ -1001,7 +1115,8 @@ fun SignInStatus(
                         .padding(10.dp),
                     style = MaterialTheme.typography.titleLarge,
                 )
-                Text(text = " : ",
+                Text(
+                    text = " : ",
                     fontWeight = FontWeight.Bold
                 )
                 Text(
@@ -1011,7 +1126,8 @@ fun SignInStatus(
                         .padding(10.dp),
                     style = MaterialTheme.typography.titleLarge,
                 )
-                Text(text = " : ",
+                Text(
+                    text = " : ",
                     fontWeight = FontWeight.Bold
                 )
                 Text(
@@ -1029,7 +1145,8 @@ fun SignInStatus(
                         .padding(10.dp),
                     style = MaterialTheme.typography.titleLarge,
                 )
-                Text(text = " : ",
+                Text(
+                    text = " : ",
                     fontWeight = FontWeight.Bold
                 )
                 Text(
@@ -1039,7 +1156,8 @@ fun SignInStatus(
                         .padding(10.dp),
                     style = MaterialTheme.typography.titleLarge,
                 )
-                Text(text = " : ",
+                Text(
+                    text = " : ",
                     fontWeight = FontWeight.Bold
                 )
                 Text(
@@ -1123,7 +1241,7 @@ fun getElapsedTime(startTimeMillis: Long): Long {
     return System.currentTimeMillis() - startTimeMillis
 }
 
-fun Long.toHms(): Triple<Long,Long,Long> {
+fun Long.toHms(): Triple<Long, Long, Long> {
     val seconds = (this / 1000) % 60
     val minutes = (this / (1000 * 60)) % 60
     val hours = (this / (1000 * 60 * 60))
@@ -1137,12 +1255,12 @@ fun AddTaskShowModalSheet(
     liveUserDetails: UserLoginData,
     navController: NavController,
     viewModel: MainScreenViewModel
-){
+) {
     var sheetState = rememberModalBottomSheetState()
     val coroutineScope = rememberCoroutineScope()
     val leaveTrackerDetails = viewModel.liveLeaveTrackerDetails.collectAsStateWithLifecycle()
 
-    Column{
+    Column {
         ModalBottomSheet(
             onDismissRequest = {
                 viewModel.toggleAddTaskShowBottomSheet()
@@ -1156,7 +1274,7 @@ fun AddTaskShowModalSheet(
             ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.clickable{
+                    modifier = Modifier.clickable {
                         viewModel.userEmailUiState?.let {
                             coroutineScope.launch {
                                 sheetState.hide()
@@ -1182,7 +1300,7 @@ fun AddTaskShowModalSheet(
                 }
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.clickable{
+                    modifier = Modifier.clickable {
                         coroutineScope.launch {
                             sheetState.hide()
                             viewModel.toggleAddTaskShowBottomSheet()
@@ -1214,15 +1332,12 @@ fun AddTaskShowModalSheet(
                 }
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.clickable{
+                    modifier = Modifier.clickable {
                         coroutineScope.launch {
                             sheetState.hide()
                             viewModel.toggleAddTaskShowBottomSheet()
                             if (!sheetState.isVisible) {
-                                val annualLeaveDataMap = Json.encodeToString(leaveTrackerDetails.value)
-                                val encodedLeaveJson =
-                                    URLEncoder.encode(annualLeaveDataMap, StandardCharsets.UTF_8.toString())
-                                navController.navigate("ApplyLeaveScreen/${encodedLeaveJson}/All")
+                                navController.navigate("ApplyLeaveScreen/${leaveTrackerDetails.value.emailId}/All")
                             }
                         }
                     }
@@ -1247,11 +1362,11 @@ fun AddTaskShowModalSheet(
             ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.clickable{
+                    modifier = Modifier.clickable {
                         coroutineScope.launch {
                             sheetState.hide()
                             viewModel.toggleAddTaskShowBottomSheet()
-                            if (!sheetState.isVisible&&(liveUserDetails.emp_Id.isNotBlank())) {
+                            if (!sheetState.isVisible && (liveUserDetails.emp_Id.isNotBlank())) {
                                 navController.navigate("LeaveRegularisationScreen/${liveUserDetails.email}/${liveUserDetails.username}/${liveUserDetails.emp_Id}")
                             }
                         }
@@ -1271,12 +1386,12 @@ fun AddTaskShowModalSheet(
                 }
             }
             Spacer(modifier = Modifier.height(10.dp))
-            Row (
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(10.dp),
                 horizontalArrangement = Arrangement.Center
-            ){
+            ) {
                 Icon(
                     imageVector = ImageVector.vectorResource(R.drawable.cancel_24dp),
                     contentDescription = "Cancel",
@@ -1301,7 +1416,7 @@ fun UserProfileImage(imageUrl: String) {
             alpha = 0.5f,
             contentDescription = null,
             modifier = Modifier
-                .size(50.dp)
+                .size(45.dp)
                 .clip(CircleShape)
         )
     } else {
@@ -1314,7 +1429,7 @@ fun UserProfileImage(imageUrl: String) {
             placeholder = rememberVectorPainter(Icons.Filled.AccountCircle),
             contentScale = ContentScale.Crop,
             modifier = Modifier
-                .size(50.dp)
+                .size(45.dp)
                 .clip(CircleShape)
         )
     }
@@ -1327,6 +1442,29 @@ fun String.truncate(maxLength: Int): String {
         this
     }
 }
+
+@Composable
+fun Modifier.singleClick(
+    debounceTime: Long = 500L,
+    coroutineScope: CoroutineScope = rememberCoroutineScope(),
+    onClick: () -> Unit
+): Modifier {
+    var isClickable by remember { mutableStateOf(true) }
+
+    return this.then(
+        Modifier.clickable(enabled = isClickable) {
+            if (isClickable) {
+                isClickable = false
+                onClick()
+                coroutineScope.launch {
+                    delay(debounceTime)
+                    isClickable = true
+                }
+            }
+        }
+    )
+}
+
 
 //"https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c",
 

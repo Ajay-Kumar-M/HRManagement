@@ -70,7 +70,6 @@ class AppDataManager {
                 userCurrentSignInStatus = signInStatusDocument.toObject(UserSignInStatusData::class.java)
                 println("Field value: ${userCurrentSignInStatus?.status}")
             } else {
-                println("No such Sign in document")
                 responseHandler("Failure","No such SIGN-IN document")
             }
             userCurrentSignInStatus?.let { userSignInStatus ->
@@ -80,9 +79,8 @@ class AppDataManager {
 
                 if (attendanceLogDocument.exists()) {
                     userAttendanceLog = attendanceLogDocument.toObject(AttendanceData::class.java)
-                    println("Field value: ${userAttendanceLog?.status}")
                 } else {
-                    println("No such ATTENDANCE LOG document")
+                    Log.d("AppDataManager","No such ATTENDANCE LOG document")
 //                    responseHandler("Failure","No such ATTENDANCE LOG document")
                     val timestamp: Long = 1622548800000
                     val calendar = Calendar.getInstance()
@@ -131,7 +129,6 @@ class AppDataManager {
             Log.d(TAG, "Success $result")
             responseHandler("Success","")
         }.addOnFailureListener { exception ->
-                println("Error getting document: $exception")
                 responseHandler("Failure","Error transcation failed: $exception")
         }
     }
@@ -549,6 +546,18 @@ class AppDataManager {
             }
     }
 
+    fun getNotificationData(responseHandler: (QuerySnapshot?,String) -> Unit){
+        val notificationCollection = firestoreDB.collection("notifications").document("organization1").collection("OrgNotifications")
+        notificationCollection.get()
+            .addOnSuccessListener { result ->
+                responseHandler(result,"Success")
+            }
+            .addOnFailureListener { exception ->
+                Log.d(TAG, "Error getting goals: ", exception)
+                responseHandler(null,"Failure")
+            }
+    }
+
     fun addAnnouncementTemp(announcementList: AnnouncementList){
         val announcementsCollection = firestoreDB.collection("announcements").document("organization1").collection("OrgAnnouncements")
         announcementsCollection.document("${announcementList.announcementID}")
@@ -567,6 +576,18 @@ class AppDataManager {
             .set(announcementData)
             .addOnSuccessListener {
                 Log.d(TAG, "DocumentSnapshot added/updated with ID: ${announcementData.announcementID}")
+            }
+            .addOnFailureListener { e ->
+                Log.w(TAG, "Error adding document", e)
+            }
+    }
+
+    fun addNotificationDataTemp(notificationData: NotificationData){
+        val notificationDocumentRef = firestoreDB.collection("notifications").document("organization1").collection("OrgNotifications").document("${notificationData.notificationId}")
+        notificationDocumentRef
+            .set(notificationData)
+            .addOnSuccessListener {
+                Log.d(TAG, "DocumentSnapshot added/updated with ID: ${notificationData.notificationId}")
             }
             .addOnFailureListener { e ->
                 Log.w(TAG, "Error adding document", e)

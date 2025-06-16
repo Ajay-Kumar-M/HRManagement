@@ -120,10 +120,7 @@ fun LeaveReportScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
-                    val annualLeaveDataMap = Json.encodeToString(leaveTrackerDetails.value)
-                    val encodedLeaveJson =
-                        URLEncoder.encode(annualLeaveDataMap, StandardCharsets.UTF_8.toString())
-                    navController.navigate("ApplyLeaveScreen/${encodedLeaveJson}/All")
+                    navController.navigate("ApplyLeaveScreen/${leaveTrackerDetails.value.emailId}/All")
                 },
                 containerColor = Color(0xFF1976D2)
             ) {
@@ -158,10 +155,7 @@ fun LeaveReportScreen(
                         Row (
                             modifier = Modifier.padding(10.dp)
                                 .clickable{
-                                    val annualLeaveDataMap = Json.encodeToString(leaveTrackerDetails.value)
-                                    val encodedLeaveJson =
-                                        URLEncoder.encode(annualLeaveDataMap, StandardCharsets.UTF_8.toString())
-                                    navController.navigate("ApplyLeaveScreen/${encodedLeaveJson}/${leaveType}")
+                                    navController.navigate("ApplyLeaveScreen/${leaveTrackerDetails.value.emailId}/${leaveType}")
                                 },
                             verticalAlignment = Alignment.CenterVertically
                         ){

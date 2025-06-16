@@ -13,8 +13,11 @@ data class UserLoginData(
     var status: String = "",
     val emp_Id: String = "",
     val profileUrl: String = "",
-    val departmentName: String = ""
-){
+    val departmentName: String = "",
+    val reportingTo: Map<String,String> = mapOf()
+)
+
+/*
     companion object {
         fun from(map: MutableMap<String, String>) = UserLoginData(
             provider = map["provider"].toString(),
@@ -29,4 +32,4 @@ data class UserLoginData(
             departmentName = map["departmentName"].toString()
         )
     }
-}
+ */

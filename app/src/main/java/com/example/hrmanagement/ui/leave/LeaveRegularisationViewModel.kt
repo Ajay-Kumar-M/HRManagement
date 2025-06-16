@@ -135,7 +135,6 @@ class LeaveRegularisationViewModel: ViewModel() {
         if ((userEmailDBState!=null)&&((userEmailDBState?.isNotBlank())==true)) {
             if (isViewLoading.value==false) toggleIsViewLoading()
             numberOfFeatchProcess++
-            println("timestamp $periodStartDateTimestamp $periodEndDateTimestamp")
             appDataManager.getFirebaseAttendanceData(periodStartDateTimestamp.value,periodEndDateTimestamp.value,userEmailDBState!!,::updateAttendanceDetails)
         }
     }

@@ -26,14 +26,15 @@ class AppDataManager {
     private var usersigninstatuslistenerRegistration: ListenerRegistration? = null
     private val _announcementLiveData = MutableLiveData<List<String>>()
     val announcementLiveData: LiveData<List<String>> = _announcementLiveData
-    private var _liveUserSignInStatus: MutableStateFlow<String> = MutableStateFlow("Not populated yet!")
+    private var _liveUserSignInStatus: MutableStateFlow<String> =
+        MutableStateFlow("Not populated yet!")
     val liveUserSignInStatus = _liveUserSignInStatus.asStateFlow()
 
     init {
         firestoreDB = Firebase.firestore
     }
 
-    fun addGoogleAuthUserData(googleAuth: GoogleAuth){
+    fun addGoogleAuthUserData(googleAuth: GoogleAuth) {
         val usersCollection = firestoreDB.collection("users")
         usersCollection.document(googleAuth.email)
             .set(googleAuth)
@@ -45,13 +46,14 @@ class AppDataManager {
             }
     }
 
-    fun addDummyUserSignInStatus(emailid: String,userSignInStatusData: UserSignInStatusData) {
+    fun addDummyUserSignInStatus(emailid: String, userSignInStatusData: UserSignInStatusData) {
         val signInStatusDocumentRef = firestoreDB.collection("signinstatus").document(emailid)
         signInStatusDocumentRef.set(userSignInStatusData)
     }
 
     fun addDummyUserData(userLoginData: UserLoginData) {
-        val signInStatusDocumentRef = firestoreDB.collection("users").document(userLoginData.email.toString())
+        val signInStatusDocumentRef =
+            firestoreDB.collection("users").document(userLoginData.email.toString())
         signInStatusDocumentRef.set(userLoginData)
     }
 
@@ -60,27 +62,35 @@ class AppDataManager {
         linkDocumentRef.set(linkData)
     }
 
-    fun addSignInStatus(emailId: String, checkInOrCheckOutTimestamp: Long, currentDayTimestamp: Long, responseHandler: (String,String) -> Unit){
+    fun addSignInStatus(
+        emailId: String,
+        checkInOrCheckOutTimestamp: Long,
+        currentDayTimestamp: Long,
+        responseHandler: (String, String) -> Unit
+    ) {
 
         firestoreDB.runTransaction { transaction ->
             var userCurrentSignInStatus: UserSignInStatusData? = UserSignInStatusData()
             val signInStatusDocumentRef = firestoreDB.collection("signinstatus").document(emailId)
             val signInStatusDocument = transaction.get(signInStatusDocumentRef)
             if (signInStatusDocument.exists()) {
-                userCurrentSignInStatus = signInStatusDocument.toObject(UserSignInStatusData::class.java)
+                userCurrentSignInStatus =
+                    signInStatusDocument.toObject(UserSignInStatusData::class.java)
                 println("Field value: ${userCurrentSignInStatus?.status}")
             } else {
-                responseHandler("Failure","No such SIGN-IN document")
+                responseHandler("Failure", "No such SIGN-IN document")
             }
             userCurrentSignInStatus?.let { userSignInStatus ->
                 var userAttendanceLog: AttendanceData? = AttendanceData()
-                val attendanceDocumentCollectionRef = firestoreDB.collection("attendance").document(emailId).collection("attendanceLogs").document(currentDayTimestamp.toString())
+                val attendanceDocumentCollectionRef =
+                    firestoreDB.collection("attendance").document(emailId)
+                        .collection("attendanceLogs").document(currentDayTimestamp.toString())
                 val attendanceLogDocument = transaction.get(attendanceDocumentCollectionRef)
 
                 if (attendanceLogDocument.exists()) {
                     userAttendanceLog = attendanceLogDocument.toObject(AttendanceData::class.java)
                 } else {
-                    Log.d("AppDataManager","No such ATTENDANCE LOG document")
+                    Log.d("AppDataManager", "No such ATTENDANCE LOG document")
 //                    responseHandler("Failure","No such ATTENDANCE LOG document")
                     val timestamp: Long = 1622548800000
                     val calendar = Calendar.getInstance()
@@ -103,7 +113,7 @@ class AppDataManager {
                     )
                 }
                 userAttendanceLog?.let { attendanceLog ->
-                    if (userSignInStatus.status=="Checked-In"){
+                    if (userSignInStatus.status == "Checked-In") {
                         val diffMillis = checkInOrCheckOutTimestamp - attendanceLog.checkInTime
                         val hours = diffMillis / (1000 * 60 * 60)
                         val minutes = (diffMillis % (1000 * 60 * 60)) / (1000 * 60)
@@ -113,7 +123,7 @@ class AppDataManager {
                         attendanceLog.checkOutLocation = "Chennai"
                         attendanceLog.totalHours = "$hours.$minutes".toFloat()
                     } else {
-                        if ( attendanceLog.checkInTime == 0L ) { //will be executed when the user checks-in for the first time on a particular day
+                        if (attendanceLog.checkInTime == 0L) { //will be executed when the user checks-in for the first time on a particular day
                             userSignInStatus.checkintimestamp = checkInOrCheckOutTimestamp
                             attendanceLog.checkInTime = checkInOrCheckOutTimestamp
                             attendanceLog.status = "Present"
@@ -121,49 +131,50 @@ class AppDataManager {
                         userSignInStatus.status = "Checked-In"
                         attendanceLog.checkInLocation = "Chennai"
                     }
-                    transaction.set(signInStatusDocumentRef,userSignInStatus)
-                    transaction.set(attendanceDocumentCollectionRef,attendanceLog)
+                    transaction.set(signInStatusDocumentRef, userSignInStatus)
+                    transaction.set(attendanceDocumentCollectionRef, attendanceLog)
                 }
             }
         }.addOnSuccessListener { result ->
             Log.d(TAG, "Success $result")
-            responseHandler("Success","")
+            responseHandler("Success", "")
         }.addOnFailureListener { exception ->
-                responseHandler("Failure","Error transcation failed: $exception")
+            responseHandler("Failure", "Error transcation failed: $exception")
         }
     }
 
-    fun getUserGoalsData(emailId: String, responseHandler: (QuerySnapshot?,String) -> Unit) {
-        val goalsCollection = firestoreDB.collection("goals").document(emailId).collection("indigoals")
+    fun getUserGoalsData(emailId: String, responseHandler: (QuerySnapshot?, String) -> Unit) {
+        val goalsCollection =
+            firestoreDB.collection("goals").document(emailId).collection("indigoals")
         goalsCollection.get()
             .addOnSuccessListener { result ->
 //                for (document in result) {
 //                    Log.d(TAG, "${document.id} => ${document.data}")
 //                }
-                responseHandler(result,"Success")
+                responseHandler(result, "Success")
             }
             .addOnFailureListener { exception ->
                 Log.d(TAG, "Error getting goals: ", exception)
-                responseHandler(null,"Failure")
+                responseHandler(null, "Failure")
             }
     }
 
-    fun getAllQuickLinks(responseHandler: (QuerySnapshot?,String) -> Unit) {
+    fun getAllQuickLinks(responseHandler: (QuerySnapshot?, String) -> Unit) {
         val quickLinksCollection = firestoreDB.collection("quicklinks")
         quickLinksCollection.get()
             .addOnSuccessListener { result ->
 //                for (document in result) {
 //                    Log.d(TAG, "${document.id} => ${document.data}")
 //                }
-                responseHandler(result,"Success")
+                responseHandler(result, "Success")
             }
             .addOnFailureListener { exception ->
                 Log.d(TAG, "Error getting goals: ", exception)
-                responseHandler(null,"Failure")
+                responseHandler(null, "Failure")
             }
     }
 
-    fun getLimitedQuickLinks(limit: Long, responseHandler: (QuerySnapshot?,String) -> Unit) {
+    fun getLimitedQuickLinks(limit: Long, responseHandler: (QuerySnapshot?, String) -> Unit) {
         val quickLinksCollection = firestoreDB.collection("quicklinks")
         val limitedQuery = quickLinksCollection
             .orderBy("linkname", Query.Direction.DESCENDING)
@@ -174,17 +185,22 @@ class AppDataManager {
 //                for (document in result) {
 //                    Log.d(TAG, "${document.id} => ${document.data}")
 //                }
-                responseHandler(result,"Success")
+                responseHandler(result, "Success")
             }
             .addOnFailureListener { exception ->
                 Log.d(TAG, "Error getting goals: ", exception)
-                responseHandler(null,"Failure")
+                responseHandler(null, "Failure")
             }
     }
 
-    fun addRegularisationAttendanceData(emailId: String,attendanceData: List<AttendanceRegularisationData>, returnResponse: (String) -> Unit){
+    fun addRegularisationAttendanceData(
+        emailId: String,
+        attendanceData: List<AttendanceRegularisationData>,
+        returnResponse: (String) -> Unit
+    ) {
         val batch = firestoreDB.batch()
-        val attendanceCollection = firestoreDB.collection("attendance").document(emailId).collection("attendanceRegularisationLogs")
+        val attendanceCollection = firestoreDB.collection("attendance").document(emailId)
+            .collection("attendanceRegularisationLogs")
         for (data in attendanceData) {
             val docRef = attendanceCollection.document(data.date.toString()) // auto-generated ID
             batch.set(docRef, data)
@@ -200,8 +216,14 @@ class AppDataManager {
             }
     }
 
-    fun getFirebaseAttendanceData(startDateTimestamp: Long,endDateTimestamp: Long, emailId: String,responseHandler: (QuerySnapshot?,String) -> Unit){
-        val attendanceCollection = firestoreDB.collection("attendance").document(emailId).collection("attendanceLogs")
+    fun getFirebaseAttendanceData(
+        startDateTimestamp: Long,
+        endDateTimestamp: Long,
+        emailId: String,
+        responseHandler: (QuerySnapshot?, String) -> Unit
+    ) {
+        val attendanceCollection =
+            firestoreDB.collection("attendance").document(emailId).collection("attendanceLogs")
         val query = attendanceCollection
             .whereLessThanOrEqualTo("date", endDateTimestamp)
             .whereGreaterThanOrEqualTo("date", startDateTimestamp)
@@ -210,20 +232,28 @@ class AppDataManager {
 //                for (document in result) {
 //                    Log.d(TAG, "${document.id} => ${document.data}")
 //                }
-                responseHandler(result,"Success")
+                responseHandler(result, "Success")
             }
             .addOnFailureListener { exception ->
                 Log.d(TAG, "Error getting attendance record: ", exception)
-                responseHandler(null,"Failure")
+                responseHandler(null, "Failure")
             }
     }
 
-    fun addGoalData(goalData: GoalData,lastGoalIndex: Int,updateLastGoalIndex: Boolean, returnResponse: (String) -> Unit){
+    fun addGoalData(
+        goalData: GoalData,
+        lastGoalIndex: Int,
+        updateLastGoalIndex: Boolean,
+        returnResponse: (String) -> Unit
+    ) {
         firestoreDB.runBatch { batch ->
-            val goalDocument = firestoreDB.collection("goals").document(goalData.emailId).collection("indigoals").document("goal$lastGoalIndex")
-            batch.set(goalDocument,goalData)
+            val goalDocument =
+                firestoreDB.collection("goals").document(goalData.emailId).collection("indigoals")
+                    .document("goal$lastGoalIndex")
+            batch.set(goalDocument, goalData)
             if (updateLastGoalIndex) {
-                val parentGoalCollectionDoc = firestoreDB.collection("goals").document(goalData.emailId)
+                val parentGoalCollectionDoc =
+                    firestoreDB.collection("goals").document(goalData.emailId)
                 batch.update(parentGoalCollectionDoc, "lastGoalIndex", lastGoalIndex)
             }
         }.addOnSuccessListener {
@@ -235,8 +265,9 @@ class AppDataManager {
         }
     }
 
-    fun addDepartmentData(departmentInfo: DepartmentInfo){
-        val usersCollection = firestoreDB.collection("departments").document("Department1").collection("subDepartments").document("Sub1Department1").collection("subDepartments")
+    fun addDepartmentData(departmentInfo: DepartmentInfo) {
+        val usersCollection = firestoreDB.collection("departments").document("Department1")
+            .collection("subDepartments").document("Sub1Department1").collection("subDepartments")
         usersCollection.document(departmentInfo.name)
             .set(departmentInfo)
             .addOnSuccessListener {
@@ -247,7 +278,7 @@ class AppDataManager {
             }
     }
 
-    fun getUserLastFeedData(emaailId: String,successResponse: (FeedMetadata?, String) -> Unit){
+    fun getUserLastFeedData(emaailId: String, successResponse: (FeedMetadata?, String) -> Unit) {
         val docRef = firestoreDB.collection("feeds").document(emaailId)
         docRef.get()
             .addOnSuccessListener { document ->
@@ -255,23 +286,30 @@ class AppDataManager {
                     val resultData = document.toObject(FeedMetadata::class.java)
                     resultData?.let {
                         Log.d(TAG, "getFirebaseDepartment temp data $it")
-                        successResponse(it,"Success")
+                        successResponse(it, "Success")
                     }
                 } else {
                     Log.d(TAG, "No such document")
-                    successResponse(null,"No such document")
+                    successResponse(null, "No such document")
                 }
             }
             .addOnFailureListener { exception ->
                 Log.d(TAG, "get failed with ", exception)
-                successResponse(null,"Error Exception $exception")
+                successResponse(null, "Error Exception $exception")
             }
     }
 
-    fun addUserStatusData(feedData: FeedData,updateLastFeedIndex: Boolean,feedCount: Int, returnResponse: (String) -> Unit){
+    fun addUserStatusData(
+        feedData: FeedData,
+        updateLastFeedIndex: Boolean,
+        feedCount: Int,
+        returnResponse: (String) -> Unit
+    ) {
         firestoreDB.runBatch { batch ->
-            val feedDocumentRef = firestoreDB.collection("feeds").document(feedData.email).collection("userfeeds").document(feedData.feedID)
-            batch.set(feedDocumentRef,feedData)
+            val feedDocumentRef =
+                firestoreDB.collection("feeds").document(feedData.email).collection("userfeeds")
+                    .document(feedData.feedID)
+            batch.set(feedDocumentRef, feedData)
             val parentFeedCollectionDoc =
                 firestoreDB.collection("feeds").document(feedData.email)
             if (updateLastFeedIndex) {
@@ -290,12 +328,19 @@ class AppDataManager {
         }
     }
 
-    fun addLeaveTrackerData(leaveTrackerData: LeaveTrackerData,year: Int, returnResponse: (String) -> Unit){
+    fun addLeaveTrackerData(
+        leaveTrackerData: LeaveTrackerData,
+        year: Int,
+        returnResponse: (String) -> Unit
+    ) {
         val usersCollection = firestoreDB.collection("leavetrackers")
         usersCollection.document("${leaveTrackerData.emailId}$year")
             .set(leaveTrackerData)
             .addOnSuccessListener {
-                Log.d(TAG, "DocumentSnapshot added/updated with ID: ${leaveTrackerData.emailId}$year")
+                Log.d(
+                    TAG,
+                    "DocumentSnapshot added/updated with ID: ${leaveTrackerData.emailId}$year"
+                )
                 returnResponse("Success")
             }
             .addOnFailureListener { e ->
@@ -304,19 +349,26 @@ class AppDataManager {
             }
     }
 
-    fun addLeaveTrackerDataTemp(leaveTrackerData: LeaveTrackerData,year: Int){
+    fun addLeaveTrackerDataTemp(leaveTrackerData: LeaveTrackerData, year: Int) {
         val usersCollection = firestoreDB.collection("leavetrackers")
         usersCollection.document("${leaveTrackerData.emailId}$year")
             .set(leaveTrackerData)
             .addOnSuccessListener {
-                Log.d(TAG, "DocumentSnapshot added/updated with ID: ${leaveTrackerData.emailId}$year")
+                Log.d(
+                    TAG,
+                    "DocumentSnapshot added/updated with ID: ${leaveTrackerData.emailId}$year"
+                )
             }
             .addOnFailureListener { e ->
                 Log.w(TAG, "Error adding document", e)
             }
     }
 
-    fun getFirebaseLeaveTrackerData(year: Int,emailId: String,successResponse: (LeaveTrackerData, String) -> Unit){
+    fun getFirebaseLeaveTrackerData(
+        year: Int,
+        emailId: String,
+        successResponse: (LeaveTrackerData, String) -> Unit
+    ) {
         var resultData: LeaveTrackerData? = LeaveTrackerData()
         val docRef = firestoreDB.collection("leavetrackers").document("$emailId$year")
         docRef.get()
@@ -325,20 +377,23 @@ class AppDataManager {
                     resultData = document.toObject(LeaveTrackerData::class.java)
                     resultData?.let {
                         Log.d(TAG, "getFirebaseDepartment temp data $it")
-                        successResponse(it,"Success")
+                        successResponse(it, "Success")
                     }
                 } else {
                     Log.d(TAG, "No such document")
-                    successResponse(resultData?: LeaveTrackerData(),"No such document")
+                    successResponse(resultData ?: LeaveTrackerData(), "No such document")
                 }
             }
             .addOnFailureListener { exception ->
                 Log.d(TAG, "get failed with ", exception)
-                successResponse(resultData?: LeaveTrackerData(),"Error Exception $exception")
+                successResponse(resultData ?: LeaveTrackerData(), "Error Exception $exception")
             }
     }
 
-    fun getFirebaseDepartment(depatmentId: String,responseHandler: (QuerySnapshot?, String) -> Unit) {
+    fun getFirebaseDepartment(
+        depatmentId: String,
+        responseHandler: (QuerySnapshot?, String) -> Unit
+    ) {
         val usersCollection = firestoreDB.collection("users")
         val query = usersCollection
             .whereEqualTo("departmentName", depatmentId)
@@ -347,15 +402,18 @@ class AppDataManager {
 //                for (document in result) {
 //                    Log.d(TAG, "${document.id} => ${document.data}")
 //                }
-                responseHandler(result,"Success")
+                responseHandler(result, "Success")
             }
             .addOnFailureListener { exception ->
                 Log.d(TAG, "Error getting goals: ", exception)
-                responseHandler(null,"Failure")
+                responseHandler(null, "Failure")
             }
     }
 
-    fun getFirebaseDepartmentOld(depatmentId: String,successResponse: (DepartmentInfo?,String) -> Unit) {
+    fun getFirebaseDepartmentOld(
+        depatmentId: String,
+        successResponse: (DepartmentInfo?, String) -> Unit
+    ) {
         var resultData: DepartmentInfo? = DepartmentInfo()
         val docRef = firestoreDB.collection("departments").document(depatmentId)
         docRef.get()
@@ -364,20 +422,20 @@ class AppDataManager {
                     resultData = document.toObject(DepartmentInfo::class.java)
                     resultData?.let {
                         Log.d(TAG, "getFirebaseDepartment temp data $it")
-                        successResponse(it,"Success")
+                        successResponse(it, "Success")
                     }
                 } else {
                     Log.d(TAG, "No such document")
-                    successResponse(null,"No such document")
+                    successResponse(null, "No such document")
                 }
             }
             .addOnFailureListener { exception ->
                 Log.d(TAG, "get failed with ", exception)
-                successResponse(null,"Error Exception $exception")
+                successResponse(null, "Error Exception $exception")
             }
     }
 
-    fun getFirebaseUser(userid: String,successResponse: (UserLoginData?, String) -> Unit) {
+    fun getFirebaseUser(userid: String, successResponse: (UserLoginData?, String) -> Unit) {
         var resultData: UserLoginData? = UserLoginData()
         val docRef = firestoreDB.collection("users").document(userid)
         docRef.get()
@@ -386,16 +444,92 @@ class AppDataManager {
                     resultData = document.toObject(UserLoginData::class.java)
                     resultData?.let {
                         Log.d(TAG, "getFirebaseUser temp data $it")
-                        successResponse(it,"Success")
+                        successResponse(it, "Success")
                     }
                 } else {
                     Log.d(TAG, "No such document")
-                    successResponse(null,"No such document")
+                    successResponse(null, "No such document")
                 }
             }
             .addOnFailureListener { exception ->
                 Log.d(TAG, "get failed with ", exception)
                 successResponse(null, "Error Exception $exception")
+            }
+    }
+
+    fun getFirebaseUserFavorites(
+        userid: String,
+        successResponse: (QuerySnapshot?, String) -> Unit
+    ) {
+        val favoriteCollectionRef =
+            firestoreDB.collection("users").document(userid).collection("favorites")
+        favoriteCollectionRef.get()
+            .addOnSuccessListener { documents ->
+                if (documents != null) {
+                    Log.d(TAG, "getFirebaseUser temp data ${documents.size()}")
+                    successResponse(documents, "Success")
+                } else {
+                    Log.d(TAG, "No such document")
+                    successResponse(null, "No such document")
+                }
+            }
+            .addOnFailureListener { exception ->
+                Log.d(TAG, "get failed with ", exception)
+                successResponse(null, "Error Exception $exception")
+            }
+    }
+
+    fun getFirebaseUserLimitedFavorites( limit: Long,
+        userid: String,
+        successResponse: (QuerySnapshot?, String) -> Unit
+    ) {
+        val favoriteCollectionRef =
+            firestoreDB.collection("users").document(userid).collection("favorites")
+        val limitedQuery = favoriteCollectionRef
+            .orderBy("email", Query.Direction.ASCENDING)
+            .limit(limit)
+
+        limitedQuery.get()
+            .addOnSuccessListener { documents ->
+                if (documents != null) {
+                    Log.d(TAG, "getFirebaseUser temp data ${documents.size()}")
+                    successResponse(documents, "Success")
+                } else {
+                    Log.d(TAG, "No such document")
+                    successResponse(null, "No such document")
+                }
+            }
+            .addOnFailureListener { exception ->
+                Log.d(TAG, "get failed with ", exception)
+                successResponse(null, "Error Exception $exception")
+            }
+    }
+
+    fun addUserFavorite(favoritePerson: FavoritePerson, response: (String) -> Unit ){
+        val favoriteCollectionDocumentRef = firestoreDB.collection("users").document(favoritePerson.favoriteBy).collection("favorites").document(favoritePerson.email)
+        favoriteCollectionDocumentRef
+            .set(favoritePerson)
+            .addOnSuccessListener {
+                Log.d(TAG, "DocumentSnapshot added/updated with ID: ${favoritePerson.email}")
+                response("Success")
+            }
+            .addOnFailureListener { e ->
+                Log.w(TAG, "Error adding document", e)
+                response("Failure")
+            }
+    }
+
+    fun removeUserFavorite(myEmailId: String, colleagueEmailId: String, response: (String) -> Unit ){
+        val favoriteCollectionDocumentRef = firestoreDB.collection("users").document(myEmailId).collection("favorites").document(colleagueEmailId)
+        favoriteCollectionDocumentRef
+            .delete()
+            .addOnSuccessListener {
+                Log.d(TAG, "DocumentSnapshot added/updated with ID: $colleagueEmailId")
+                response("Success")
+            }
+            .addOnFailureListener { e ->
+                Log.w(TAG, "Error adding document", e)
+                response("Failure")
             }
     }
 
@@ -405,10 +539,10 @@ class AppDataManager {
             .addOnSuccessListener { querySnapshot ->
                 if (querySnapshot != null) {
                     Log.d(TAG, "getAllFirebaseUsers temp data ${querySnapshot.size()}")
-                    successResponse(querySnapshot,"Success")
+                    successResponse(querySnapshot, "Success")
                 } else {
                     Log.d(TAG, "getAllFirebaseUsers No such document")
-                    successResponse(null,"getAllFirebaseUsers No such document")
+                    successResponse(null, "getAllFirebaseUsers No such document")
                 }
             }
             .addOnFailureListener { exception ->
@@ -417,29 +551,33 @@ class AppDataManager {
             }
     }
 
-    fun listenForUserSignInStatusUpdates(userid: String){
-        usersigninstatuslistenerRegistration = firestoreDB.collection("signinstatus").document(userid)
-            .addSnapshotListener { snapshot, e ->
-                if (e != null) {
-                    Log.w(TAG, "Listen failed.", e)
-                    return@addSnapshotListener
-                }
-                val source = if (snapshot != null && snapshot.metadata.hasPendingWrites()) {
-                    "Local"
-                } else {
-                    "Server"
-                }
-                if (snapshot != null && snapshot.exists()) {
-                    Log.d(TAG, "listenForUserSignInStatusUpdates userid - $userid data ${snapshot.data}")
-                    val temp = snapshot.toObject(UserSignInStatusData::class.java)
-                    Log.d(TAG, "listenForUserSignInStatusUpdates temp data $temp")
-                    if (!temp?.status.isNullOrBlank()){
-                        _liveUserSignInStatus.value = temp.status.toString()
+    fun listenForUserSignInStatusUpdates(userid: String) {
+        usersigninstatuslistenerRegistration =
+            firestoreDB.collection("signinstatus").document(userid)
+                .addSnapshotListener { snapshot, e ->
+                    if (e != null) {
+                        Log.w(TAG, "Listen failed.", e)
+                        return@addSnapshotListener
                     }
-                } else {
-                    Log.d(TAG, "$source data: null")
+                    val source = if (snapshot != null && snapshot.metadata.hasPendingWrites()) {
+                        "Local"
+                    } else {
+                        "Server"
+                    }
+                    if (snapshot != null && snapshot.exists()) {
+                        Log.d(
+                            TAG,
+                            "listenForUserSignInStatusUpdates userid - $userid data ${snapshot.data}"
+                        )
+                        val temp = snapshot.toObject(UserSignInStatusData::class.java)
+                        Log.d(TAG, "listenForUserSignInStatusUpdates temp data $temp")
+                        if (!temp?.status.isNullOrBlank()) {
+                            _liveUserSignInStatus.value = temp.status.toString()
+                        }
+                    } else {
+                        Log.d(TAG, "$source data: null")
+                    }
                 }
-            }
     }
 
     fun listenForUserUpdates() {
@@ -456,9 +594,11 @@ class AppDataManager {
                                 // Handle new document
                                 docChange.document
                             }
+
                             DocumentChange.Type.MODIFIED -> {
                                 // Handle modified document
                             }
+
                             DocumentChange.Type.REMOVED -> {
                                 // Handle removed document
                             }
@@ -472,8 +612,10 @@ class AppDataManager {
         listenerRegistration?.remove()
     }
 
-    fun getLimitedAnnouncements(limit: Long, responseHandler: (QuerySnapshot?,String) -> Unit) {
-        val announcementsCollection = firestoreDB.collection("announcements").document("organization1").collection("OrgAnnouncements")
+    fun getLimitedAnnouncements(limit: Long, responseHandler: (QuerySnapshot?, String) -> Unit) {
+        val announcementsCollection =
+            firestoreDB.collection("announcements").document("organization1")
+                .collection("OrgAnnouncements")
         val limitedQuery = announcementsCollection
             .orderBy("announcementID", Query.Direction.DESCENDING)
             .limit(limit)
@@ -483,47 +625,64 @@ class AppDataManager {
 //                for (document in result) {
 //                    Log.d(TAG, "${document.id} => ${document.data}")
 //                }
-                responseHandler(result,"Success")
+                responseHandler(result, "Success")
             }
             .addOnFailureListener { exception ->
                 Log.d(TAG, "Error getting goals: ", exception)
-                responseHandler(null,"Failure")
+                responseHandler(null, "Failure")
             }
     }
 
-    fun getAnnouncements(responseHandler: (QuerySnapshot?,String) -> Unit) {
-        val announcementsCollection = firestoreDB.collection("announcements").document("organization1").collection("OrgAnnouncements")
+    fun getAnnouncements(responseHandler: (QuerySnapshot?, String) -> Unit) {
+        val announcementsCollection =
+            firestoreDB.collection("announcements").document("organization1")
+                .collection("OrgAnnouncements")
         announcementsCollection.get()
             .addOnSuccessListener { result ->
 //                for (document in result) {
 //                    Log.d(TAG, "${document.id} => ${document.data}")
 //                }
-                responseHandler(result,"Success")
+                responseHandler(result, "Success")
             }
             .addOnFailureListener { exception ->
                 Log.d(TAG, "Error getting goals: ", exception)
-                responseHandler(null,"Failure")
+                responseHandler(null, "Failure")
             }
     }
 
-    fun getAnnouncementData(announcementId: Int, responseHandler: (DocumentSnapshot?, String) -> Unit) {
-        val announcementsDocument = firestoreDB.collection("announcements").document("organization1").collection("OrgAnnouncements").document(announcementId.toString()).collection("AnnouncementData").document(announcementId.toString())
+    fun getAnnouncementData(
+        announcementId: Int,
+        responseHandler: (DocumentSnapshot?, String) -> Unit
+    ) {
+        val announcementsDocument =
+            firestoreDB.collection("announcements").document("organization1")
+                .collection("OrgAnnouncements").document(announcementId.toString())
+                .collection("AnnouncementData").document(announcementId.toString())
         announcementsDocument.get()
             .addOnSuccessListener { result ->
-                responseHandler(result,"Success")
+                responseHandler(result, "Success")
             }
             .addOnFailureListener { exception ->
                 Log.d(TAG, "Error getting goals: ", exception)
-                responseHandler(null,"Failure")
+                responseHandler(null, "Failure")
             }
     }
 
-    fun modifyAnnouncementData(announcementData: AnnouncementData, returnResponse: (String) -> Unit){
-        val announcementsDocument = firestoreDB.collection("announcements").document("organization1").collection("OrgAnnouncements").document(announcementData.announcementID.toString()).collection("AnnouncementData").document(announcementData.announcementID.toString())
+    fun modifyAnnouncementData(
+        announcementData: AnnouncementData,
+        returnResponse: (String) -> Unit
+    ) {
+        val announcementsDocument =
+            firestoreDB.collection("announcements").document("organization1")
+                .collection("OrgAnnouncements").document(announcementData.announcementID.toString())
+                .collection("AnnouncementData").document(announcementData.announcementID.toString())
         announcementsDocument
             .set(announcementData)
             .addOnSuccessListener {
-                Log.d(TAG, "addAnnouncementLikeData added/updated with ID: ${announcementData.announcementID}")
+                Log.d(
+                    TAG,
+                    "addAnnouncementLikeData added/updated with ID: ${announcementData.announcementID}"
+                )
                 returnResponse("Success")
             }
             .addOnFailureListener { e ->
@@ -532,10 +691,17 @@ class AppDataManager {
             }
     }
 
-    fun addCommentLikeData(commentsData: MutableMap<String, CommentsData>, announcementID: Int, returnResponse: (String) -> Unit){
-        val announcementsDocument = firestoreDB.collection("announcements").document("organization1").collection("OrgAnnouncements").document(announcementID.toString()).collection("AnnouncementData").document(announcementID.toString())
+    fun addCommentLikeData(
+        commentsData: MutableMap<String, CommentsData>,
+        announcementID: Int,
+        returnResponse: (String) -> Unit
+    ) {
+        val announcementsDocument =
+            firestoreDB.collection("announcements").document("organization1")
+                .collection("OrgAnnouncements").document(announcementID.toString())
+                .collection("AnnouncementData").document(announcementID.toString())
         announcementsDocument
-            .update("comments",commentsData)
+            .update("comments", commentsData)
             .addOnSuccessListener {
                 Log.d(TAG, "addCommentLikeData added/updated with ID: ${commentsData}")
                 returnResponse("Success")
@@ -546,63 +712,81 @@ class AppDataManager {
             }
     }
 
-    fun getNotificationData(responseHandler: (QuerySnapshot?,String) -> Unit){
-        val notificationCollection = firestoreDB.collection("notifications").document("organization1").collection("OrgNotifications")
+    fun getNotificationData(responseHandler: (QuerySnapshot?, String) -> Unit) {
+        val notificationCollection =
+            firestoreDB.collection("notifications").document("organization1")
+                .collection("OrgNotifications")
         notificationCollection.get()
             .addOnSuccessListener { result ->
-                responseHandler(result,"Success")
+                responseHandler(result, "Success")
             }
             .addOnFailureListener { exception ->
                 Log.d(TAG, "Error getting goals: ", exception)
-                responseHandler(null,"Failure")
+                responseHandler(null, "Failure")
             }
     }
 
-    fun addAnnouncementTemp(announcementList: AnnouncementList){
-        val announcementsCollection = firestoreDB.collection("announcements").document("organization1").collection("OrgAnnouncements")
+    fun addAnnouncementTemp(announcementList: AnnouncementList) {
+        val announcementsCollection =
+            firestoreDB.collection("announcements").document("organization1")
+                .collection("OrgAnnouncements")
         announcementsCollection.document("${announcementList.announcementID}")
             .set(announcementList)
             .addOnSuccessListener {
-                Log.d(TAG, "DocumentSnapshot added/updated with ID: ${announcementList.announcementID}")
+                Log.d(
+                    TAG,
+                    "DocumentSnapshot added/updated with ID: ${announcementList.announcementID}"
+                )
             }
             .addOnFailureListener { e ->
                 Log.w(TAG, "Error adding document", e)
             }
     }
 
-    fun addAnnouncementDataTemp(announcementData: AnnouncementData){
-        val announcementsCollection = firestoreDB.collection("announcements").document("organization1").collection("OrgAnnouncements").document("${announcementData.announcementID}").collection("AnnouncementData")
+    fun addAnnouncementDataTemp(announcementData: AnnouncementData) {
+        val announcementsCollection =
+            firestoreDB.collection("announcements").document("organization1")
+                .collection("OrgAnnouncements").document("${announcementData.announcementID}")
+                .collection("AnnouncementData")
         announcementsCollection.document("${announcementData.announcementID}")
             .set(announcementData)
             .addOnSuccessListener {
-                Log.d(TAG, "DocumentSnapshot added/updated with ID: ${announcementData.announcementID}")
+                Log.d(
+                    TAG,
+                    "DocumentSnapshot added/updated with ID: ${announcementData.announcementID}"
+                )
             }
             .addOnFailureListener { e ->
                 Log.w(TAG, "Error adding document", e)
             }
     }
 
-    fun addNotificationDataTemp(notificationData: NotificationData){
-        val notificationDocumentRef = firestoreDB.collection("notifications").document("organization1").collection("OrgNotifications").document("${notificationData.notificationId}")
+    fun addNotificationDataTemp(notificationData: NotificationData) {
+        val notificationDocumentRef =
+            firestoreDB.collection("notifications").document("organization1")
+                .collection("OrgNotifications").document("${notificationData.notificationId}")
         notificationDocumentRef
             .set(notificationData)
             .addOnSuccessListener {
-                Log.d(TAG, "DocumentSnapshot added/updated with ID: ${notificationData.notificationId}")
+                Log.d(
+                    TAG,
+                    "DocumentSnapshot added/updated with ID: ${notificationData.notificationId}"
+                )
             }
             .addOnFailureListener { e ->
                 Log.w(TAG, "Error adding document", e)
             }
     }
 
-    fun getHolidays(responseHandler: (QuerySnapshot?,String) -> Unit) {
+    fun getHolidays(responseHandler: (QuerySnapshot?, String) -> Unit) {
         val holidaysCollection = firestoreDB.collection("holidays")
         holidaysCollection.get()
             .addOnSuccessListener { result ->
-                responseHandler(result,"Success")
+                responseHandler(result, "Success")
             }
             .addOnFailureListener { exception ->
                 Log.d(TAG, "Error getting goals: ", exception)
-                responseHandler(null,"Failure")
+                responseHandler(null, "Failure")
             }
     }
 

@@ -81,7 +81,6 @@ class AppPreferenceDataStore(context: Context) {
             preferences[EMP_ID] ?: "",
             preferences[PROFILE_URL] ?: "",
             preferences[DEPARTMENT_NAME] ?: ""
-
         )
     }
 

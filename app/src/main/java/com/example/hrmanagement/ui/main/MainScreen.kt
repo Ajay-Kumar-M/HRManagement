@@ -1,6 +1,16 @@
 package com.example.hrmanagement.ui.main
 
 import android.util.Log
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideIn
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.with
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -85,6 +95,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkAnnotation
@@ -106,9 +117,11 @@ import com.example.hrmanagement.R
 import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
 import com.example.hrmanagement.component.CircularProgressIndicatorComposable
 import com.example.hrmanagement.data.AnnouncementList
+import com.example.hrmanagement.data.FavoritePerson
 import com.example.hrmanagement.data.HolidayData
 import com.example.hrmanagement.data.LinkData
 import com.example.hrmanagement.data.UserLoginData
+import com.example.hrmanagement.ui.requests.MyRequestsScreen
 import com.example.hrmanagement.ui.userinfo.getPropertyValue
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
@@ -137,8 +150,8 @@ fun MainScreen(
     val isViewLoading = viewModel.isViewLoading.collectAsStateWithLifecycle()
     val liveUserDetails: State<UserLoginData> =
         viewModel.liveUserDetails.collectAsStateWithLifecycle()
-    var selectedItem by rememberSaveable { mutableIntStateOf(1) }
-    val tabItems = listOf("Services", "Home", "", "Approvals", "More")
+    var selectedItem by rememberSaveable { mutableIntStateOf(3) }
+    val tabItems = listOf("Services", "Home", "", "Requests", "More")
     val selectedIcons = listOf(
         ImageVector.vectorResource(id = R.drawable.apps),
         Icons.Filled.Home,
@@ -182,13 +195,13 @@ fun MainScreen(
                                         .crossfade(true)
                                         .build(),
                                     contentDescription = null,
-                                    placeholder = rememberVectorPainter(Icons.Filled.AccountCircle),
+                                    placeholder = rememberVectorPainter(ImageVector.vectorResource(R.drawable.account_placeholder)),
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier
                                         .size(40.dp)
                                         .clip(RoundedCornerShape(10.dp))
                                         .singleClick{
-                                            navController.navigate("UserInfoScreen/${liveUserDetails.value.email}")
+                                            navController.navigate("UserInfoScreen/${viewModel.userEmailUiState}")
                                         }
                                 )
                             }
@@ -352,9 +365,8 @@ fun MainScreen(
                     1 -> {
                         HomeScreen(outerPadding, navController, viewModel)
                     }
-
                     3 -> {
-
+                        MyRequestsScreen(outerPadding, navController, liveUserDetails.value.email)
                     }
 
                     4 -> {
@@ -617,6 +629,7 @@ fun HomeScreen(
     val quickLinksData = viewModel.quickLinksLimitedData.collectAsStateWithLifecycle()
     val leaveTrackerDetails = viewModel.liveLeaveTrackerDetails.collectAsStateWithLifecycle()
     val announcementsLimitedData = viewModel.announcementsLimitedData.collectAsStateWithLifecycle()
+    val favouritesLimitedData = viewModel.favouritesLimitedData.collectAsStateWithLifecycle()
     val holidaysData = viewModel.holidaysData.collectAsStateWithLifecycle()
     val liveUserDetails: State<UserLoginData> =
         viewModel.liveUserDetails.collectAsStateWithLifecycle()
@@ -643,6 +656,7 @@ fun HomeScreen(
             viewModel.fetchLimitedAnnouncements()
             viewModel.getLeaveTrackerDetails()
             viewModel.getHolidayDetails()
+            viewModel.fetchLimitedFavorites()
         },
         modifier = Modifier.fillMaxSize()
     ) {
@@ -661,9 +675,7 @@ fun HomeScreen(
                 modifier = Modifier
                     .clip(shape = RoundedCornerShape(15.dp))
                     .fillMaxWidth(0.8f)
-                    .height(370.dp)
                     .background(Color.White)
-//                                .verticalScroll(rememberScrollState())
                     .padding(10.dp)
             ) {
                 Row(
@@ -759,18 +771,16 @@ fun HomeScreen(
                 modifier = Modifier
                     .clip(shape = RoundedCornerShape(15.dp))
                     .fillMaxWidth(0.8f)
-                    .height(200.dp)
                     .background(Color.White)
-                    .verticalScroll(rememberScrollState())
                     .padding(10.dp)
             ) {
                 Row(
                     modifier = Modifier.padding(10.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Outlined.FavoriteBorder, //ImageVector.vectorResource(R.drawable.clock_24dp),
+                    Image(
+                        painter = painterResource(R.drawable.favorites_icon),
                         contentDescription = "Favorites",
-                        tint = Color(0xFFADD8E6)
+                        modifier = Modifier.size(25.dp)
                     )
                     Spacer(Modifier.width(10.dp))
                     Text(
@@ -778,19 +788,79 @@ fun HomeScreen(
                         style = MaterialTheme.typography.titleLarge
                     )
                 }
-                Spacer(Modifier.height(10.dp))
-                if (false) {
-
-                } else {
-                    Column(
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        Text(
-                            text = "No Data Found",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
+                favouritesLimitedData.value?.let {
+                    if (it.size() > 0) {
+                        it.forEach { favourite ->
+                            val favouritePerson =
+                                favourite.toObject(FavoritePerson::class.java)
+                            Log.d("MainScreen", "announcementData $favouritePerson")
+                            Row(
+                                modifier = Modifier
+                                    .padding(10.dp)
+                                    .clickable {
+                                        navController.navigate("ColleagueInfoScreen/${favouritePerson.email}/${liveUserDetails.value.email}")
+                                    },
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                UserProfileImage(favouritePerson.imageUrl)
+                                Spacer(Modifier.width(10.dp))
+                                Column {
+                                    Text(
+                                        text = favouritePerson.username,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = Color.Black,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Spacer(Modifier.height(2.dp))
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = ImageVector.vectorResource(R.drawable.id_card_svg),
+                                            contentDescription = "ID",
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                        Text(
+                                            favouritePerson.employeeId,
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                    }
+                                }
+                            }
+                            Spacer(Modifier.width(20.dp))
+                        }
+                        Spacer(Modifier.width(30.dp))
+                        Button(
+                            onClick = {
+                                quickLinksData.value?.let {
+                                    navController.navigate("FavouritesScreen/${liveUserDetails.value.email}")
+                                }
+                            },
+                            modifier = Modifier
+                                .align(Alignment.CenterHorizontally),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFADD8E6)
+                            ),
+                        ) {
+                            Text(
+                                text = "View All",
+                                style = MaterialTheme.typography.titleSmall,
+                                color = Color.Black,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Spacer(Modifier.width(10.dp))
+                    } else {
+                        Column(
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            Text(
+                                text = "No Data Found",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
                     }
                 }
             }
@@ -799,7 +869,6 @@ fun HomeScreen(
                 modifier = Modifier
                     .clip(shape = RoundedCornerShape(15.dp))
                     .fillMaxWidth(0.8f)
-                    .height(310.dp)
                     .background(Color.White)
                     .padding(10.dp)
             ) {
@@ -884,9 +953,7 @@ fun HomeScreen(
                 modifier = Modifier
                     .clip(shape = RoundedCornerShape(15.dp))
                     .fillMaxWidth(0.8f)
-                    .height(250.dp)
                     .background(Color.White)
-//                                .verticalScroll(rememberScrollState())
                     .padding(10.dp)
             ) {
                 Row(
@@ -973,7 +1040,6 @@ fun HomeScreen(
                 modifier = Modifier
                     .clip(shape = RoundedCornerShape(15.dp))
                     .fillMaxWidth(0.8f)
-                    .height(310.dp)
                     .background(Color.White)
                     .padding(10.dp)
             ) {
@@ -1075,6 +1141,7 @@ fun HomeScreen(
 
 }
 
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun SignInStatus(
     viewModel: MainScreenViewModel
@@ -1108,35 +1175,69 @@ fun SignInStatus(
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (userSignInStatus.value == "Checked-In") {
-                Text(
-                    text = "$hours",
+                Box(
                     modifier = Modifier
                         .background(Color(0xFFFFD6D7))
                         .padding(10.dp),
-                    style = MaterialTheme.typography.titleLarge,
-                )
+                ) {
+                    AnimatedContent(
+                        targetState = hours,
+                        transitionSpec = {
+                            slideInVertically(animationSpec = tween(durationMillis = 1000)) { height -> height } + fadeIn() togetherWith
+                                    slideOutVertically(animationSpec = tween(durationMillis = 1000)) { height -> -height } + fadeOut()
+                        }
+                    ) { targetHours ->
+                        Text(
+                            text = String.format(Locale.getDefault(),"%02d", targetHours),
+                            style = MaterialTheme.typography.titleLarge,
+                        )
+                    }
+                }
                 Text(
                     text = " : ",
                     fontWeight = FontWeight.Bold
                 )
-                Text(
-                    text = "$minutes",
+                Box(
                     modifier = Modifier
                         .background(Color(0xFFFFD6D7))
                         .padding(10.dp),
-                    style = MaterialTheme.typography.titleLarge,
-                )
+                ) {
+                    AnimatedContent(
+                        targetState = minutes,
+                        transitionSpec = {
+                            slideInVertically(animationSpec = tween(durationMillis = 1000)) { height -> height } + fadeIn() togetherWith
+                                    slideOutVertically(animationSpec = tween(durationMillis = 1000)) { height -> -height } + fadeOut()
+                        }
+                    ) { targetMinutes ->
+                        Text(
+                            text = String.format(Locale.getDefault(),"%02d", targetMinutes),
+                            style = MaterialTheme.typography.titleLarge,
+                        )
+                    }
+                }
                 Text(
                     text = " : ",
                     fontWeight = FontWeight.Bold
                 )
-                Text(
-                    text = "$seconds",
+                Box(
                     modifier = Modifier
                         .background(Color(0xFFFFD6D7))
                         .padding(10.dp),
-                    style = MaterialTheme.typography.titleLarge,
-                )
+                ) {
+                    AnimatedContent(
+                        targetState = seconds,
+                        transitionSpec = {
+                            slideInVertically(animationSpec = tween(durationMillis = 1000)) { height -> height } + fadeIn() togetherWith
+                                    slideOutVertically(animationSpec = tween(durationMillis = 1000)) { height -> -height } + fadeOut()
+                        }
+                    ) { targetSeconds ->
+                        Text(
+                            text = String.format(Locale.getDefault(),"%02d", targetSeconds),
+                            style = MaterialTheme.typography.titleLarge,
+                        )
+                    }
+                }
+
             } else {
                 Text(
                     text = totalHrsIntPart,
@@ -1426,7 +1527,7 @@ fun UserProfileImage(imageUrl: String) {
                 .crossfade(true)
                 .build(),
             contentDescription = null,
-            placeholder = rememberVectorPainter(Icons.Filled.AccountCircle),
+            placeholder = rememberVectorPainter(ImageVector.vectorResource(R.drawable.account_placeholder)),
             contentScale = ContentScale.Crop,
             modifier = Modifier
                 .size(45.dp)

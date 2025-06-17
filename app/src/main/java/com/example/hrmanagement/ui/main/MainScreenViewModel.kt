@@ -46,6 +46,8 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
     private var _userAttendanceData: MutableStateFlow<AttendanceData> =
         MutableStateFlow(AttendanceData())
     val userAttendanceData = _userAttendanceData.asStateFlow()
+    private var _favouritesLimitedData: MutableStateFlow<QuerySnapshot?> = MutableStateFlow(null)
+    val favouritesLimitedData = _favouritesLimitedData.asStateFlow()
     private var _quickLinksLimitedData: MutableStateFlow<QuerySnapshot?> = MutableStateFlow(null)
     val quickLinksLimitedData = _quickLinksLimitedData.asStateFlow()
     private var _announcementsLimitedData: MutableStateFlow<QuerySnapshot?> = MutableStateFlow(null)
@@ -66,11 +68,12 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
         }
         calendarYear = Calendar.getInstance().get(Calendar.YEAR);
         fetchUserDetails()
-        fetchUserSignInStatus()
-        fetchLimitedQuickLinks()
-        fetchLimitedAnnouncements()
-        getLeaveTrackerDetails()
-        getHolidayDetails()
+//        fetchUserSignInStatus()
+//        fetchLimitedQuickLinks()
+//        fetchLimitedAnnouncements()
+//        getLeaveTrackerDetails()
+//        getHolidayDetails()
+//        fetchLimitedFavorites()
         if (!userEmailUiState.isNullOrBlank()) {
             appDataManager.listenForUserSignInStatusUpdates(userEmailUiState!!)
         }
@@ -204,6 +207,33 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
             toggleIsViewLoading()
     }
 
+    fun fetchLimitedFavorites() {
+        if (!_isViewLoading.value) {
+            toggleIsViewLoading()
+        }
+        numberOfFeatchProcess++
+        if (userEmailUiState!=null){
+            appDataManager.getFirebaseUserLimitedFavorites(3L, userEmailUiState!!,::updateLimitedFavouritesData)
+        }
+    }
+
+    fun updateLimitedFavouritesData(favouritesData: QuerySnapshot?, response: String) {
+        numberOfFeatchProcess--
+        if (response == "Success") {
+            Log.d("MainScreenViewModel", "updateQuickLinksData called $favouritesData")
+            favouritesData?.count()?.let {
+                if (it > 0) {
+                    _favouritesLimitedData.value = favouritesData
+                }
+            }
+        } else {
+            //handle errors
+            TODO()
+        }
+        if ((isViewLoading.value == true) && (numberOfFeatchProcess == 0))
+            toggleIsViewLoading()
+    }
+
 
     fun fetchLimitedAnnouncements() {
         if (!_isViewLoading.value) {
@@ -316,7 +346,8 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
                     "",
                     "",
                     profileUrl = TODO(),
-                    "Department1"
+                    "Department1",
+                    mapOf()
                 )
             )
         }

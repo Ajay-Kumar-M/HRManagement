@@ -1,6 +1,12 @@
 package com.example.hrmanagement.ui.userinfo
 
+import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.provider.ContactsContract
+import android.util.Log
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -13,6 +19,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -23,6 +30,8 @@ import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MailOutline
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -33,6 +42,7 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -53,6 +63,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat.startActivity
 import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -75,15 +86,26 @@ fun ColleagueInfoScreen(
     modifier: Modifier,
     navController: NavController,
     colleagueEmailId: String,
+    myEmailId: String,
     viewModel: ColleagueInfoScreenViewModel = viewModel()
 ) {
     val departmentDetails = viewModel.liveDepartmentDetails.collectAsStateWithLifecycle()
     val liveColleagueDetails = viewModel.liveColleagueDetails.collectAsStateWithLifecycle()
+    val liveUserFavoriteDetails = viewModel.liveUserFavoriteDetails.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val tabs = listOf("Profile", "Team")
     var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
     val isViewLoading = viewModel.isViewLoading.collectAsStateWithLifecycle()
     val lifecycleOwner = LocalLifecycleOwner.current
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { /* Handle result if needed */ }
+
+    LaunchedEffect(viewModel) {
+        viewModel.toastEvent.collect { message ->
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        }
+    }
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -126,7 +148,8 @@ fun ColleagueInfoScreen(
                             model = liveColleagueDetails.value.imageUrl,
                             contentDescription = "Profile Icon",
                             modifier = Modifier.matchParentSize(),
-                            contentScale = ContentScale.FillBounds
+                            contentScale = ContentScale.FillBounds,
+                            placeholder = rememberVectorPainter(ImageVector.vectorResource(R.drawable.account_placeholder))
                         )
                     }
                     IconButton(
@@ -171,6 +194,76 @@ fun ColleagueInfoScreen(
                         Icon(
                             imageVector = Icons.Default.Share,
                             contentDescription = "Share Profile"
+                        )
+                    }
+                    val isFavorite = liveUserFavoriteDetails.value.any { it.email == colleagueEmailId }
+                    IconButton(
+                        onClick = {
+                            if (isFavorite) {
+                                viewModel.removeColleagueFromFavorites()
+                            } else {
+                                viewModel.addColleagueToFavorites()
+                            }
+                        },
+                        colors = IconButtonDefaults.iconButtonColors(
+                            containerColor = Color.White,
+                            contentColor = Color.Black
+                        ),
+                        modifier = Modifier.size(60.dp)
+                            .padding(15.dp)
+                            .align(Alignment.TopEnd)
+                            .offset(y=40.dp)
+                    ) {
+                        if (isFavorite){
+                            Icon(
+                                imageVector = ImageVector.vectorResource(R.drawable.star_filled),
+                                contentDescription = "Favorite",
+                                tint = Color.Unspecified,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        } else {
+                            Icon(
+                                imageVector = ImageVector.vectorResource(R.drawable.star_outlined),
+                                contentDescription = "Not Favorite",
+                                tint = Color.Unspecified,
+                                modifier = Modifier.size(30.dp)
+                            )
+                        }
+                    }
+                    IconButton(
+                        onClick = {
+                            val intent = Intent(Intent.ACTION_INSERT).apply {
+                                type = ContactsContract.RawContacts.CONTENT_TYPE
+                                putExtra(ContactsContract.Intents.Insert.NAME, liveColleagueDetails.value.username)
+                                putExtra(ContactsContract.Intents.Insert.PHONE, liveColleagueDetails.value.mobileNumber)
+                                putExtra(ContactsContract.Intents.Insert.EMAIL, liveColleagueDetails.value.email)
+                                putExtra(ContactsContract.Intents.Insert.COMPANY, liveColleagueDetails.value.departmentName)
+                            }
+                            val packageManager = context.packageManager
+                            if (intent.resolveActivity(packageManager) != null) {
+                                context.startActivity(intent)
+                            } else {
+                                Toast.makeText(context, "No contacts app found.", Toast.LENGTH_SHORT).show()
+                                val intent = Intent(Intent.ACTION_VIEW).apply {
+                                    data = ContactsContract.Contacts.CONTENT_URI
+                                }
+                                context.startActivity(intent)
+                            }
+                        },
+                        colors = IconButtonDefaults.iconButtonColors(
+                            containerColor = Color.White,
+                            contentColor = Color.Black
+                        ),
+                        modifier = Modifier.size(60.dp)
+                            .padding(15.dp)
+                            .align(Alignment.TopEnd)
+                            .offset(y=80.dp)
+                    ) {
+                        Icon(
+                            imageVector = ImageVector.vectorResource(R.drawable.add_contact_person),
+                            contentDescription = "Add to contacts",
+                            tint = Color.Unspecified,
+                            modifier = Modifier.size(20.dp)
                         )
                     }
 //                    Text(
@@ -412,7 +505,7 @@ fun ColleagueInfoScreen(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clickable {
-                                            navController.navigate("ColleagueInfoScreen/${liveColleagueDetails.value.reportingTo.getValue("emailId")}")
+                                            navController.navigate("ColleagueInfoScreen/${liveColleagueDetails.value.reportingTo.getValue("emailId")}/$myEmailId")
                                         },
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
@@ -489,7 +582,7 @@ fun ColleagueInfoScreen(
                                         modifier = Modifier.clickable{
                                             val userJson = Json.encodeToString(person)
                                             val encodedUserJson = URLEncoder.encode(userJson, StandardCharsets.UTF_8.toString())
-                                            navController.navigate("ColleagueInfoScreen/${encodedUserJson}")
+                                            navController.navigate("ColleagueInfoScreen/${teamMemberInfo.email}/$myEmailId")
                                         }
                                     ) {
                                         UserProfileImage(teamMemberInfo.imageUrl)

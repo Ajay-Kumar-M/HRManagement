@@ -17,6 +17,15 @@ data class UserLoginData(
     val reportingTo: Map<String,String> = mapOf()
 )
 
+@Serializable
+data class FavoritePerson(
+    val username: String = "",
+    val email: String = "",
+    val imageUrl: String = "",
+    val employeeId: String = "",
+    val favoriteBy: String = ""
+)
+
 /*
     companion object {
         fun from(map: MutableMap<String, String>) = UserLoginData(

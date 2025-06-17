@@ -162,7 +162,8 @@ fun UserInfoScreen(
                                 model = userImageUri.value,
                                 contentDescription = "Profile Icon",
                                 modifier = Modifier.matchParentSize(),
-                                contentScale = ContentScale.FillBounds
+                                contentScale = ContentScale.FillBounds,
+                                placeholder = rememberVectorPainter(ImageVector.vectorResource(R.drawable.account_placeholder))
                             )
                         }
                         IconButton(
@@ -1393,6 +1394,7 @@ fun TeamComposable(
     navController: NavController
 ){
     val departmentDetails = viewModel.liveDepartmentDetails.collectAsStateWithLifecycle()
+    val userLoginData = viewModel.userLoginData.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
@@ -1424,7 +1426,7 @@ fun TeamComposable(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable {
-                        navController.navigate("ColleagueInfoScreen/${teamMemberInfo.email}")
+                        navController.navigate("ColleagueInfoScreen/${teamMemberInfo.email}/${userLoginData.value.email}")
                     },
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -1593,7 +1595,7 @@ fun ProfileComposable(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable {
-                    navController.navigate("ColleagueInfoScreen/${userLoginData.reportingTo.getValue("emailId")}")
+                    navController.navigate("ColleagueInfoScreen/${userLoginData.reportingTo.getValue("emailId")}/${userLoginData.email}")
                 },
             verticalAlignment = Alignment.CenterVertically
         ) {

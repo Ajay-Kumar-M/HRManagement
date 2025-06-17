@@ -275,7 +275,7 @@ fun ColleaguesGridView(
                             if (userData.email == emailId) {
                                 navController.navigate("UserInfoScreen/${emailId}")
                             } else {
-                                navController.navigate("ColleagueInfoScreen/${emailId}")
+                                navController.navigate("ColleagueInfoScreen/${emailId}/${userData.email}")
                             }
                         }
                 ) {
@@ -293,7 +293,7 @@ fun ColleaguesGridView(
                                 .crossfade(true)
                                 .build(),
                             contentDescription = null,
-                            placeholder = rememberVectorPainter(Icons.Filled.AccountCircle),
+                            placeholder = rememberVectorPainter(ImageVector.vectorResource(R.drawable.account_placeholder)),
                             contentScale = ContentScale.Crop,
                             modifier = Modifier.matchParentSize()
                         )
@@ -330,7 +330,7 @@ fun ColleaguesGridView(
                             if (userData.email == emailId) {
                                 navController.navigate("UserInfoScreen/${emailId}")
                             } else {
-                                navController.navigate("ColleagueInfoScreen/${emailId}")
+                                navController.navigate("ColleagueInfoScreen/${emailId}/${userData.email}")
                             }
                         }
                 ) {

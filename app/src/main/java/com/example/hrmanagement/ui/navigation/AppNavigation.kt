@@ -24,6 +24,7 @@ import com.example.hrmanagement.ui.userinfo.ColleagueInfoScreen
 import com.example.hrmanagement.ui.leave.LeaveDetailsScreen
 import com.example.hrmanagement.ui.leave.LeaveRegularisationScreen
 import com.example.hrmanagement.ui.leave.LeaveReportScreen
+import com.example.hrmanagement.ui.main.FavouritesScreen
 import com.example.hrmanagement.ui.main.NotificationScreen
 import com.example.hrmanagement.ui.main.StatusScreen
 import com.example.hrmanagement.ui.services.AttendanceComposableView
@@ -77,13 +78,27 @@ fun AppNavigation(modifier: Modifier = Modifier) {
             }
         }
 
+        composable(
+            route = "FavouritesScreen/{userEmailId}",
+            arguments = listOf(navArgument("userEmailId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val userEmailId = backStackEntry.arguments?.getString("userEmailId")
+            if (userEmailId != null) {
+                FavouritesScreen(modifier, navController, userEmailId)
+            }
+        }
+
         composable (
-            route = "ColleagueInfoScreen/{personEmailId}",
-            arguments = listOf(navArgument("personEmailId") { type = NavType.StringType })
+            route = "ColleagueInfoScreen/{colleagueEmailId}/{myEmailId}",
+            arguments = listOf(
+                navArgument("colleagueEmailId") { type = NavType.StringType },
+                navArgument("myEmailId") { type = NavType.StringType }
+                )
         ){ backStackEntry ->
-            val person = backStackEntry.arguments?.getString("personEmailId")
-            if (person != null) {
-                ColleagueInfoScreen(modifier,navController,person)
+            val colleagueEmailId = backStackEntry.arguments?.getString("colleagueEmailId")
+            val myEmailId = backStackEntry.arguments?.getString("myEmailId")
+            if ((colleagueEmailId != null)&&(myEmailId != null)) {
+                ColleagueInfoScreen(modifier,navController,colleagueEmailId,myEmailId)
             }
         }
 

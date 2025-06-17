@@ -150,7 +150,7 @@ fun MainScreen(
     val isViewLoading = viewModel.isViewLoading.collectAsStateWithLifecycle()
     val liveUserDetails: State<UserLoginData> =
         viewModel.liveUserDetails.collectAsStateWithLifecycle()
-    var selectedItem by rememberSaveable { mutableIntStateOf(3) }
+    var selectedItem by rememberSaveable { mutableIntStateOf(1) }
     val tabItems = listOf("Services", "Home", "", "Requests", "More")
     val selectedIcons = listOf(
         ImageVector.vectorResource(id = R.drawable.apps),
@@ -1128,7 +1128,7 @@ fun HomeScreen(
                     text = AnnotatedString("Show Snackbar"),
                     onClick = {
                         //viewModel.toggleIsViewLoading()
-//                        viewModel.addUserToDB()
+                        viewModel.addUserToDB()
 //                            viewModel.logoutCurrentUser()
                         scope.launch {
                             snackbarHostState.showSnackbar("Custom Snackbar!")

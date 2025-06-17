@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
 import com.example.hrmanagement.data.AttendanceData
+import com.example.hrmanagement.data.LeaveData
 import com.example.hrmanagement.data.LeaveTrackerData
 import com.example.hrmanagement.ui.userinfo.getPropertyValue
 import com.google.firebase.firestore.QuerySnapshot
@@ -53,6 +54,7 @@ class ApplyCompOffViewModel(
     val toastEvent = _toastEvent.asSharedFlow()
     var startTimeTimestamp = 0L
     var endTimeTimestamp = 0L
+    var lastLeaveId: Int? = null
 
     init {
         year = Calendar.getInstance().get(Calendar.YEAR)
@@ -66,6 +68,24 @@ class ApplyCompOffViewModel(
         }
         _workDate.value = startOfTheDay.timeInMillis
         onWorkDateSelected(_workDate.value)
+        fetchLastLeaveId()
+    }
+
+    fun fetchLastLeaveId(){
+        if (!_isViewLoading.value) {
+            toggleIsViewLoading()
+        }
+        numberOfFeatchProcess++
+        appDataManager.fetchLastLeaveId(personEmailId){ id, status ->
+            if (status == "Success") {
+                lastLeaveId = id
+            } else {
+            }
+            numberOfFeatchProcess--
+            if ((isViewLoading.value==true)&&(numberOfFeatchProcess==0)) {
+                toggleIsViewLoading()
+            }
+        }
     }
 
     fun updateAttendanceDetails(attendanceData: QuerySnapshot?,response: String){
@@ -79,65 +99,93 @@ class ApplyCompOffViewModel(
             //handle errors
             TODO()
         }
-        if ((isViewLoading.value==true)&&(numberOfFeatchProcess==0))
+        if ((isViewLoading.value==true)&&(numberOfFeatchProcess==0)) {
             toggleIsViewLoading()
-    }
-
-    fun addAnnualLeaveDataResponseListener(response: String){
-        if(response == "Success"){
-            Log.d("ApplyCompOffViewModel","addAnnualLeaveDataResponseListener record added $response")
-            clearAllUiFields()
-            if (isViewLoading.value==true) {
-                toggleIsViewLoading()
-            }
-            triggerToast("Record Created")
-        } else {
-            //handle errors
-            if (isViewLoading.value==true) {
-                toggleIsViewLoading()
-            }
-            triggerToast("Error occurred. Try again!")
         }
     }
 
+    fun addAnnualLeaveDataResponseListener(response: String){
+        numberOfFeatchProcess
+        if(response == "Success"){
+            Log.d("ApplyCompOffViewModel","addAnnualLeaveDataResponseListener record added $response")
+            clearAllUiFields()
+            triggerToast("Record Created")
+        } else {
+            //handle errors
+            triggerToast("Error occurred. Try again!")
+        }
+        if ((isViewLoading.value == true) && (numberOfFeatchProcess == 0))
+            toggleIsViewLoading()
+    }
+
     fun addAnnualLeaveData() {
-        toggleIsViewLoading()
+        if (!_isViewLoading.value) {
+            toggleIsViewLoading()
+        }
+        numberOfFeatchProcess++
+        val calendar = Calendar.getInstance()
+        calendar.timeInMillis = workDate.value
+        year = calendar.get(Calendar.YEAR)
         appDataManager.getFirebaseLeaveTrackerData(year, personEmailId,::processLeaveRequest)
     }
 
     fun processLeaveRequest(responseLeaveTrackerData: LeaveTrackerData, response: String) {
-        if (response=="Success"){
+        if ((response=="Success")&&(lastLeaveId!=null)){
             val workSelectedDate = SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault()).format(Date(workDate.value))?: ""
             val dateOfRequest = SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault()).format(Date(Calendar.getInstance().timeInMillis))?: ""
             val employeeId = responseLeaveTrackerData.employeeID
-            responseLeaveTrackerData.lastLeaveId = responseLeaveTrackerData.lastLeaveId+1
-            responseLeaveTrackerData.annualLeaveData.put(
-                "${employeeId}_${responseLeaveTrackerData.lastLeaveId}",
-                mapOf(
-                    Pair("Leave ID","${responseLeaveTrackerData.lastLeaveId}"),
-                    Pair("Leave Type","Comp Off"),
-                    Pair("Number Of Days","1"),
-                    Pair("Start Date",workSelectedDate),
-                    Pair("End Date",workSelectedDate),
-                    Pair("Status","Pending"),
-                    Pair("Email",responseLeaveTrackerData.emailId),
-                    Pair("Employee ID","$employeeId"),
-                    Pair("Employee Name",responseLeaveTrackerData.annualLeaveData.values.first().getValue("Employee Name")),
-                    Pair("Team Email Id",responseLeaveTrackerData.annualLeaveData.values.first().getValue("Team Email Id")),
-                    Pair("Date Of Request",dateOfRequest),
-                    Pair("Reason For Leave", leaveReason.value),
-                    Pair("Duration", durationTypeSelected.value),
-                    Pair("Unit", unitOptionSelected.value),
-                    Pair("Duration Hour", timeDurationHr.value.toString()),
-                    Pair("Duration Minute", timeDurationMin.value.toString()),
-                    Pair("Start Time Hour", startTimeData.value.first.toString()),
-                    Pair("Start Time Minute", startTimeData.value.second.toString()),
-                    Pair("End Time Hour", endTimeData.value.first.toString()),
-                    Pair("End Time Minute", endTimeData.value.second.toString()),
-                    Pair("Expiry", "31-DEC-$year")
-                )
+            lastLeaveId = lastLeaveId?.plus(1)
+            responseLeaveTrackerData.lastLeaveId = lastLeaveId!!
+//            responseLeaveTrackerData.annualLeaveData.put(
+//                "${employeeId}_${responseLeaveTrackerData.lastLeaveId}",
+//                mapOf(
+//                    Pair("Leave ID","${responseLeaveTrackerData.lastLeaveId}"),
+//                    Pair("Leave Type","Comp Off"),
+//                    Pair("Number Of Days","1"),
+//                    Pair("Start Date",workSelectedDate),
+//                    Pair("End Date",workSelectedDate),
+//                    Pair("Status","Pending"),
+//                    Pair("Email",responseLeaveTrackerData.emailId),
+//                    Pair("Employee ID","$employeeId"),
+//                    Pair("Employee Name",responseLeaveTrackerData.annualLeaveData.values.first().getValue("Employee Name")),
+//                    Pair("Team Email Id",responseLeaveTrackerData.annualLeaveData.values.first().getValue("Team Email Id")),
+//                    Pair("Date Of Request",dateOfRequest),
+//                    Pair("Reason For Leave", leaveReason.value),
+//                    Pair("Duration", durationTypeSelected.value),
+//                    Pair("Unit", unitOptionSelected.value),
+//                    Pair("Duration Hour", timeDurationHr.value.toString()),
+//                    Pair("Duration Minute", timeDurationMin.value.toString()),
+//                    Pair("Start Time Hour", startTimeData.value.first.toString()),
+//                    Pair("Start Time Minute", startTimeData.value.second.toString()),
+//                    Pair("End Time Hour", endTimeData.value.first.toString()),
+//                    Pair("End Time Minute", endTimeData.value.second.toString()),
+//                    Pair("Expiry", "31-DEC-$year")
+//                )
+//            )
+            val leaveData = LeaveData(
+                lastLeaveId!!,
+                "Comp Off",
+                1,
+                workDate.value,
+                workDate.value,
+                "Pending",
+                responseLeaveTrackerData.emailId,
+                "$employeeId",
+                responseLeaveTrackerData.username,
+                responseLeaveTrackerData.teamEmailId,
+                Calendar.getInstance().timeInMillis,
+                leaveReason.value,
+                durationTypeSelected.value,timeDurationHr.value,timeDurationMin.value,
+                startTimeData.value.first,startTimeData.value.second,endTimeData.value.first,endTimeData.value.second,
+                "31-DEC-$year",unitOptionSelected.value,
+                year,
+                workSelectedDate,
+                workSelectedDate,
+                dateOfRequest,
+                mapOf()
             )
-            appDataManager.addLeaveTrackerData(responseLeaveTrackerData, year, ::addAnnualLeaveDataResponseListener)
+//            appDataManager.addLeaveLogTemp(leaveData)
+            appDataManager.addLeaveTrackerData(responseLeaveTrackerData, year, leaveData, ::addAnnualLeaveDataResponseListener)
         } else {
             triggerToast("Error fetching Users Info! Try again")
             Log.d("ApplyCompOffViewModel","Error fetching Users Info! Try again")

@@ -1187,6 +1187,7 @@ fun LeaveTrackerComposable(
     viewModel: LeaveTrackerViewModel = viewModel()
 ){
     val isViewLoading = viewModel.isViewLoading.collectAsStateWithLifecycle()
+    val leaveRequests = viewModel.leaveRequests.collectAsStateWithLifecycle()
     val calendarYear = viewModel.calendarYear.collectAsStateWithLifecycle()
     val leaveTypes = listOf("Casual Leave", "Sick Leave", "On Duty", "Optional Holidays", "Comp Off")
     val leaveTypeIcons: Map<String, ImageVector> = mapOf(
@@ -1215,6 +1216,7 @@ fun LeaveTrackerComposable(
             when (event) {
                 Lifecycle.Event.ON_START -> {
                     viewModel.getLeaveTrackerDetails()
+                    viewModel.getLeaveRequests()
 //                    viewModel.getGoals()
 //                    viewModel.getAttendanceDetails()
                 }
@@ -1254,6 +1256,7 @@ fun LeaveTrackerComposable(
                     onClick = {
                         viewModel.decrementCalendarYear()
                         viewModel.getLeaveTrackerDetails()
+                        viewModel.getLeaveRequests()
                     },
                     colors = IconButtonDefaults.iconButtonColors(
                         containerColor = Color.White,
@@ -1278,6 +1281,7 @@ fun LeaveTrackerComposable(
                     onClick = {
                         viewModel.incrementCalendarYear()
                         viewModel.getLeaveTrackerDetails()
+                        viewModel.getLeaveRequests()
                     },
                     colors = IconButtonDefaults.iconButtonColors(
                         containerColor = Color.White,
@@ -1352,31 +1356,31 @@ fun LeaveTrackerComposable(
                 }
             }
             Spacer(modifier = Modifier.height(20.dp))
-            leaveTrackerData.value.annualLeaveData.forEach { allLeaves ->
+            leaveRequests.value.forEach { leaveRequest ->
                 Column(
                     modifier = Modifier
                         .background(Color.White)
                         .padding(20.dp)
                         .fillMaxWidth()
                         .clickable {
-                            val userJson = Json.encodeToString(allLeaves.value)
+                            val userJson = Json.encodeToString(leaveRequest)
                             val encodedUserJson =
                                 URLEncoder.encode(userJson, StandardCharsets.UTF_8.toString())
                             navController.navigate("LeaveDetailsScreen/${encodedUserJson}")
                         }
                 ) {
                     Text(
-                        "${allLeaves.value.getValue("Leave Type")} - ${allLeaves.value.getValue("Number Of Days")} Day(s)",
+                        "${leaveRequest.leaveType} - ${leaveRequest.numberOfDays} Day(s)",
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.padding(5.dp)
                     )
                     Text(
-                        "${allLeaves.value.getValue("Start Date")} To ${allLeaves.value.getValue("End Date")}",
+                        "${leaveRequest.fromDateString} To ${leaveRequest.toDateString}",
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.padding(5.dp)
                     )
                     Text(
-                        allLeaves.value.getValue("Status"),
+                        leaveRequest.status,
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.padding(5.dp)
                     )

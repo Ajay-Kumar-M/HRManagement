@@ -24,14 +24,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.hrmanagement.data.LeaveData
 import com.example.hrmanagement.ui.userinfo.UserInfoScreenViewModel
 
 @Composable
 fun LeaveDetailsScreen(
     modifier: Modifier,
     navController: NavController,
-    leaveData: Map<String,String>,
-    viewModel: UserInfoScreenViewModel = viewModel()
+    leaveData: LeaveData,
+    viewModel: LeaveDetailsViewModel = viewModel()
 ) {
 
     Scaffold(
@@ -73,56 +74,56 @@ fun LeaveDetailsScreen(
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(20.dp,15.dp,5.dp,2.dp)
             )
-            Text("${leaveData.getValue("Employee ID")} - ${leaveData.getValue("Email")} - ${leaveData.getValue("Employee Name")}",
-                style = MaterialTheme.typography.bodyMedium,
+            Text("${leaveData.employeeId} - ${leaveData.emailId} - ${leaveData.employeeName}",
+                style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(20.dp,2.dp,5.dp,15.dp)
             )
             Text("Leave Type",
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(20.dp,15.dp,5.dp,2.dp)
             )
-            Text(leaveData.getValue("Leave Type"),
-                style = MaterialTheme.typography.bodyMedium,
+            Text(leaveData.leaveType,
+                style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(20.dp,2.dp,5.dp,15.dp)
             )
             Text("Date",
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(20.dp,15.dp,5.dp,2.dp)
             )
-            Text("${leaveData.getValue("Start Date")} - ${leaveData.getValue("End Date")}",
-                style = MaterialTheme.typography.bodyMedium,
+            Text("${leaveData.fromDateString} - ${leaveData.toDateString}",
+                style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(20.dp,2.dp,5.dp,15.dp)
             )
             Text("Total Day(s)",
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(20.dp,15.dp,5.dp,2.dp)
             )
-            Text("${leaveData.getValue("Number Of Days")} Day(s)",
-                style = MaterialTheme.typography.bodyMedium,
+            Text("${leaveData.numberOfDays} Day(s)",
+                style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(20.dp,2.dp,5.dp,15.dp)
             )
             Text("Team Email ID",
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(20.dp,15.dp,5.dp,2.dp)
             )
-            Text(leaveData.getValue("Team Email Id"),
-                style = MaterialTheme.typography.bodyMedium,
+            Text(leaveData.teamMailId,
+                style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(20.dp,2.dp,5.dp,15.dp)
             )
             Text("Date Of Request",
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(20.dp,15.dp,5.dp,2.dp)
             )
-            Text(leaveData.getValue("Date Of Request"),
-                style = MaterialTheme.typography.bodyMedium,
+            Text(leaveData.dateOfRequestString,
+                style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(20.dp,2.dp,5.dp,15.dp)
             )
             Text("Reason for leave",
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(20.dp,15.dp,5.dp,2.dp)
             )
-            Text(leaveData.getValue("Reason For Leave"),
-                style = MaterialTheme.typography.bodyMedium,
+            Text(leaveData.reasonForLeave,
+                style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(20.dp,2.dp,5.dp,15.dp)
             )
         }

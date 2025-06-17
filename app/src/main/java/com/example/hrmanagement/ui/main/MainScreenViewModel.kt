@@ -13,6 +13,7 @@ import com.example.hrmanagement.data.AttendanceData
 import com.example.hrmanagement.data.CommentsData
 import com.example.hrmanagement.data.DepartmentInfo
 import com.example.hrmanagement.data.GoogleAuth
+import com.example.hrmanagement.data.LeaveData
 import com.example.hrmanagement.data.LeaveTrackerData
 import com.example.hrmanagement.data.LikeData
 import com.example.hrmanagement.data.LinkData
@@ -68,12 +69,12 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
         }
         calendarYear = Calendar.getInstance().get(Calendar.YEAR);
         fetchUserDetails()
-//        fetchUserSignInStatus()
-//        fetchLimitedQuickLinks()
-//        fetchLimitedAnnouncements()
-//        getLeaveTrackerDetails()
-//        getHolidayDetails()
-//        fetchLimitedFavorites()
+        fetchUserSignInStatus()
+        fetchLimitedQuickLinks()
+        fetchLimitedAnnouncements()
+        getLeaveTrackerDetails()
+        getHolidayDetails()
+        fetchLimitedFavorites()
         if (!userEmailUiState.isNullOrBlank()) {
             appDataManager.listenForUserSignInStatusUpdates(userEmailUiState!!)
         }
@@ -314,17 +315,119 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
     }
 
     fun addUserToDB() {
-        appDataManager.addNotificationDataTemp(NotificationData(
-            4,
-            "Ajay Kumar M has posted in Town Hall",
-            "Ajay Kumar M has posted in Town Hall",
-            Calendar.getInstance().timeInMillis,
-            "ajay.kumar0495@gmail.com",
-            "Ajay Kumar M",
-            "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c",
-            "Active",
-            0
-        ))
+//        for (i in 1..2) {
+            appDataManager.addLeaveLogTemp(LeaveData(
+                1,
+                "Casual Leave",
+                1,
+                1579737600000,
+                1579737600000,
+                "Approved",
+                "ajay.kumar0495@gmail.com",
+                "1001",
+                "Ajay Kumar M",
+                "team@gmail.com",
+                1579478400000,
+                "Casual Leave",
+                "",0,0,
+                0,0,0,0,
+                "",
+                "",
+                2020
+            ))
+            appDataManager.addLeaveLogTemp(LeaveData(
+                2,
+                "Sick Leave",
+                2,
+                1740268800000,
+                1740355200000,
+                "Approved",
+                "ajay.kumar0495@gmail.com",
+                "1001",
+                "Ajay Kumar M",
+                "team@gmail.com",
+                1740009600000,
+                "Sick Leave",
+                "",0,0,
+                0,0,0,0,
+                "",
+                "",
+                2020
+            ))
+            appDataManager.addLeaveLogTemp(LeaveData(
+                3,
+                "On Duty",
+                1,
+                1742688000000,
+                1742688000000,
+                "Approved",
+                "ajay.kumar0495@gmail.com",
+                "1001",
+                "Ajay Kumar M",
+                "team@gmail.com",
+                1742428800000,
+                "On Duty",
+                "",0,0,
+                0,0,0,0,
+                "",
+                "",
+                2020
+            ))
+            appDataManager.addLeaveLogTemp(LeaveData(
+                4,
+                "Optional Holiday",
+                1,
+                1745366400000,
+                1745366400000,
+                "Approved",
+                "ajay.kumar0495@gmail.com",
+                "1001",
+                "Ajay Kumar M",
+                "team@gmail.com",
+                1745193600000,
+                "Optional Holiday",
+                "",0,0,
+                0,0,0,0,
+                "",
+                "",
+                2020
+            ))
+            appDataManager.addLeaveLogTemp(LeaveData(
+                5,
+                "Comp Off",
+                1,
+                1748131200000,
+                1748131200000,
+                "Approved",
+                "ajay.kumar0495@gmail.com",
+                "1001",
+                "Ajay Kumar M",
+                "team@gmail.com",
+                1747785600000,
+                "Comp Off",
+                "Full Day",
+                0,0,
+                10,30,18,30,
+                "31 Dec 2020",
+                "Days",
+                2020
+            ))
+
+
+//        }
+
+
+//        appDataManager.addNotificationDataTemp(NotificationData(
+//            4,
+//            "Ajay Kumar M has posted in Town Hall",
+//            "Ajay Kumar M has posted in Town Hall",
+//            Calendar.getInstance().timeInMillis,
+//            "ajay.kumar0495@gmail.com",
+//            "Ajay Kumar M",
+//            "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c",
+//            "Active",
+//            0
+//        ))
     }
 
     fun logoutCurrentUser() {

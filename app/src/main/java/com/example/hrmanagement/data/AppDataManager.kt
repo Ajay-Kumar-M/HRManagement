@@ -4,8 +4,11 @@ import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.google.firebase.Firebase
+import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.DocumentChange
+import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
@@ -331,6 +334,7 @@ class AppDataManager {
     fun addLeaveTrackerData(
         leaveTrackerData: LeaveTrackerData,
         year: Int,
+        leaveData: LeaveData,
         returnResponse: (String) -> Unit
     ) {
         val usersCollection = firestoreDB.collection("leavetrackers")
@@ -347,6 +351,22 @@ class AppDataManager {
                 Log.w(TAG, "Error adding document", e)
                 returnResponse("Failure")
             }
+        firestoreDB.runBatch { batch ->
+            val leaveTrackerDocumentRef = firestoreDB.collection("leavetrackers").document("${leaveTrackerData.emailId}$year")
+            batch.set(leaveTrackerDocumentRef,leaveTrackerData)
+
+            val leaveDataDocumentRef = firestoreDB.collection("leavelogs").document(leaveTrackerData.emailId)
+            batch.update(leaveDataDocumentRef, "lastLeaveId", leaveData.leaveId)
+
+            val leaveRequestDocumentRef = firestoreDB.collection("leavelogs").document(leaveTrackerData.emailId).collection("leaveRequests").document("${leaveData.leaveId}")
+            batch.set(leaveRequestDocumentRef,leaveData)
+        }.addOnSuccessListener {
+            Log.d(TAG, "leave details added/updated with ID: ${leaveData.leaveId}")
+            returnResponse("Success")
+        }.addOnFailureListener { e ->
+            Log.w(TAG, "Error adding goal", e)
+            returnResponse("Failure")
+        }
     }
 
     fun addLeaveTrackerDataTemp(leaveTrackerData: LeaveTrackerData, year: Int) {
@@ -364,6 +384,64 @@ class AppDataManager {
             }
     }
 
+    fun fetchLastLeaveId(emailId: String, response: (Int?, String) -> Unit){
+        val docRef = firestoreDB.collection("leavelogs").document(emailId)
+        docRef.get()
+            .addOnSuccessListener { documentSnap ->
+                if (documentSnap != null) {
+                    Log.d(TAG, "fetchLastLeaveId temp data ${documentSnap}")
+                    response(documentSnap.getLong("lastLeaveId")?.toInt(), "Success")
+                } else {
+                    Log.d(TAG, "No such document")
+                    response(null, "No such document")
+                }
+            }
+            .addOnFailureListener { exception ->
+                Log.d(TAG, "get failed with ", exception)
+                response(null, "Error Exception $exception")
+            }
+    }
+
+    fun fetchLeaveLogs(year: Int, emailId: String, response: (QuerySnapshot?,String) -> Unit) {
+        if (year == 0) {
+            Log.d(TAG, "fetchLeaveLogs data3 - $year")
+            val leaveRequestsCollectionRef = firestoreDB.collection("leavelogs").document(emailId).collection("leaveRequests")
+            leaveRequestsCollectionRef.get()
+                .addOnSuccessListener { querySnap ->
+                    if (querySnap != null) {
+                        Log.d(TAG, "fetchLeaveLogs data ${querySnap.size()}")
+                        response(querySnap, "Success")
+                    } else {
+                        Log.d(TAG, "No such document")
+                        response(null, "No such document")
+                    }
+                }
+                .addOnFailureListener { exception ->
+                    Log.d(TAG, "get failed with ", exception)
+                    response(null, "Error Exception $exception")
+                }
+        } else {
+            Log.d(TAG, "fetchLeaveLogs data1=2 - $year")
+            val leaveRequestsCollectionRef = firestoreDB.collection("leavelogs").document(emailId).collection("leaveRequests")
+            leaveRequestsCollectionRef.orderBy("year",Query.Direction.DESCENDING)
+                .whereEqualTo("year",year)
+                .get()
+                .addOnSuccessListener { querySnap ->
+                    if (querySnap != null) {
+                        Log.d(TAG, "fetchLeaveLogs data ${querySnap.size()}")
+                        response(querySnap, "Success")
+                    } else {
+                        Log.d(TAG, "No such document")
+                        response(null, "No such document")
+                    }
+                }
+                .addOnFailureListener { exception ->
+                    Log.d(TAG, "get failed with ", exception)
+                    response(null, "Error Exception $exception")
+                }
+        }
+    }
+
     fun getFirebaseLeaveTrackerData(
         year: Int,
         emailId: String,
@@ -376,7 +454,7 @@ class AppDataManager {
                 if (document != null) {
                     resultData = document.toObject(LeaveTrackerData::class.java)
                     resultData?.let {
-                        Log.d(TAG, "getFirebaseDepartment temp data $it")
+                        Log.d(TAG, "getFirebaseLeaveTrackerData temp data $it")
                         successResponse(it, "Success")
                     }
                 } else {
@@ -387,6 +465,45 @@ class AppDataManager {
             .addOnFailureListener { exception ->
                 Log.d(TAG, "get failed with ", exception)
                 successResponse(resultData ?: LeaveTrackerData(), "Error Exception $exception")
+            }
+    }
+
+    fun getAttendanceRegularizationData(emailId: String, successResponse: (QuerySnapshot?, String) -> Unit) {
+        val attendanceCollectionReference = firestoreDB.collection("attendance").document(emailId).collection("attendanceRegularisationLogs")
+        attendanceCollectionReference.get()
+            .addOnSuccessListener { querySnapshot ->
+                if (querySnapshot != null) {
+                    Log.d(TAG, "getAttendanceRegularizationData data ${querySnapshot.size()}")
+                    successResponse(querySnapshot, "Success")
+                } else {
+                    Log.d(TAG, "getAllFirebaseUsers No such document")
+                    successResponse(null, "getAllFirebaseUsers No such document")
+                }
+            }
+            .addOnFailureListener { exception ->
+                Log.d(TAG, "get failed with ", exception)
+                successResponse(null, "Error Exception $exception")
+            }
+    }
+
+    fun getLeaveRequestData(
+        emailId: String,
+        successResponse: (QuerySnapshot?, String) -> Unit
+    ) {
+        val endPrefix = emailId + '\uf8ff'
+        firestoreDB.collection("leavetrackers")
+//            .orderBy("yearValue",Query.Direction.DESCENDING) //(FieldPath.documentId())
+            .orderBy(FieldPath.documentId()) //, Query.Direction.DESCENDING)
+            .startAt(emailId)
+            .endAt(endPrefix)
+            .get()
+            .addOnSuccessListener { result ->
+                Log.d(TAG, "getLeaveRequestData temp data ${result.size()}")
+                successResponse(result, "Success")
+            }
+            .addOnFailureListener { exception ->
+                Log.d(TAG, "get failed with ", exception)
+                successResponse(null, "Error Exception $exception")
             }
     }
 
@@ -726,6 +843,21 @@ class AppDataManager {
             }
     }
 
+    fun addLeaveLogTemp(leavelog: LeaveData) {
+        val document =
+            firestoreDB.collection("leavelogs").document("ajay.kumar0495@gmail.com").collection("leaveRequests").document("${leavelog.leaveId}")
+        document.set(leavelog)
+            .addOnSuccessListener {
+                Log.d(
+                    TAG,
+                    "DocumentSnapshot added/updated with ID: ${leavelog.leaveId}"
+                )
+            }
+            .addOnFailureListener { e ->
+                Log.w(TAG, "Error adding document", e)
+            }
+    }
+
     fun addAnnouncementTemp(announcementList: AnnouncementList) {
         val announcementsCollection =
             firestoreDB.collection("announcements").document("organization1")
@@ -837,5 +969,10 @@ class AppDataManager {
 //                reutrnResponse(operationStatus)
 //            }
 //    }
+
+.orderBy("yearValue",Query.Direction.DESCENDING) //(FieldPath.documentId())
+            .orderBy(FieldPath.documentId())
+            .startAt(2000,emailId)
+            .endAt(2026,endPrefix)
 
  */

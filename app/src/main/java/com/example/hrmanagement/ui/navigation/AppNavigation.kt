@@ -8,6 +8,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.hrmanagement.Service.MyApplication
+import com.example.hrmanagement.data.LeaveData
 import com.example.hrmanagement.data.LeaveTrackerData
 import com.example.hrmanagement.data.UserLoginData
 import com.example.hrmanagement.ui.announcement.AnnouncementDetailScreen
@@ -109,7 +110,7 @@ fun AppNavigation(modifier: Modifier = Modifier) {
             val encodedPersonJson = backStackEntry.arguments?.getString("leaveData")
             val leaveData = encodedPersonJson?.let {
                 val decodedJson = URLDecoder.decode(it, StandardCharsets.UTF_8.toString())
-                Json.decodeFromString<Map<String,String>>(decodedJson)
+                Json.decodeFromString<LeaveData>(decodedJson)
             }
             if (leaveData != null) {
                 LeaveDetailsScreen(modifier,navController,leaveData)

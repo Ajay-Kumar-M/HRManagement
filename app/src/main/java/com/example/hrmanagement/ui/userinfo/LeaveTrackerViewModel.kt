@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
 import com.example.hrmanagement.Service.MyApplication.Companion.appPreferenceDataStore
+import com.example.hrmanagement.data.LeaveData
 import com.example.hrmanagement.data.LeaveTrackerData
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,6 +24,8 @@ class LeaveTrackerViewModel: ViewModel() {
     var userEmailId: String? = ""
     private var _liveLeaveTrackerDetails: MutableStateFlow<LeaveTrackerData> = MutableStateFlow(LeaveTrackerData())
     val liveLeaveTrackerDetails = _liveLeaveTrackerDetails.asStateFlow()
+    private var _leaveRequests: MutableStateFlow<List<LeaveData>> = MutableStateFlow(listOf())
+    val leaveRequests = _leaveRequests.asStateFlow()
 //    private val _showBottomSheetLeaveType: MutableStateFlow<String> = MutableStateFlow("")
     var showBottomSheetLeaveType = "" // _showBottomSheetLeaveType.asStateFlow()
 
@@ -54,6 +57,23 @@ class LeaveTrackerViewModel: ViewModel() {
         }
         if ((isViewLoading.value==true)&&(numberOfFeatchProcess==0))
             toggleIsViewLoading()
+    }
+
+    fun getLeaveRequests(){
+        if (isViewLoading.value==false) toggleIsViewLoading()
+        numberOfFeatchProcess++
+        if (userEmailId!=null){
+            appDataManager.fetchLeaveLogs(calendarYear.value,userEmailId!!) { querySnapshot, response ->
+                if (response == "Success") {
+                    _leaveRequests.value = querySnapshot?.toObjects(LeaveData::class.java) ?: listOf()
+                } else {
+
+                }
+                numberOfFeatchProcess--
+                if ((isViewLoading.value==true)&&(numberOfFeatchProcess==0))
+                    toggleIsViewLoading()
+            }
+        }
     }
 
     fun changeShowBottomSheetLeaveType(leaveType: String){

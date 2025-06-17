@@ -135,7 +135,7 @@ fun ApplyCompOffScreen(
                         contentDescription = "Previous Screen"
                     )
                 }
-                Text("AddRecord",
+                Text("Add Record",
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(20.dp,5.dp)
                 )

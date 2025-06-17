@@ -5,6 +5,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
+import com.example.hrmanagement.data.LeaveData
 import com.example.hrmanagement.data.LeaveTrackerData
 import com.example.hrmanagement.ui.userinfo.getPropertyValue
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -42,6 +43,9 @@ class ApplyLeaveViewModel(
         Pair("Optional Holidays","optionalLeaveBalance"),
         Pair("Comp Off","compOffLeaveBalance"))
     var leaveType: String = checkNotNull(savedStateHandle["leaveType"])
+    var personEmailId: String = checkNotNull(savedStateHandle["personEmailId"])
+    var lastLeaveId: Int? = null
+    private var numberOfFeatchProcess: Int = 0
 
     init {
         year = Calendar.getInstance().get(Calendar.YEAR)
@@ -57,27 +61,49 @@ class ApplyLeaveViewModel(
         if (leaveType != "All"){
             onLeaveTypeSelected(leaveType)
         }
+        fetchLastLeaveId()
     }
 
-    fun addAnnualLeaveDataResponseListener(response: String){
-        if(response == "Success"){
-            Log.d("ApplyLeaveViewModel","addAnnualLeaveDataResponseListener record added $response")
-            clearAllUiFields()
-            if (isViewLoading.value==true) {
+    fun fetchLastLeaveId(){
+        if (!_isViewLoading.value) {
+            toggleIsViewLoading()
+        }
+        numberOfFeatchProcess++
+        appDataManager.fetchLastLeaveId(personEmailId){ id, status ->
+            if (status == "Success") {
+                lastLeaveId = id
+            } else {
+
+            }
+            numberOfFeatchProcess--
+            if ((isViewLoading.value==true)&&(numberOfFeatchProcess==0)) {
                 toggleIsViewLoading()
             }
-            triggerToast("Record Created")
-        } else {
-            //handle errors
-            if (isViewLoading.value==true) {
-                toggleIsViewLoading()
-            }
-            triggerToast("Error occurred. Try again!")
         }
     }
 
+    fun addAnnualLeaveDataResponseListener(response: String){
+        numberOfFeatchProcess--
+        if(response == "Success"){
+            Log.d("ApplyLeaveViewModel","addAnnualLeaveDataResponseListener record added $response")
+            clearAllUiFields()
+            triggerToast("Record Created")
+        } else {
+            //handle errors
+            triggerToast("Error occurred. Try again!")
+        }
+        if ((isViewLoading.value == true) && (numberOfFeatchProcess == 0))
+            toggleIsViewLoading()
+    }
+
     fun addAnnualLeaveData(personEmailId: String) {
-        toggleIsViewLoading()
+        if (!_isViewLoading.value) {
+            toggleIsViewLoading()
+        }
+        numberOfFeatchProcess++
+        val calendar = Calendar.getInstance()
+        calendar.timeInMillis = fromDate.value
+        year = calendar.get(Calendar.YEAR)
         appDataManager.getFirebaseLeaveTrackerData(year, personEmailId,::processLeaveRequest)
     }
 
@@ -89,12 +115,13 @@ class ApplyLeaveViewModel(
             responseLeaveTrackerData,
             selectedLeaveTypeDataClass
         ).toString().toInt())-differenceInDays
-        if (processedLeaveDaysRemaining>=0){
+        if ((processedLeaveDaysRemaining>=0)&&(lastLeaveId!=null)){
             val fromSelectedDate = SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault()).format(Date(fromDate.value))?: ""
             val toSelectedDate = SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault()).format(Date(toDate.value))?: ""
             val dateOfRequest = SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault()).format(Date(Calendar.getInstance().timeInMillis))?: ""
             val employeeId = responseLeaveTrackerData.employeeID
-            responseLeaveTrackerData.lastLeaveId = responseLeaveTrackerData.lastLeaveId+1
+            lastLeaveId = lastLeaveId!! +1
+            responseLeaveTrackerData.lastLeaveId = lastLeaveId!!
             when(selectedLeaveTypeDataClass) {
                 "casualLeaveBalance" -> { responseLeaveTrackerData.casualLeaveBalance = processedLeaveDaysRemaining }
                 "sickLeaveBalance" -> { responseLeaveTrackerData.sickLeaveBalance = processedLeaveDaysRemaining }
@@ -102,24 +129,47 @@ class ApplyLeaveViewModel(
                 "optionalLeaveBalance" -> { responseLeaveTrackerData.optionalLeaveBalance = processedLeaveDaysRemaining }
                 "compOffLeaveBalance" -> { responseLeaveTrackerData.compOffLeaveBalance = processedLeaveDaysRemaining }
             }
-            responseLeaveTrackerData.annualLeaveData.put(
-                "${employeeId}_${responseLeaveTrackerData.lastLeaveId}",
-                mapOf(
-                    Pair("Leave ID","${responseLeaveTrackerData.lastLeaveId}"),
-                    Pair("Leave Type",leaveTypeSelected.value),
-                    Pair("Number Of Days","$differenceInDays"),
-                    Pair("Start Date",fromSelectedDate),
-                    Pair("End Date",toSelectedDate),
-                    Pair("Status","Pending"),
-                    Pair("Email",responseLeaveTrackerData.emailId),
-                    Pair("Employee ID","$employeeId"),
-                    Pair("Employee Name",responseLeaveTrackerData.annualLeaveData.values.first().getValue("Employee Name")),
-                    Pair("Team Email Id",responseLeaveTrackerData.annualLeaveData.values.first().getValue("Team Email Id")),
-                    Pair("Date Of Request",dateOfRequest),
-                    Pair("Reason For Leave", leaveReason.value)
-                )
+//            responseLeaveTrackerData.annualLeaveData.put(
+//                "${employeeId}_${responseLeaveTrackerData.lastLeaveId}",
+//                mapOf(
+//                    Pair("Leave ID","${responseLeaveTrackerData.lastLeaveId}"),
+//                    Pair("Leave Type",leaveTypeSelected.value),
+//                    Pair("Number Of Days","$differenceInDays"),
+//                    Pair("Start Date",fromSelectedDate),
+//                    Pair("End Date",toSelectedDate),
+//                    Pair("Status","Pending"),
+//                    Pair("Email",responseLeaveTrackerData.emailId),
+//                    Pair("Employee ID","$employeeId"),
+//                    Pair("Employee Name",responseLeaveTrackerData.annualLeaveData.values.first().getValue("Employee Name")),
+//                    Pair("Team Email Id",responseLeaveTrackerData.annualLeaveData.values.first().getValue("Team Email Id")),
+//                    Pair("Date Of Request",dateOfRequest),
+//                    Pair("Reason For Leave", leaveReason.value)
+//                )
+//            )
+            val leaveData = LeaveData(
+                lastLeaveId!!,
+                leaveTypeSelected.value,
+                differenceInDays,
+                fromDate.value,
+                toDate.value,
+                "Approved",
+                responseLeaveTrackerData.emailId,
+                "$employeeId",
+                responseLeaveTrackerData.username,
+                responseLeaveTrackerData.teamEmailId,
+                Calendar.getInstance().timeInMillis,
+                leaveReason.value,
+                "",0,0,
+                0,0,0,0,
+                "","",
+                year,
+                fromSelectedDate,
+                toSelectedDate,
+                dateOfRequest,
+                mapOf()
             )
-            appDataManager.addLeaveTrackerData(responseLeaveTrackerData, year, ::addAnnualLeaveDataResponseListener)
+//            appDataManager.addLeaveLogTemp(leaveData)
+            appDataManager.addLeaveTrackerData(responseLeaveTrackerData, year, leaveData, ::addAnnualLeaveDataResponseListener)
         } else {
             triggerToast("You don't have enough Balance Days from ${leaveTypeSelected.value}")
             Log.d("ApplyLeaveViewModel","You don't have enough Balance Days from ${leaveTypeSelected.value}")
@@ -157,8 +207,11 @@ class ApplyLeaveViewModel(
     fun clearAllUiFields() {
         onLeaveReasonUpdated("")
         onLeaveTypeSelected("Select Leave Type from Dropdown")
-        onFromDateSelected(Calendar.getInstance().timeInMillis)
-        onToDateSelected(Calendar.getInstance().timeInMillis)
+        val currentTime = Calendar.getInstance().timeInMillis
+        onFromDateSelected(currentTime)
+        onToDateSelected(currentTime)
+        _fromDate.value = currentTime
+        _toDate.value = currentTime
     }
 }
 

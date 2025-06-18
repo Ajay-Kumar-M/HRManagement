@@ -28,6 +28,7 @@ import com.example.hrmanagement.ui.leave.LeaveReportScreen
 import com.example.hrmanagement.ui.main.FavouritesScreen
 import com.example.hrmanagement.ui.main.NotificationScreen
 import com.example.hrmanagement.ui.main.StatusScreen
+import com.example.hrmanagement.ui.more.FeedsScreen
 import com.example.hrmanagement.ui.services.AttendanceComposableView
 import com.example.hrmanagement.ui.services.AttendanceInformationScreen
 import com.example.hrmanagement.ui.services.ColleaguesScreen
@@ -76,6 +77,16 @@ fun AppNavigation(modifier: Modifier = Modifier) {
             val userEmailId = backStackEntry.arguments?.getString("userEmailId")
             if (userEmailId != null) {
                 UserInfoScreen(modifier,navController,userEmailId)
+            }
+        }
+
+        composable(
+            route = "FeedsScreen/{userEmailId}",
+            arguments = listOf(navArgument("userEmailId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val userEmailId = backStackEntry.arguments?.getString("userEmailId")
+            if (userEmailId != null) {
+                FeedsScreen(modifier, navController, userEmailId)
             }
         }
 

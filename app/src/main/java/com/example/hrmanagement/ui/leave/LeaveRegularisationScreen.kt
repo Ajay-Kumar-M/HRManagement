@@ -78,6 +78,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.hrmanagement.component.CircularProgressIndicatorComposable
+import com.example.hrmanagement.component.completeFormatTimestamp
+import com.example.hrmanagement.component.convertToStartOfDayInGMT
+import com.example.hrmanagement.component.dayOfDate
+import com.example.hrmanagement.component.getDateTimeMills
+import com.example.hrmanagement.component.monthNumberToShortName
+import com.example.hrmanagement.component.timestampToLocalDateTime
 import com.example.hrmanagement.data.AttendanceRegularisationData
 import kotlinx.datetime.Month
 import java.text.SimpleDateFormat
@@ -843,80 +849,6 @@ fun DateTimePickerDialog(
             }
         }
     }
-}
-
-//fun normalizeToMidnightUtc(millis: Long): Long {
-//    val instant = Instant.ofEpochMilli(millis)
-//    val date = instant.atZone(ZoneOffset.UTC).toLocalDate()
-//    return date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
-//}
-//
-//fun convertGMTToLocalTime(
-//    gmtTimestamp: Long,
-//    zoneId: ZoneId = ZoneId.systemDefault() // or ZoneId.of("Asia/Kolkata")
-//): ZonedDateTime {
-//    return Instant.ofEpochMilli(gmtTimestamp)
-//        .atZone(ZoneId.of("UTC"))           // Interpret timestamp as GMT
-//        .withZoneSameInstant(zoneId)        // Convert to your zone
-//}
-
-fun timestampToLocalDateTime(timestamp: Long, zoneId: ZoneId = ZoneId.systemDefault()): LocalDateTime {
-    return Instant.ofEpochMilli(timestamp)
-        .atZone(zoneId)
-        .toLocalDateTime()
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-fun getDateTimeMills(
-    datePickerState: DatePickerState,
-    timePickerState: TimePickerState,
-    zoneId: ZoneId = ZoneId.systemDefault()
-): Long? = datePickerState.selectedDateMillis?.let { dateMillis ->
-    val localDate = Instant.ofEpochMilli(dateMillis).atZone(zoneId).toLocalDate()
-    val localTime = LocalTime.of(timePickerState.hour, timePickerState.minute)
-    LocalDateTime.of(localDate, localTime)
-        .atZone(zoneId)
-        .toInstant()
-        .toEpochMilli()
-}
-
-fun convertToStartOfDayInGMT(selectedDateMillis: Long, zoneId: ZoneId = ZoneId.systemDefault()): Long {
-    val localDate = Instant.ofEpochMilli(selectedDateMillis)
-        .atZone(zoneId)
-        .toLocalDate() // Extract just the date (no time)
-    return localDate
-        .atStartOfDay(zoneId) // Set time to 00:00 in local timezone
-        .toInstant()          // Convert to Instant (GMT)
-        .toEpochMilli()       // Get millis
-}
-
-//fun localDateTimeToMillis(dateTime: LocalDateTime, zoneId: ZoneId = ZoneId.systemDefault()): Long {
-//    val zonedDateTime: ZonedDateTime = dateTime.atZone(zoneId)
-//    return zonedDateTime.toInstant().toEpochMilli()
-//}
-
-fun dayOfDate(timestamp: Long): String {
-    val calendar = Calendar.getInstance().apply {
-        timeInMillis = timestamp
-    }
-    val date = calendar.time
-    val dayFormat = SimpleDateFormat("EEE", Locale.getDefault())
-    return dayFormat.format(date)
-}
-
-fun monthNumberToShortName(month: Int): String {
-    return Month.of(month)
-        .getDisplayName(java.time.format.TextStyle.SHORT, Locale.ENGLISH) // "Jan", "Feb", "Mar", ...
-}
-
-fun completeFormatTimestamp(timestamp: Long): String {
-    val sdf = SimpleDateFormat("dd-MMM-yyyy hh:mm a", Locale.ENGLISH)
-    return sdf.format(Date(timestamp))
-}
-
-fun dateFormatTimestamp(timestamp: Long): String {
-    val sdf = SimpleDateFormat("dd-MMM-yyyy", Locale.ENGLISH)
-    return sdf.format(Date(timestamp))
 }
 
 @Composable

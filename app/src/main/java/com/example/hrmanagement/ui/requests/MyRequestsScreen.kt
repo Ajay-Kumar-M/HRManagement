@@ -1,6 +1,5 @@
 package com.example.hrmanagement.ui.requests
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -15,13 +14,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -36,7 +33,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.hrmanagement.component.CircularProgressIndicatorComposable
-import com.example.hrmanagement.data.LeaveData
 import kotlinx.serialization.json.Json
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
@@ -44,7 +40,7 @@ import java.nio.charset.StandardCharsets
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MyRequestsScreen(
-    modifier: PaddingValues,
+    modifierPaddingValues: PaddingValues,
     navController: NavController,
     emailId: String,
     viewModel: MyRequestsViewModel = viewModel()
@@ -76,7 +72,7 @@ fun MyRequestsScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(modifier)
+                    .padding(modifierPaddingValues)
             ) {
                 TabRow(
                     selectedTabIndex = selectedTabIndex,
@@ -138,10 +134,17 @@ fun PendingListScreen(
                     Column(
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(
-                            "Leave - ${leaveData.leaveType}",
-                            style = MaterialTheme.typography.titleSmall,
-                        )
+                        if (leaveData.unit.isNotEmpty()){
+                            Text(
+                                "Leave - ${leaveData.leaveType} Request",
+                                style = MaterialTheme.typography.titleSmall,
+                            )
+                        } else {
+                            Text(
+                                "Leave - ${leaveData.leaveType}",
+                                style = MaterialTheme.typography.titleSmall,
+                            )
+                        }
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             leaveData.dateOfRequestString,

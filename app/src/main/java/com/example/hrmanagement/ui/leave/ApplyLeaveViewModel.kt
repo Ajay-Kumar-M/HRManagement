@@ -149,7 +149,7 @@ class ApplyLeaveViewModel(
             val leaveData = LeaveData(
                 lastLeaveId!!,
                 leaveTypeSelected.value,
-                differenceInDays,
+                differenceInDays.toFloat(),
                 fromDate.value,
                 toDate.value,
                 "Approved",

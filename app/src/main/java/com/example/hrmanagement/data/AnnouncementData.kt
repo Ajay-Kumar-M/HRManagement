@@ -1,5 +1,6 @@
 package com.example.hrmanagement.data
 
+import kotlinx.serialization.Serializable
 import java.util.Calendar
 
 data class AnnouncementList(
@@ -40,6 +41,7 @@ data class AnnouncementData(
     val reporterProfileImageUrl: String = "",
 )
 
+@Serializable
 data class CommentsData(
     val commentId: Int = 0,
     val username: String = "",
@@ -52,6 +54,7 @@ data class CommentsData(
     var lastLikeId: Int = 0
 )
 
+@Serializable
 data class LikeData(
     val username: String = "",
     val emailId: String = "",

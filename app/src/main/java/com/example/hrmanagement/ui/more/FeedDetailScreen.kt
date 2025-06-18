@@ -1,7 +1,8 @@
-package com.example.hrmanagement.ui.services
+package com.example.hrmanagement.ui.more
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,39 +15,57 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.outlined.ThumbUp
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withLink
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.hrmanagement.R
+import com.example.hrmanagement.component.CircularProgressIndicatorComposable
+import com.example.hrmanagement.component.completeFormatTimestamp
+import com.example.hrmanagement.component.truncate
+import com.example.hrmanagement.data.FeedData
+import com.example.hrmanagement.data.LeaveData
+import com.example.hrmanagement.ui.main.UserProfileImage
+import kotlinx.serialization.json.Json
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 
 @Composable
-fun EmployeeInformationScreen(
+fun FeedDetailScreen(
     modifier: Modifier,
     navController: NavController,
-    emailId: String,
-    viewModel: EmployeeInformationViewModel = viewModel()
+    userEmailId: String,
+    feedId: Int,
+    feedType: String,
+    viewModel: FeedDetailViewModel = viewModel()
 ) {
-    val listOfActions: List<Pair<String,String>> = listOf(
-        "Colleagues" to "ColleaguesScreen",
-        "Employee Details" to "EmployeeDetailsScreen",
-    )
 
+    val isViewLoading = viewModel.isViewLoading.collectAsStateWithLifecycle()
     Scaffold(
         modifier = Modifier.padding(5.dp),
         contentWindowInsets = WindowInsets.safeDrawing,
@@ -54,28 +73,22 @@ fun EmployeeInformationScreen(
             Row(
                 modifier = Modifier
                     .statusBarsPadding()
-                    .background(Color.White)
                     .fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
                     onClick = {
                         navController.popBackStack()
                     },
-                    colors = IconButtonDefaults.iconButtonColors(
-                        containerColor = Color.White,
-                        contentColor = Color.Black
-                    ),
                     modifier = Modifier
                         .size(40.dp)
                         .padding(2.dp)
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Next Year"
+                        contentDescription = "Previous screen"
                     )
                 }
-                Text("Employee Information",
+                Text("Feeds",
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(20.dp,5.dp)
                 )
@@ -84,41 +97,28 @@ fun EmployeeInformationScreen(
     ) { innerPadding ->
         Column(
             modifier = Modifier
-                .clip(shape = RoundedCornerShape(15.dp))
                 .fillMaxSize()
-                .background(Color.White)
-                .verticalScroll(rememberScrollState())
                 .padding(innerPadding)
         ) {
-            listOfActions.forEach { action ->
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
-                        .padding(15.dp)
-                        .clickable{
-                            when(action.first) {
-                                "Employee Details","Colleagues" -> {
-                                    navController.navigate("${action.second}/$emailId")
-                                }
-                            }
-                        }
+            if (isViewLoading.value){
+                Column(
+                    modifier = Modifier
+                        .padding(10.dp)
+                        .fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Filled.Star,
-                        contentDescription = "List",
-                        tint = Color.White,
-                        modifier = Modifier.size(30.dp)
-                            .background(Color(0xFFFF7F50),RoundedCornerShape(15.dp))
-                            .padding(5.dp)
-                    )
-                    Spacer(Modifier.width(15.dp))
-                    Text(
-                        action.first,
-//                        fontSize = 18.sp,
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
+                    CircularProgressIndicatorComposable()
                 }
+            } else {
                 Spacer(Modifier.height(10.dp))
+                LazyColumn(
+                    modifier = Modifier
+                        .padding(10.dp)
+                        .fillMaxSize()
+                ) {
+
+                }
             }
         }
         Spacer(Modifier.height(20.dp))

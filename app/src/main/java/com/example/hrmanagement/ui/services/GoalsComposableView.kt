@@ -43,17 +43,12 @@ fun GoalsComposableView(
             Row(
                 modifier = Modifier
                     .statusBarsPadding()
-                    .background(Color.White)
                     .fillMaxWidth(),
             ) {
                 IconButton(
                     onClick = {
                         navController.popBackStack()
                     },
-//                    colors = IconButtonDefaults.iconButtonColors(
-//                        containerColor = Color.White,
-//                        contentColor = Color.Black
-//                    ),
                     modifier = Modifier
                         .size(40.dp)
                         .padding(2.dp)

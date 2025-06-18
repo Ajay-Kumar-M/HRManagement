@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.hrmanagement.Service.MyApplication
 import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
 import com.example.hrmanagement.Service.MyApplication.Companion.appPreferenceDataStore
+import com.example.hrmanagement.component.startOfTheDayInMillis
 import com.example.hrmanagement.data.AnnouncementData
 import com.example.hrmanagement.data.AnnouncementList
 import com.example.hrmanagement.data.AttendanceData
@@ -59,7 +60,7 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
     val isViewLoading = _isViewLoading.asStateFlow()
     private var _addTaskShowBottomSheet: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val addTaskShowBottomSheet = _addTaskShowBottomSheet.asStateFlow()
-    private var numberOfFeatchProcess: Int = 0
+    private var numberOfFetchProcess: Int = 0
     private var calendarYear: Int = 0
 
     init {
@@ -87,14 +88,14 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
         if (!_isViewLoading.value) {
             toggleIsViewLoading()
         }
-        numberOfFeatchProcess++
+        numberOfFetchProcess++
         if (userEmailUiState != null) {
             appDataManager.getFirebaseUser(userEmailUiState!!, ::updateUserDetails)
         }
     }
 
     fun updateUserDetails(userDetails: UserLoginData?, response: String) {
-        numberOfFeatchProcess--
+        numberOfFetchProcess--
         Log.d("MainScreenViewModel", "updateUserDetails called $userDetails")
         if ((response == "Success") && (userDetails != null)) {
             _liveUserDetails.value = userDetails
@@ -105,7 +106,7 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
             //handle errors
             TODO()
         }
-        if ((isViewLoading.value) && (numberOfFeatchProcess == 0)) {
+        if ((isViewLoading.value) && (numberOfFetchProcess == 0)) {
             toggleIsViewLoading()
         }
     }
@@ -121,7 +122,7 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
                 set(Calendar.SECOND, 0)       // Set seconds to 0
                 set(Calendar.MILLISECOND, 0)  // Set milliseconds to 0
             }
-            numberOfFeatchProcess++
+            numberOfFetchProcess++
             appDataManager.addSignInStatus(
                 userEmailUiState!!,
                 calendar.timeInMillis,
@@ -132,7 +133,7 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
     }
 
     fun updateSignInResponse(response: String, error: String) {
-        numberOfFeatchProcess--
+        numberOfFetchProcess--
         if (response == "Success") {
             Log.d("MainScreenViewModel", "updateSignInResponse called $response")
         } else {
@@ -140,26 +141,20 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
             TODO()
         }
         fetchUserSignInStatus()
-        if ((isViewLoading.value == true) && (numberOfFeatchProcess == 0))
+        if ((isViewLoading.value == true) && (numberOfFetchProcess == 0))
             toggleIsViewLoading()
     }
 
     fun fetchUserSignInStatus() {
-        val startOfTheDay = Calendar.getInstance()
-        startOfTheDay.apply {
-            set(Calendar.HOUR_OF_DAY, 0)  // Set hour to midnight
-            set(Calendar.MINUTE, 0)       // Set minutes to 0
-            set(Calendar.SECOND, 0)       // Set seconds to 0
-            set(Calendar.MILLISECOND, 0)  // Set milliseconds to 0
-        }
+        val startOfTheDayInMillis = startOfTheDayInMillis(Calendar.getInstance().timeInMillis)
         if (!userEmailUiState.isNullOrBlank()) {
             if (!_isViewLoading.value) {
                 toggleIsViewLoading()
             }
-            numberOfFeatchProcess++
+            numberOfFetchProcess++
             appDataManager.getFirebaseAttendanceData(
-                startOfTheDay.timeInMillis,
-                startOfTheDay.timeInMillis + 86399990,
+                startOfTheDayInMillis,
+                startOfTheDayInMillis + 86399990,
                 userEmailUiState!!,
                 ::updateAttendanceDetails
             )
@@ -167,7 +162,7 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
     }
 
     fun updateAttendanceDetails(attendanceData: QuerySnapshot?, response: String) {
-        numberOfFeatchProcess--
+        numberOfFetchProcess--
         if (response == "Success") {
             Log.d("UserInfoScreenViewModel", "updateAttendanceDetails called $attendanceData")
             val documentSnapshot = attendanceData?.first()
@@ -178,7 +173,7 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
             //handle errors
             TODO()
         }
-        if ((isViewLoading.value == true) && (numberOfFeatchProcess == 0))
+        if ((isViewLoading.value == true) && (numberOfFetchProcess == 0))
             toggleIsViewLoading()
     }
 
@@ -186,13 +181,13 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
         if (!_isViewLoading.value) {
             toggleIsViewLoading()
         }
-        numberOfFeatchProcess++
+        numberOfFetchProcess++
         appDataManager.getLimitedQuickLinks(3L, ::updateLimitedQuickLinksData)
 
     }
 
     fun updateLimitedQuickLinksData(quickLinksData: QuerySnapshot?, response: String) {
-        numberOfFeatchProcess--
+        numberOfFetchProcess--
         if (response == "Success") {
             Log.d("MainScreenViewModel", "updateQuickLinksData called $quickLinksData")
             quickLinksData?.count()?.let {
@@ -204,7 +199,7 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
             //handle errors
             TODO()
         }
-        if ((isViewLoading.value == true) && (numberOfFeatchProcess == 0))
+        if ((isViewLoading.value == true) && (numberOfFetchProcess == 0))
             toggleIsViewLoading()
     }
 
@@ -212,14 +207,14 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
         if (!_isViewLoading.value) {
             toggleIsViewLoading()
         }
-        numberOfFeatchProcess++
+        numberOfFetchProcess++
         if (userEmailUiState!=null){
             appDataManager.getFirebaseUserLimitedFavorites(3L, userEmailUiState!!,::updateLimitedFavouritesData)
         }
     }
 
     fun updateLimitedFavouritesData(favouritesData: QuerySnapshot?, response: String) {
-        numberOfFeatchProcess--
+        numberOfFetchProcess--
         if (response == "Success") {
             Log.d("MainScreenViewModel", "updateQuickLinksData called $favouritesData")
             favouritesData?.count()?.let {
@@ -231,7 +226,7 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
             //handle errors
             TODO()
         }
-        if ((isViewLoading.value == true) && (numberOfFeatchProcess == 0))
+        if ((isViewLoading.value == true) && (numberOfFetchProcess == 0))
             toggleIsViewLoading()
     }
 
@@ -240,13 +235,13 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
         if (!_isViewLoading.value) {
             toggleIsViewLoading()
         }
-        numberOfFeatchProcess++
+        numberOfFetchProcess++
         appDataManager.getLimitedAnnouncements(3L, ::updateLimitedAnnouncementsData)
 
     }
 
     fun updateLimitedAnnouncementsData(announcementData: QuerySnapshot?, response: String) {
-        numberOfFeatchProcess--
+        numberOfFetchProcess--
         if (response == "Success") {
             Log.d("MainScreenViewModel", "updateQuickLinksData called $announcementData")
             announcementData?.count()?.let {
@@ -258,14 +253,14 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
             //handle errors
             TODO()
         }
-        if ((isViewLoading.value == true) && (numberOfFeatchProcess == 0))
+        if ((isViewLoading.value == true) && (numberOfFetchProcess == 0))
             toggleIsViewLoading()
     }
 
     fun getLeaveTrackerDetails() {
         if ((userEmailUiState != null) && ((userEmailUiState?.isNotBlank()) == true)) {
             if (isViewLoading.value == false) toggleIsViewLoading()
-            numberOfFeatchProcess++
+            numberOfFetchProcess++
             appDataManager.getFirebaseLeaveTrackerData(
                 calendarYear,
                 userEmailUiState!!,
@@ -276,33 +271,33 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
 
     fun updateLeaveTrackerData(leaveTrackerData: LeaveTrackerData?, response: String) {
         Log.d("MainScreenViewModel", "updateLeaveTrackerData called $leaveTrackerData")
-        numberOfFeatchProcess--
+        numberOfFetchProcess--
         if ((response == "Success") && (leaveTrackerData != null)) {
             _liveLeaveTrackerDetails.value = leaveTrackerData
         } else {
             //handle errors
             TODO()
         }
-        if ((isViewLoading.value == true) && (numberOfFeatchProcess == 0))
+        if ((isViewLoading.value == true) && (numberOfFetchProcess == 0))
             toggleIsViewLoading()
     }
 
     fun getHolidayDetails() {
         if (isViewLoading.value == false) toggleIsViewLoading()
-        numberOfFeatchProcess++
+        numberOfFetchProcess++
         appDataManager.getHolidays(::updateHolidayData)
     }
 
     fun updateHolidayData(holidays: QuerySnapshot?, response: String) {
         Log.d("MainScreenViewModel", "updateHolidayData called $holidays")
-        numberOfFeatchProcess--
+        numberOfFetchProcess--
         if ((response == "Success") && (holidays != null)) {
             _holidaysData.value = holidays
         } else {
             //handle errors
             TODO()
         }
-        if ((isViewLoading.value == true) && (numberOfFeatchProcess == 0))
+        if ((isViewLoading.value == true) && (numberOfFetchProcess == 0))
             toggleIsViewLoading()
     }
 
@@ -319,7 +314,7 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
             appDataManager.addLeaveLogTemp(LeaveData(
                 1,
                 "Casual Leave",
-                1,
+                1.0f,
                 1579737600000,
                 1579737600000,
                 "Approved",
@@ -338,7 +333,7 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
             appDataManager.addLeaveLogTemp(LeaveData(
                 2,
                 "Sick Leave",
-                2,
+                2.0f,
                 1740268800000,
                 1740355200000,
                 "Approved",
@@ -357,7 +352,7 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
             appDataManager.addLeaveLogTemp(LeaveData(
                 3,
                 "On Duty",
-                1,
+                1.0f,
                 1742688000000,
                 1742688000000,
                 "Approved",
@@ -376,7 +371,7 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
             appDataManager.addLeaveLogTemp(LeaveData(
                 4,
                 "Optional Holiday",
-                1,
+                1.0f,
                 1745366400000,
                 1745366400000,
                 "Approved",
@@ -395,7 +390,7 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
             appDataManager.addLeaveLogTemp(LeaveData(
                 5,
                 "Comp Off",
-                1,
+                1.0f,
                 1748131200000,
                 1748131200000,
                 "Approved",

@@ -28,7 +28,7 @@ data class LeaveTrackerData (
 data class LeaveData(
     val leaveId: Int = 0,
     val leaveType: String = "",
-    val numberOfDays: Int = 0,
+    val numberOfDays: Float = 0.0f,
     val startDate: Long = 0,
     val endDate: Long = 0,
     val status: String = "",
@@ -51,5 +51,9 @@ data class LeaveData(
     val fromDateString: String = "",
     val toDateString: String = "",
     val dateOfRequestString: String = "",
-    val otherInfo: Map<String,String> = mapOf()
+    val otherInfo: Map<String,String> = mapOf(),
+    val comments: MutableMap<String,CommentsData> = mutableMapOf(),
+    val commentsEnabled: Boolean = true,
+    var lastCommentId: Int = 0,
+    var commentsCount: Int = 0,
 )

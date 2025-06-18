@@ -17,7 +17,7 @@ class MyRequestsViewModel: ViewModel() {
     private var _leaveTrackerDocuments: List<LeaveTrackerData> = listOf()
     private var _isViewLoading: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val isViewLoading = _isViewLoading.asStateFlow()
-    var numberOfFeatchProcess: Int = 0
+    var numberOfFetchProcess: Int = 0
     var userEmail: String?
     private var _pendingLeaveRequests: MutableStateFlow<List<LeaveData>> = MutableStateFlow(listOf())
     val pendingLeaveRequests = _pendingLeaveRequests.asStateFlow()
@@ -42,9 +42,8 @@ class MyRequestsViewModel: ViewModel() {
         if (!_isViewLoading.value) {
             toggleIsViewLoading()
         }
-        numberOfFeatchProcess++
+        numberOfFetchProcess++
         if (userEmail != null) {
-            Log.d("MyRequestsViewModel", "fetchLeaveRequestsData called $userEmail")
             appDataManager.fetchLeaveLogs(0,userEmail!!) { querySnapshot, response ->
                 Log.d("MyRequestsViewModel", "response called $userEmail")
                 if ((response == "Success")&&(querySnapshot!=null)) {
@@ -72,8 +71,8 @@ class MyRequestsViewModel: ViewModel() {
                 } else {
 
                 }
-                numberOfFeatchProcess--
-                if ((isViewLoading.value==true)&&(numberOfFeatchProcess==0))
+                numberOfFetchProcess--
+                if ((isViewLoading.value==true)&&(numberOfFetchProcess==0))
                     toggleIsViewLoading()
             }
         }
@@ -83,7 +82,7 @@ class MyRequestsViewModel: ViewModel() {
         if (!_isViewLoading.value) {
             toggleIsViewLoading()
         }
-        numberOfFeatchProcess++
+        numberOfFetchProcess++
         if (userEmail != null) {
             Log.d("MyRequestsViewModel", "fetchLeaveRequestsData called $userEmail")
             appDataManager.getAttendanceRegularizationData(userEmail!!) { querySnapshot, response ->
@@ -94,8 +93,8 @@ class MyRequestsViewModel: ViewModel() {
                 } else {
 
                 }
-                numberOfFeatchProcess--
-                if ((isViewLoading.value==true)&&(numberOfFeatchProcess==0))
+                numberOfFetchProcess--
+                if ((isViewLoading.value==true)&&(numberOfFetchProcess==0))
                     toggleIsViewLoading()
             }
         }

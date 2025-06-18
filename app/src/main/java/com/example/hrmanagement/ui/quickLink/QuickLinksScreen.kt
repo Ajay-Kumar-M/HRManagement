@@ -79,7 +79,7 @@ fun QuickLinksScreen(
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Next Year"
+                        contentDescription = "Previous screen"
                     )
                 }
                 Text("Leave Details",

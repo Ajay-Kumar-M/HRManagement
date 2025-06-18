@@ -6,11 +6,9 @@ import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
-import androidx.compose.animation.with
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -46,7 +44,6 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.AddCircle
 import androidx.compose.material.icons.outlined.CheckCircle
-import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Notifications
@@ -116,19 +113,18 @@ import coil.request.ImageRequest
 import com.example.hrmanagement.R
 import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
 import com.example.hrmanagement.component.CircularProgressIndicatorComposable
+import com.example.hrmanagement.component.truncate
 import com.example.hrmanagement.data.AnnouncementList
 import com.example.hrmanagement.data.FavoritePerson
 import com.example.hrmanagement.data.HolidayData
 import com.example.hrmanagement.data.LinkData
 import com.example.hrmanagement.data.UserLoginData
+import com.example.hrmanagement.ui.more.MoreScreen
 import com.example.hrmanagement.ui.requests.MyRequestsScreen
 import com.example.hrmanagement.ui.userinfo.getPropertyValue
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.Json
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -150,7 +146,7 @@ fun MainScreen(
     val isViewLoading = viewModel.isViewLoading.collectAsStateWithLifecycle()
     val liveUserDetails: State<UserLoginData> =
         viewModel.liveUserDetails.collectAsStateWithLifecycle()
-    var selectedItem by rememberSaveable { mutableIntStateOf(1) }
+    var selectedItem by rememberSaveable { mutableIntStateOf(4) }
     val tabItems = listOf("Services", "Home", "", "Requests", "More")
     val selectedIcons = listOf(
         ImageVector.vectorResource(id = R.drawable.apps),
@@ -176,7 +172,8 @@ fun MainScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(5.dp, 0.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Row {
                             if (userImageUri.value?.isBlank() == true) {
@@ -370,7 +367,7 @@ fun MainScreen(
                     }
 
                     4 -> {
-
+                        MoreScreen(outerPadding, navController, liveUserDetails.value)
                     }
                 }
             }
@@ -384,6 +381,9 @@ fun handleServiceNavigation(
     userLoginData: UserLoginData
 ) {
     when (service) {
+        "Feeds" -> {
+
+        }
         "Employee Information" -> {
             navController.navigate("EmployeeInformationScreen/${userLoginData.email}")
         }
@@ -425,7 +425,6 @@ fun ServicesScreen(
     navController: NavController,
     userLoginData: UserLoginData
 ) {
-
     val isListView = remember { mutableStateOf(false) }
     val isPullDownRefreshing = remember { mutableStateOf(false) }
     val listOfServices = listOf(
@@ -1533,14 +1532,6 @@ fun UserProfileImage(imageUrl: String) {
                 .size(45.dp)
                 .clip(CircleShape)
         )
-    }
-}
-
-fun String.truncate(maxLength: Int): String {
-    return if (this.length > maxLength) {
-        this.take(maxLength) + "..."
-    } else {
-        this
     }
 }
 

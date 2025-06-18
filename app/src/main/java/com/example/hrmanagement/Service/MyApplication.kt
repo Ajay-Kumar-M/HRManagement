@@ -10,6 +10,8 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.firestore
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.runBlocking
 import java.security.AuthProvider
 
 class MyApplication: Application() {
@@ -21,6 +23,9 @@ class MyApplication: Application() {
         googleAuthenticationService = GoogleAuthenticationService()
         networkMonitor = NetworkStatusMonitor(this).also { it.startMonitor() }
         appDataManager = AppDataManager()
+        runBlocking {
+            appUserEmailId = appPreferenceDataStore.emailFlow.firstOrNull().toString()
+        }
     }
 
     companion object {
@@ -29,5 +34,6 @@ class MyApplication: Application() {
         val apiService = ApiService(client = HttpClient(OkHttp))
         lateinit var networkMonitor: NetworkStatusMonitor
         lateinit var appDataManager: AppDataManager
+        lateinit var appUserEmailId: String
     }
 }

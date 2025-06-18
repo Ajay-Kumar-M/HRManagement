@@ -62,8 +62,8 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.hrmanagement.R
 import com.example.hrmanagement.component.CircularProgressIndicatorComposable
+import com.example.hrmanagement.component.truncate
 import com.example.hrmanagement.ui.main.UserProfileImage
-import com.example.hrmanagement.ui.main.truncate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

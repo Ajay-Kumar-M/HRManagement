@@ -1,5 +1,6 @@
 package com.example.hrmanagement.ui.leave
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -63,8 +64,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.hrmanagement.component.CircularProgressIndicatorComposable
+import com.example.hrmanagement.component.formatTimestampLegacy
+import com.example.hrmanagement.component.isWeekend
+import com.example.hrmanagement.component.startOfTheDayInMillis
 import com.example.hrmanagement.data.LeaveTrackerData
 import java.text.SimpleDateFormat
+import java.time.Instant
+import java.time.ZoneId
+import java.time.ZoneOffset
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
@@ -256,8 +263,10 @@ fun ApplyCompOffScreen(
                             onDismissRequest = {},
                             confirmButton = {
                                 TextButton(onClick = {
-                                    viewModel.onWorkDateSelected(workDatePickerState.selectedDateMillis)
-                                    workShowDatePicker = !workShowDatePicker
+                                    workDatePickerState.selectedDateMillis?.let { it ->
+                                        viewModel.onWorkDateSelected(startOfTheDayInMillis(it))
+                                        workShowDatePicker = !workShowDatePicker
+                                    }
                                 }) {
                                     Text("OK")
                                 }
@@ -314,7 +323,9 @@ fun ApplyCompOffScreen(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceEvenly
                         ) {
-                            Column {
+                            Column(
+                                horizontalAlignment = Alignment.Start
+                            ) {
                                 Text(
                                     "Overtime",
                                     style = MaterialTheme.typography.bodyMedium
@@ -335,7 +346,9 @@ fun ApplyCompOffScreen(
                                     fontWeight = FontWeight.Bold
                                 )
                             }
-                            Column {
+                            Column(
+                                horizontalAlignment = Alignment.Start
+                            ) {
                                 Text(
                                     "Total",
                                     style = MaterialTheme.typography.bodyMedium
@@ -614,15 +627,3 @@ fun ApplyCompOffScreen(
     }
 }
 
-fun formatTimestampLegacy(timestamp: Long): String {
-    val sdf = SimpleDateFormat("hh:mm a", Locale.getDefault())
-    return sdf.format(Date(timestamp))
-}
-
-fun isWeekend(timestamp: Long): Boolean {
-    val calendar = Calendar.getInstance().apply {
-        timeInMillis = timestamp
-    }
-    val dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK)
-    return dayOfWeek == Calendar.SATURDAY || dayOfWeek == Calendar.SUNDAY
-}

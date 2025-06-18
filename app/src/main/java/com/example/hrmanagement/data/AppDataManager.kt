@@ -337,20 +337,6 @@ class AppDataManager {
         leaveData: LeaveData,
         returnResponse: (String) -> Unit
     ) {
-        val usersCollection = firestoreDB.collection("leavetrackers")
-        usersCollection.document("${leaveTrackerData.emailId}$year")
-            .set(leaveTrackerData)
-            .addOnSuccessListener {
-                Log.d(
-                    TAG,
-                    "DocumentSnapshot added/updated with ID: ${leaveTrackerData.emailId}$year"
-                )
-                returnResponse("Success")
-            }
-            .addOnFailureListener { e ->
-                Log.w(TAG, "Error adding document", e)
-                returnResponse("Failure")
-            }
         firestoreDB.runBatch { batch ->
             val leaveTrackerDocumentRef = firestoreDB.collection("leavetrackers").document("${leaveTrackerData.emailId}$year")
             batch.set(leaveTrackerDocumentRef,leaveTrackerData)
@@ -404,7 +390,6 @@ class AppDataManager {
 
     fun fetchLeaveLogs(year: Int, emailId: String, response: (QuerySnapshot?,String) -> Unit) {
         if (year == 0) {
-            Log.d(TAG, "fetchLeaveLogs data3 - $year")
             val leaveRequestsCollectionRef = firestoreDB.collection("leavelogs").document(emailId).collection("leaveRequests")
             leaveRequestsCollectionRef.get()
                 .addOnSuccessListener { querySnap ->
@@ -421,7 +406,6 @@ class AppDataManager {
                     response(null, "Error Exception $exception")
                 }
         } else {
-            Log.d(TAG, "fetchLeaveLogs data1=2 - $year")
             val leaveRequestsCollectionRef = firestoreDB.collection("leavelogs").document(emailId).collection("leaveRequests")
             leaveRequestsCollectionRef.orderBy("year",Query.Direction.DESCENDING)
                 .whereEqualTo("year",year)
@@ -507,13 +491,27 @@ class AppDataManager {
             }
     }
 
+    fun getUserFeeds(
+        emailId: String, responseHandler: (QuerySnapshot?, String) -> Unit
+    ) {
+        val usersCollection = firestoreDB.collection("feeds").document(emailId).collection("userfeeds")
+        usersCollection.get()
+            .addOnSuccessListener { result ->
+                responseHandler(result, "Success")
+            }
+            .addOnFailureListener { exception ->
+                Log.d(TAG, "Error getting goals: ", exception)
+                responseHandler(null, "Failure")
+            }
+    }
+
     fun getFirebaseDepartment(
-        depatmentId: String,
+        departmentId: String,
         responseHandler: (QuerySnapshot?, String) -> Unit
     ) {
         val usersCollection = firestoreDB.collection("users")
         val query = usersCollection
-            .whereEqualTo("departmentName", depatmentId)
+            .whereEqualTo("departmentName", departmentId)
         query.get()
             .addOnSuccessListener { result ->
 //                for (document in result) {

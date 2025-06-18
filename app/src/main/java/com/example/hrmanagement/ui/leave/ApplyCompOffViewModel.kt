@@ -5,6 +5,9 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
+import com.example.hrmanagement.component.formatTimestampLegacy
+import com.example.hrmanagement.component.isWeekend
+import com.example.hrmanagement.component.startOfTheDayInMillis
 import com.example.hrmanagement.data.AttendanceData
 import com.example.hrmanagement.data.LeaveData
 import com.example.hrmanagement.data.LeaveTrackerData
@@ -88,12 +91,12 @@ class ApplyCompOffViewModel(
         }
     }
 
-    fun updateAttendanceDetails(attendanceData: QuerySnapshot?,response: String){
+    fun updateAttendanceDetails(attendanceDataQuerySnap: QuerySnapshot?,response: String){
         numberOfFeatchProcess--
         if(response == "Success"){
-            Log.d("ApplyCompOffViewModel","updateAttendanceDetails called $attendanceData")
-            attendanceData?.first()?.let{ attendanceLog ->
+            attendanceDataQuerySnap?.first()?.let{ attendanceLog ->
                 _attendanceData.value = attendanceLog.toObject(AttendanceData::class.java)
+                Log.d("ApplyCompOffViewModel","updateAttendanceDetails called ${attendanceData.value}")
             }
         } else {
             //handle errors
@@ -105,9 +108,9 @@ class ApplyCompOffViewModel(
     }
 
     fun addAnnualLeaveDataResponseListener(response: String){
-        numberOfFeatchProcess
+        numberOfFeatchProcess--
         if(response == "Success"){
-            Log.d("ApplyCompOffViewModel","addAnnualLeaveDataResponseListener record added $response")
+            Log.d("ApplyCompOffViewModel","addAnnualLeaveDataResponseListener1 record added $response")
             clearAllUiFields()
             triggerToast("Record Created")
         } else {
@@ -136,36 +139,31 @@ class ApplyCompOffViewModel(
             val employeeId = responseLeaveTrackerData.employeeID
             lastLeaveId = lastLeaveId?.plus(1)
             responseLeaveTrackerData.lastLeaveId = lastLeaveId!!
-//            responseLeaveTrackerData.annualLeaveData.put(
-//                "${employeeId}_${responseLeaveTrackerData.lastLeaveId}",
-//                mapOf(
-//                    Pair("Leave ID","${responseLeaveTrackerData.lastLeaveId}"),
-//                    Pair("Leave Type","Comp Off"),
-//                    Pair("Number Of Days","1"),
-//                    Pair("Start Date",workSelectedDate),
-//                    Pair("End Date",workSelectedDate),
-//                    Pair("Status","Pending"),
-//                    Pair("Email",responseLeaveTrackerData.emailId),
-//                    Pair("Employee ID","$employeeId"),
-//                    Pair("Employee Name",responseLeaveTrackerData.annualLeaveData.values.first().getValue("Employee Name")),
-//                    Pair("Team Email Id",responseLeaveTrackerData.annualLeaveData.values.first().getValue("Team Email Id")),
-//                    Pair("Date Of Request",dateOfRequest),
-//                    Pair("Reason For Leave", leaveReason.value),
-//                    Pair("Duration", durationTypeSelected.value),
-//                    Pair("Unit", unitOptionSelected.value),
-//                    Pair("Duration Hour", timeDurationHr.value.toString()),
-//                    Pair("Duration Minute", timeDurationMin.value.toString()),
-//                    Pair("Start Time Hour", startTimeData.value.first.toString()),
-//                    Pair("Start Time Minute", startTimeData.value.second.toString()),
-//                    Pair("End Time Hour", endTimeData.value.first.toString()),
-//                    Pair("End Time Minute", endTimeData.value.second.toString()),
-//                    Pair("Expiry", "31-DEC-$year")
-//                )
-//            )
+            var numberOfDays: Float = 0.0f
+            if (unitOptionSelected.value=="Days"){
+                when(durationTypeSelected.value) {
+                    "Full Day" -> { numberOfDays = 1.0f }
+                    "Half Day" -> { numberOfDays = 0.5f }
+                    "Quarter Day" -> { numberOfDays = 0.25f }
+                }
+            } else {
+                val totalHours = timeDurationHr.value + timeDurationMin.value / 60f
+                val fractionOfDay = totalHours / 24f
+                numberOfDays = String.format(Locale.US, "%.2f", fractionOfDay).toFloat()
+            }
+            val overtime = if (isWeekend(attendanceData.value.date)){
+                "${String.format(Locale.US,"%.2f", attendanceData.value.totalHours)} Hr(s)"
+            } else {
+                if(attendanceData.value.totalHours.minus(9.0)>0.0) {
+                    "${String.format(Locale.US,"%.2f", attendanceData.value.totalHours.minus(9.0))} Hr(s)"
+                } else {
+                    "-"
+                }
+            }
             val leaveData = LeaveData(
                 lastLeaveId!!,
                 "Comp Off",
-                1,
+                numberOfDays,
                 workDate.value,
                 workDate.value,
                 "Pending",
@@ -182,9 +180,13 @@ class ApplyCompOffViewModel(
                 workSelectedDate,
                 workSelectedDate,
                 dateOfRequest,
-                mapOf()
+                mapOf(
+                    "firstIn" to formatTimestampLegacy(attendanceData.value.checkInTime),
+                    "lastOut" to formatTimestampLegacy(attendanceData.value.checkOutTime),
+                    "overtime" to overtime,
+                    "total" to "${String.format(Locale.US,"%.2f", attendanceData.value.totalHours)} Hr(s)",
+                )
             )
-//            appDataManager.addLeaveLogTemp(leaveData)
             appDataManager.addLeaveTrackerData(responseLeaveTrackerData, year, leaveData, ::addAnnualLeaveDataResponseListener)
         } else {
             triggerToast("Error fetching Users Info! Try again")
@@ -207,8 +209,8 @@ class ApplyCompOffViewModel(
         _durationTypeSelected.value = durationType
     }
 
-    fun onLeaveReasonUpdated(updatedleaveReason: String){
-        _leaveReason.value = updatedleaveReason
+    fun onLeaveReasonUpdated(updatedLeaveReason: String){
+        _leaveReason.value = updatedLeaveReason
     }
 
     fun unitOptionChanged(updatedOption: String){
@@ -244,7 +246,7 @@ class ApplyCompOffViewModel(
 
     fun clearAllUiFields() {
         onLeaveReasonUpdated("")
-        onWorkDateSelected(Calendar.getInstance().timeInMillis)
+        onWorkDateSelected(startOfTheDayInMillis(Calendar.getInstance().timeInMillis))
         onDurationTypeSelected("Full Day")
         unitOptionChanged("Days")
         updateTimeDuration(0,0)
@@ -252,3 +254,32 @@ class ApplyCompOffViewModel(
         updateEndTimeDuration(0,0)
     }
 }
+
+/*
+//            responseLeaveTrackerData.annualLeaveData.put(
+//                "${employeeId}_${responseLeaveTrackerData.lastLeaveId}",
+//                mapOf(
+//                    Pair("Leave ID","${responseLeaveTrackerData.lastLeaveId}"),
+//                    Pair("Leave Type","Comp Off"),
+//                    Pair("Number Of Days","1"),
+//                    Pair("Start Date",workSelectedDate),
+//                    Pair("End Date",workSelectedDate),
+//                    Pair("Status","Pending"),
+//                    Pair("Email",responseLeaveTrackerData.emailId),
+//                    Pair("Employee ID","$employeeId"),
+//                    Pair("Employee Name",responseLeaveTrackerData.annualLeaveData.values.first().getValue("Employee Name")),
+//                    Pair("Team Email Id",responseLeaveTrackerData.annualLeaveData.values.first().getValue("Team Email Id")),
+//                    Pair("Date Of Request",dateOfRequest),
+//                    Pair("Reason For Leave", leaveReason.value),
+//                    Pair("Duration", durationTypeSelected.value),
+//                    Pair("Unit", unitOptionSelected.value),
+//                    Pair("Duration Hour", timeDurationHr.value.toString()),
+//                    Pair("Duration Minute", timeDurationMin.value.toString()),
+//                    Pair("Start Time Hour", startTimeData.value.first.toString()),
+//                    Pair("Start Time Minute", startTimeData.value.second.toString()),
+//                    Pair("End Time Hour", endTimeData.value.first.toString()),
+//                    Pair("End Time Minute", endTimeData.value.second.toString()),
+//                    Pair("Expiry", "31-DEC-$year")
+//                )
+//            )
+ */

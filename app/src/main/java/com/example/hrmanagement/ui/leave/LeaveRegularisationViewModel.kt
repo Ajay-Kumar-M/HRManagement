@@ -3,11 +3,9 @@ package com.example.hrmanagement.ui.leave
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
-import com.example.hrmanagement.Service.MyApplication.Companion.appPreferenceDataStore
-import com.example.hrmanagement.data.AttendanceData
+import com.example.hrmanagement.service.MyApplication.Companion.appDataManager
+import com.example.hrmanagement.service.MyApplication.Companion.appPreferenceDataStore
 import com.example.hrmanagement.data.AttendanceRegularisationData
-import com.google.firebase.Timestamp
 import com.google.firebase.firestore.QuerySnapshot
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,14 +17,11 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.text.SimpleDateFormat
 import java.time.LocalDate
-import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.TextStyle
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
-import java.util.TimeZone
-import kotlin.collections.indexOf
 
 class LeaveRegularisationViewModel: ViewModel() {
 

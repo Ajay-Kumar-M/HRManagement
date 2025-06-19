@@ -2,8 +2,8 @@ package com.example.hrmanagement.ui.requests
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
-import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
-import com.example.hrmanagement.Service.MyApplication.Companion.appPreferenceDataStore
+import com.example.hrmanagement.service.MyApplication.Companion.appDataManager
+import com.example.hrmanagement.service.MyApplication.Companion.appPreferenceDataStore
 import com.example.hrmanagement.data.AttendanceRegularisationData
 import com.example.hrmanagement.data.LeaveData
 import com.example.hrmanagement.data.LeaveTrackerData

@@ -3,11 +3,8 @@ package com.example.hrmanagement.ui.userinfo
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
-import com.example.hrmanagement.Service.MyApplication.Companion.appPreferenceDataStore
-import com.example.hrmanagement.data.AttendanceData
-import com.example.hrmanagement.data.DepartmentInfo
-import com.example.hrmanagement.data.LeaveTrackerData
+import com.example.hrmanagement.service.MyApplication.Companion.appDataManager
+import com.example.hrmanagement.service.MyApplication.Companion.appPreferenceDataStore
 import com.example.hrmanagement.data.UserLoginData
 import com.google.firebase.firestore.QuerySnapshot
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,13 +13,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.runBlocking
-import kotlinx.datetime.DayOfWeek
-import java.text.SimpleDateFormat
 import java.time.LocalDate
-import java.time.ZoneId
 import java.time.format.TextStyle
-import java.util.Calendar
-import java.util.Date
 import java.util.Locale
 import kotlin.reflect.full.memberProperties
 

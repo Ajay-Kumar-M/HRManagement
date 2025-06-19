@@ -64,6 +64,7 @@ import com.example.hrmanagement.R
 import com.example.hrmanagement.component.CircularProgressIndicatorComposable
 import com.example.hrmanagement.component.truncate
 import com.example.hrmanagement.ui.main.UserProfileImage
+import javax.annotation.meta.When
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -111,7 +112,7 @@ fun ColleaguesScreen(
                         viewModel.colleagueSearchTextChanged(it)
                     },
                     singleLine = true,
-                    placeholder = { Text("Search Colleagues", fontSize = 14.sp) },
+                    placeholder = { Text("Search ${viewTabs[selectedTabIndex]}", fontSize = 14.sp) },
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Default.Search,
@@ -146,13 +147,14 @@ fun ColleaguesScreen(
             }
         },
         floatingActionButton = {
+            if(selectedTabIndex==1) {
                 FloatingActionButton(
                     onClick = {
                         viewModel.toggleIsViewType()
                     },
                     containerColor = Color(0xFF1976D2)
                 ) {
-                    if(isViewTypeList.value){
+                    if (isViewTypeList.value) {
                         Icon(
                             ImageVector.vectorResource(R.drawable.list),
                             contentDescription = "List",
@@ -166,7 +168,8 @@ fun ColleaguesScreen(
                         )
                     }
                 }
-            },
+            }
+        },
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -203,6 +206,7 @@ fun ColleaguesScreen(
                                     selectedTabIndex = index
                                     when (selectedTabIndex) {
                                         0 -> {
+                                            viewModel.fetchFavorites()
                                         }
                                         1 -> {
                                         }
@@ -216,15 +220,7 @@ fun ColleaguesScreen(
                     }
                     when (selectedTabIndex) {
                         0 -> {
-                            Column(
-                                modifier = Modifier
-                                    .padding(10.dp)
-                                    .fillMaxSize(),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
-                            ) {
-                                Text("No Data Available")
-                            }
+                            FavoritesListView(viewModel,emailId,navController)
                         }
                         1 -> {
                             ColleaguesGridView(viewModel,emailId,navController)
@@ -244,6 +240,59 @@ fun ColleaguesScreen(
                 }
             }
             Spacer(Modifier.height(20.dp))
+        }
+    }
+}
+
+@Composable
+fun FavoritesListView(
+    viewModel: ColleaguesViewModel,
+    emailId: String,
+    navController: NavController
+){
+
+    val favouritesData = viewModel.favouritesData.collectAsStateWithLifecycle()
+
+    if (favouritesData.value.isNotEmpty()) {
+        LazyColumn(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            items(favouritesData.value) { favoriteUserData ->
+                Row(
+                    modifier = Modifier.fillMaxWidth()
+                        .padding(15.dp,10.dp)
+                        .clickable{
+                            if (favoriteUserData.email == emailId) {
+                                navController.navigate("UserInfoScreen/${emailId}")
+                            } else {
+                                navController.navigate("ColleagueInfoScreen/${emailId}/${favoriteUserData.email}")
+                            }
+                        }
+                ) {
+                    UserProfileImage(favoriteUserData.imageUrl)
+                    Spacer(Modifier.width(15.dp))
+                    Column{
+                        Text(
+                            favoriteUserData.username.truncate(15),
+                            fontSize = 12.sp,
+                        )
+                        Text(
+                            favoriteUserData.employeeId,
+                            fontSize = 12.sp,
+                        )
+                    }
+                }
+            }
+        }
+    } else {
+        Column(
+            modifier = Modifier
+                .padding(10.dp)
+                .fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text("No Data Available")
         }
     }
 }

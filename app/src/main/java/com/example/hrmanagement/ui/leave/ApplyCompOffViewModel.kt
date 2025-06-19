@@ -4,14 +4,13 @@ import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
+import com.example.hrmanagement.service.MyApplication.Companion.appDataManager
 import com.example.hrmanagement.component.formatTimestampLegacy
 import com.example.hrmanagement.component.isWeekend
 import com.example.hrmanagement.component.startOfTheDayInMillis
 import com.example.hrmanagement.data.AttendanceData
 import com.example.hrmanagement.data.LeaveData
 import com.example.hrmanagement.data.LeaveTrackerData
-import com.example.hrmanagement.ui.userinfo.getPropertyValue
 import com.google.firebase.firestore.QuerySnapshot
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,7 +21,6 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
-import kotlin.time.Duration.Companion.milliseconds
 
 class ApplyCompOffViewModel(
     savedStateHandle: SavedStateHandle

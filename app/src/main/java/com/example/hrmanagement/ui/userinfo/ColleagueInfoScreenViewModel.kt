@@ -4,7 +4,7 @@ import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
+import com.example.hrmanagement.service.MyApplication.Companion.appDataManager
 import com.example.hrmanagement.data.FavoritePerson
 import com.example.hrmanagement.data.UserLoginData
 import com.google.firebase.firestore.QuerySnapshot

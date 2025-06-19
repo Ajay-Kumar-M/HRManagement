@@ -3,8 +3,8 @@ package com.example.hrmanagement.ui.more
 import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
-import com.example.hrmanagement.Service.MyApplication.Companion.appUserEmailId
+import com.example.hrmanagement.service.MyApplication.Companion.appDataManager
+import com.example.hrmanagement.service.MyApplication.Companion.appUserEmailId
 import com.example.hrmanagement.data.CommentsData
 import com.example.hrmanagement.data.FeedData
 import com.example.hrmanagement.data.LeaveData
@@ -15,7 +15,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import java.util.Calendar
 import kotlin.collections.component1
 import kotlin.collections.component2
-import kotlin.collections.forEach
 
 class FeedDetailViewModel(
     savedStateHandle: SavedStateHandle

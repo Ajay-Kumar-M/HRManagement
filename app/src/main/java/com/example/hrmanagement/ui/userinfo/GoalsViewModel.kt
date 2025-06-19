@@ -2,8 +2,8 @@ package com.example.hrmanagement.ui.userinfo
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
-import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
-import com.example.hrmanagement.Service.MyApplication.Companion.appPreferenceDataStore
+import com.example.hrmanagement.service.MyApplication.Companion.appDataManager
+import com.example.hrmanagement.service.MyApplication.Companion.appPreferenceDataStore
 import com.google.firebase.firestore.QuerySnapshot
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow

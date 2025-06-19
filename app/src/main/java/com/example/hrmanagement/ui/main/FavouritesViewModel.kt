@@ -3,7 +3,7 @@ package com.example.hrmanagement.ui.main
 import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
+import com.example.hrmanagement.service.MyApplication.Companion.appDataManager
 import com.example.hrmanagement.data.FavoritePerson
 import com.google.firebase.firestore.QuerySnapshot
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,7 +17,7 @@ class FavouritesViewModel(
     val favouritesData = _favouritesData.asStateFlow()
     private var _isViewLoading: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val isViewLoading = _isViewLoading.asStateFlow()
-    private var numberOfFeatchProcess: Int = 0
+    private var numberOfFetchProcess: Int = 0
     var userEmailId: String = checkNotNull(savedStateHandle["userEmailId"])
 
     init {
@@ -28,13 +28,13 @@ class FavouritesViewModel(
         if (!_isViewLoading.value) {
             toggleIsViewLoading()
         }
-        numberOfFeatchProcess++
+        numberOfFetchProcess++
         appDataManager.getFirebaseUserFavorites(userEmailId,::updateFavouritesData)
 
     }
 
     fun updateFavouritesData(favouritesData: QuerySnapshot?, response: String) {
-        numberOfFeatchProcess--
+        numberOfFetchProcess--
         if (response == "Success") {
             Log.d("MainScreenViewModel", "updateQuickLinksData called $favouritesData")
             favouritesData?.count()?.let {
@@ -46,7 +46,7 @@ class FavouritesViewModel(
             //handle errors
             TODO()
         }
-        if ((isViewLoading.value == true) && (numberOfFeatchProcess == 0))
+        if ((isViewLoading.value == true) && (numberOfFetchProcess == 0))
             toggleIsViewLoading()
     }
 

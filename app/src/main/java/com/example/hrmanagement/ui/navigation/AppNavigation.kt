@@ -7,10 +7,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.example.hrmanagement.Service.MyApplication
+import com.example.hrmanagement.service.MyApplication
 import com.example.hrmanagement.data.LeaveData
-import com.example.hrmanagement.data.LeaveTrackerData
-import com.example.hrmanagement.data.UserLoginData
 import com.example.hrmanagement.ui.announcement.AnnouncementDetailScreen
 import com.example.hrmanagement.ui.announcement.AnnouncementsFilterScreen
 import com.example.hrmanagement.ui.announcement.AnnouncementsScreen
@@ -41,9 +39,6 @@ import com.example.hrmanagement.ui.services.GoalsComposableView
 import com.example.hrmanagement.ui.services.LeaveTrackerComposableView
 import com.example.hrmanagement.ui.services.LeaveTrackerInformationScreen
 import com.example.hrmanagement.ui.services.PerformanceInformationScreen
-import com.example.hrmanagement.ui.userinfo.AttendanceComposable
-import com.example.hrmanagement.ui.userinfo.GoalsComposable
-import com.example.hrmanagement.ui.userinfo.LeaveTrackerComposable
 import com.example.hrmanagement.ui.userinfo.UserInfoScreen
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.runBlocking

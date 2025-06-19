@@ -1,4 +1,4 @@
-package com.example.hrmanagement.Service
+package com.example.hrmanagement.service
 
 import android.content.Context
 import androidx.credentials.ClearCredentialStateRequest
@@ -6,7 +6,6 @@ import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import com.example.hrmanagement.R
 import com.example.hrmanagement.data.GoogleAuth
-import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.Firebase

@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -36,7 +35,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -82,15 +80,13 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.hrmanagement.R
-import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
+import com.example.hrmanagement.service.MyApplication.Companion.appDataManager
 import com.example.hrmanagement.component.CircularProgressIndicatorComposable
 import com.example.hrmanagement.data.AttendanceData
 import com.example.hrmanagement.data.GoalData
-import com.example.hrmanagement.data.LeaveTrackerData
 import com.example.hrmanagement.data.UserLoginData
 import com.example.hrmanagement.ui.main.UserProfileImage
 import com.google.firebase.firestore.QuerySnapshot
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import java.net.URLEncoder

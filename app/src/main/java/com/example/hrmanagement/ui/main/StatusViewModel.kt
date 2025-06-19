@@ -4,7 +4,7 @@ import android.util.Log
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.ViewModel
-import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
+import com.example.hrmanagement.service.MyApplication.Companion.appDataManager
 import com.example.hrmanagement.data.FeedData
 import com.example.hrmanagement.data.FeedMetadata
 import com.example.hrmanagement.data.UserLoginData

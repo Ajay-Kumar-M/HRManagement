@@ -4,32 +4,21 @@ import android.util.Log
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.hrmanagement.Service.MyApplication
-import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
-import com.example.hrmanagement.Service.MyApplication.Companion.appPreferenceDataStore
-import com.example.hrmanagement.Service.MyApplication.Companion.appUserDetails
-import com.example.hrmanagement.Service.MyApplication.Companion.appUserEmailId
+import com.example.hrmanagement.service.MyApplication.Companion.appDataManager
+import com.example.hrmanagement.service.MyApplication.Companion.appPreferenceDataStore
+import com.example.hrmanagement.service.MyApplication.Companion.appUserDetails
+import com.example.hrmanagement.service.MyApplication.Companion.appUserEmailId
 import com.example.hrmanagement.component.startOfTheDayInMillis
-import com.example.hrmanagement.data.AnnouncementData
-import com.example.hrmanagement.data.AnnouncementList
 import com.example.hrmanagement.data.AttendanceData
-import com.example.hrmanagement.data.CommentsData
-import com.example.hrmanagement.data.DepartmentInfo
-import com.example.hrmanagement.data.GoogleAuth
 import com.example.hrmanagement.data.LeaveData
 import com.example.hrmanagement.data.LeaveTrackerData
-import com.example.hrmanagement.data.LikeData
-import com.example.hrmanagement.data.LinkData
-import com.example.hrmanagement.data.NotificationData
 import com.example.hrmanagement.data.UserLoginData
 import com.google.firebase.firestore.QuerySnapshot
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import java.util.Calendar
 
 class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {

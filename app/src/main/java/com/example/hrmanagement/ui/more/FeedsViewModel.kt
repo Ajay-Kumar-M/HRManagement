@@ -2,8 +2,8 @@ package com.example.hrmanagement.ui.more
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
-import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
-import com.example.hrmanagement.Service.MyApplication.Companion.appUserEmailId
+import com.example.hrmanagement.service.MyApplication.Companion.appDataManager
+import com.example.hrmanagement.service.MyApplication.Companion.appUserEmailId
 import com.example.hrmanagement.data.FeedData
 import com.example.hrmanagement.data.LeaveData
 import com.example.hrmanagement.data.UserLoginData

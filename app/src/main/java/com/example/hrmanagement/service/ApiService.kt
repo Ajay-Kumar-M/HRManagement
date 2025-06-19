@@ -1,4 +1,4 @@
-package com.example.hrmanagement.Service
+package com.example.hrmanagement.service
 
 import io.ktor.client.HttpClient
 

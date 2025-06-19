@@ -53,7 +53,6 @@ import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -72,7 +71,6 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.rememberDrawerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -111,7 +109,7 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.hrmanagement.R
-import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
+import com.example.hrmanagement.service.MyApplication.Companion.appDataManager
 import com.example.hrmanagement.component.CircularProgressIndicatorComposable
 import com.example.hrmanagement.component.truncate
 import com.example.hrmanagement.data.AnnouncementList
@@ -129,7 +127,6 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
@@ -137,11 +134,7 @@ fun MainScreen(
     navController: NavController,
     viewModel: MainScreenViewModel = viewModel()
 ) {
-    val drawerState = rememberDrawerState(DrawerValue.Closed)
-    val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
-    var fabClicks by remember { mutableIntStateOf(0) }
-
     val userImageUri = viewModel.userImageUriUiState.collectAsStateWithLifecycle()
     val isViewLoading = viewModel.isViewLoading.collectAsStateWithLifecycle()
     val liveUserDetails: State<UserLoginData> =
@@ -381,9 +374,6 @@ fun handleServiceNavigation(
     userLoginData: UserLoginData
 ) {
     when (service) {
-        "Feeds" -> {
-
-        }
         "Employee Information" -> {
             navController.navigate("EmployeeInformationScreen/${userLoginData.email}")
         }

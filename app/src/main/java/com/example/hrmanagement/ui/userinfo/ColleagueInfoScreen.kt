@@ -536,7 +536,7 @@ fun ColleagueInfoScreen(
                                 }
                                 Spacer(modifier = Modifier.height(15.dp))
                                 getAllFieldsAndValues(liveColleagueDetails.value).forEach { value ->
-                                    if ((value.first != "token")||(value.first != "reportingTo")) {
+                                    if (!((value.first == "token")||(value.first == "reportingTo"))) {
                                         Text(
                                             value.first,
                                             style = MaterialTheme.typography.bodyMedium
@@ -593,8 +593,9 @@ fun ColleagueInfoScreen(
                                             )
                                             Row {
                                                 Icon(
-                                                    imageVector = Icons.Default.AccountBox,
-                                                    contentDescription = "ID"
+                                                    imageVector = ImageVector.vectorResource(R.drawable.id_card_svg),
+                                                    contentDescription = "ID",
+                                                    modifier = Modifier.size(20.dp)
                                                 )
                                                 Text(
                                                     teamMemberInfo.emp_Id,

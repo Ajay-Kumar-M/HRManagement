@@ -6,6 +6,7 @@ import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import com.example.hrmanagement.R
 import com.example.hrmanagement.data.GoogleAuth
+import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.Firebase
@@ -15,7 +16,7 @@ import kotlinx.coroutines.tasks.await
 
 class GoogleAuthenticationService {
 
-    lateinit var result: CredentialManager
+    lateinit var credentialManager: CredentialManager
 
     suspend fun signIn(context: Context): GoogleAuth? {
 
@@ -28,9 +29,9 @@ class GoogleAuthenticationService {
                 .addCredentialOption(signInWithGoogleOption)
                 .build()
 
-            result = CredentialManager.create(context)
+            credentialManager = CredentialManager.create(context)
 
-            val credResult = result.getCredential(
+            val credResult = credentialManager.getCredential(
                 request = request,
                 context = context
             )
@@ -71,8 +72,8 @@ class GoogleAuthenticationService {
     }
 
     suspend fun logout() {
+        credentialManager.clearCredentialState(ClearCredentialStateRequest())
         Firebase.auth.signOut()
-        //result.clearCredentialState(ClearCredentialStateRequest())
     }
 
     fun getCurrentUser() = Firebase.auth.currentUser

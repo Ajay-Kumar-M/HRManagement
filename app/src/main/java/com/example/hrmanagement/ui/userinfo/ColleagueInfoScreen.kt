@@ -536,7 +536,7 @@ fun ColleagueInfoScreen(
                                 }
                                 Spacer(modifier = Modifier.height(15.dp))
                                 getAllFieldsAndValues(liveColleagueDetails.value).forEach { value ->
-                                    if (value.first != "token") {
+                                    if ((value.first != "token")||(value.first != "reportingTo")) {
                                         Text(
                                             value.first,
                                             style = MaterialTheme.typography.bodyMedium

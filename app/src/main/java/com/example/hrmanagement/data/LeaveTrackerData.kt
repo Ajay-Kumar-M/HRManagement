@@ -52,8 +52,9 @@ data class LeaveData(
     val toDateString: String = "",
     val dateOfRequestString: String = "",
     val otherInfo: Map<String,String> = mapOf(),
+    val imageUrl: String = "",
     val comments: MutableMap<String,CommentsData> = mutableMapOf(),
-    val commentsEnabled: Boolean = true,
+    val isCommentsEnabled: Boolean = true,
     var lastCommentId: Int = 0,
-    var commentsCount: Int = 0,
+    var commentsCount: Int = 0
 )

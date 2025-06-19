@@ -29,7 +29,7 @@ class AnnouncementDetailViewModel(
     private var _isViewLoading: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val isViewLoading = _isViewLoading.asStateFlow()
     val announcementId: Int = checkNotNull(savedStateHandle["announcementId"])
-    private var numberOfFeatchProcess: Int = 0
+    private var numberOfFetchProcess: Int = 0
     var userEmailUiState: String? = ""
     var liveCommentID: Int = 0
 
@@ -44,7 +44,7 @@ class AnnouncementDetailViewModel(
         if (!_isViewLoading.value) {
             toggleIsViewLoading()
         }
-        numberOfFeatchProcess++
+        numberOfFetchProcess++
         appDataManager.getAnnouncementData(announcementId,::updateAnnouncementData)
     }
 
@@ -58,8 +58,8 @@ class AnnouncementDetailViewModel(
             //handle errors
             TODO()
         }
-        numberOfFeatchProcess--
-        if ((isViewLoading.value == true) && (numberOfFeatchProcess == 0))
+        numberOfFetchProcess--
+        if ((isViewLoading.value == true) && (numberOfFetchProcess == 0))
             toggleIsViewLoading()
     }
 
@@ -68,7 +68,7 @@ class AnnouncementDetailViewModel(
             if (!_isViewLoading.value) {
                 toggleIsViewLoading()
             }
-            numberOfFeatchProcess++
+            numberOfFetchProcess++
             if (isAnnouncementLiked) {
                 val currentData = _announcementData.value
                 currentData.likeUsers.remove(currentData.likeUsers.filter { (_, value) -> value.emailId == userEmailUiState }.keys.first())
@@ -81,14 +81,14 @@ class AnnouncementDetailViewModel(
     }
 
     fun modifyLikeDataResponse(response: String){
-        numberOfFeatchProcess--
+        numberOfFetchProcess--
         if(response == "Success"){
             Log.d("AnnouncementDetailViewModel","modifyLikeDataResponse Like data added/removed")
         } else {
             //handle errors
             TODO()
         }
-        if((isViewLoading.value)&&(numberOfFeatchProcess==0)) {
+        if((isViewLoading.value)&&(numberOfFetchProcess==0)) {
             toggleIsViewLoading()
         }
     }
@@ -107,8 +107,8 @@ class AnnouncementDetailViewModel(
             appDataManager.modifyAnnouncementData(currentData,::modifyLikeDataResponse)
         } else {
             //handle errors
-            numberOfFeatchProcess--
-            if((isViewLoading.value)&&(numberOfFeatchProcess==0)) {
+            numberOfFetchProcess--
+            if((isViewLoading.value)&&(numberOfFetchProcess==0)) {
                 toggleIsViewLoading()
             }
         }
@@ -119,13 +119,13 @@ class AnnouncementDetailViewModel(
             if (!_isViewLoading.value) {
                 toggleIsViewLoading()
             }
-            numberOfFeatchProcess++
+            numberOfFetchProcess++
             if (isCommentLiked) {
                 var commentData = _announcementData.value.comments
 //                currentData.likeUsers.remove(currentData.likeUsers.filter { (_, value) -> value.emailId == userEmailUiState }.keys.first())
                 commentData.getValue(commentID.toString()).likeUsers.remove(commentData.getValue(commentID.toString()).likeUsers.filter { (_, value) -> value.emailId == userEmailUiState }.keys.first())
                 commentData.getValue(commentID.toString()).likeCount = commentData.getValue(commentID.toString()).likeCount-1
-                appDataManager.addCommentLikeData(commentData,_announcementData.value.announcementID,::modifyCommentLikeDataResponse)
+                appDataManager.addAnnouncementCommentLikeData(commentData,_announcementData.value.announcementID,::modifyCommentLikeDataResponse)
             } else {
                 liveCommentID = commentID
                 appDataManager.getFirebaseUser(userEmailUiState!!,::addCommentLikeData)
@@ -134,14 +134,14 @@ class AnnouncementDetailViewModel(
     }
 
     fun modifyCommentLikeDataResponse(response: String){
-        numberOfFeatchProcess--
+        numberOfFetchProcess--
         if(response == "Success"){
             Log.d("AnnouncementDetailViewModel","modifyCommentLikeDataResponse Like data added/removed")
         } else {
             //handle errors
             TODO()
         }
-        if((isViewLoading.value)&&(numberOfFeatchProcess==0)) {
+        if((isViewLoading.value)&&(numberOfFetchProcess==0)) {
             toggleIsViewLoading()
         }
     }
@@ -162,11 +162,11 @@ class AnnouncementDetailViewModel(
                 it.lastLikeId = it.lastLikeId + 1
                 it.likeCount = it.likeCount + 1
             }
-            appDataManager.addCommentLikeData(commentData,_announcementData.value.announcementID,::modifyCommentLikeDataResponse)
+            appDataManager.addAnnouncementCommentLikeData(commentData,_announcementData.value.announcementID,::modifyCommentLikeDataResponse)
         } else {
             //handle errors
-            numberOfFeatchProcess--
-            if((isViewLoading.value)&&(numberOfFeatchProcess==0)) {
+            numberOfFetchProcess--
+            if((isViewLoading.value)&&(numberOfFetchProcess==0)) {
                 toggleIsViewLoading()
             }
         }
@@ -178,7 +178,7 @@ class AnnouncementDetailViewModel(
             if (!_isViewLoading.value) {
                 toggleIsViewLoading()
             }
-            numberOfFeatchProcess++
+            numberOfFetchProcess++
             appDataManager.getFirebaseUser(userEmailUiState!!, ::addAnnouncementComment)
         }
     }
@@ -206,15 +206,15 @@ class AnnouncementDetailViewModel(
             appDataManager.modifyAnnouncementData(announcementData,::addCommentDataResponse)
         } else {
             //handle errors
-            numberOfFeatchProcess--
-            if((isViewLoading.value)&&(numberOfFeatchProcess==0)) {
+            numberOfFetchProcess--
+            if((isViewLoading.value)&&(numberOfFetchProcess==0)) {
                 toggleIsViewLoading()
             }
         }
     }
 
     fun addCommentDataResponse(response: String){
-        numberOfFeatchProcess--
+        numberOfFetchProcess--
         if(response == "Success"){
             Log.d("AnnouncementDetailViewModel","addCommentDataResponse comment data added")
         } else {
@@ -222,7 +222,7 @@ class AnnouncementDetailViewModel(
             TODO()
         }
         _announcementComment.value = ""
-        if((isViewLoading.value)&&(numberOfFeatchProcess==0)) {
+        if((isViewLoading.value)&&(numberOfFetchProcess==0)) {
             toggleIsViewLoading()
         }
     }

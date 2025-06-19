@@ -146,7 +146,7 @@ fun MainScreen(
     val isViewLoading = viewModel.isViewLoading.collectAsStateWithLifecycle()
     val liveUserDetails: State<UserLoginData> =
         viewModel.liveUserDetails.collectAsStateWithLifecycle()
-    var selectedItem by rememberSaveable { mutableIntStateOf(4) }
+    var selectedItem by rememberSaveable { mutableIntStateOf(1) }
     val tabItems = listOf("Services", "Home", "", "Requests", "More")
     val selectedIcons = listOf(
         ImageVector.vectorResource(id = R.drawable.apps),
@@ -270,7 +270,7 @@ fun MainScreen(
                             4 -> {
                                 IconButton(
                                     onClick = {
-//                                        navController.navigate("ColleaguesScreen/${liveUserDetails.value.email}")
+                                        navController.navigate("SettingsScreen/${liveUserDetails.value.email}/${liveUserDetails.value.username}")
                                     },
                                     colors = IconButtonDefaults.iconButtonColors(
                                         containerColor = Color(0xFFF2F2F2),

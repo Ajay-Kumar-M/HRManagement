@@ -44,7 +44,7 @@ class MyRequestsViewModel: ViewModel() {
         }
         numberOfFetchProcess++
         if (userEmail != null) {
-            appDataManager.fetchLeaveLogs(0,userEmail!!) { querySnapshot, response ->
+            appDataManager.fetchLeaveLogs(0,userEmail!!,0) { querySnapshot, response, documentSnapshot ->
                 Log.d("MyRequestsViewModel", "response called $userEmail")
                 if ((response == "Success")&&(querySnapshot!=null)) {
                     val tempPendingLeaveRequest: MutableList<LeaveData> = mutableListOf()

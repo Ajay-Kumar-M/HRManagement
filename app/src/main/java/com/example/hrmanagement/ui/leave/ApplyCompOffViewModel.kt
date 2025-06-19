@@ -38,7 +38,7 @@ class ApplyCompOffViewModel(
     val isTimeDialogVisible = _isTimeDialogVisible.asStateFlow()
     private var _isViewLoading: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val isViewLoading = _isViewLoading.asStateFlow()
-    private var numberOfFeatchProcess: Int = 0
+    private var numberOfFetchProcess: Int = 0
     var _workDate: MutableStateFlow<Long> = MutableStateFlow(0)
     val workDate = _workDate.asStateFlow()
     var _leaveReason: MutableStateFlow<String> = MutableStateFlow("")
@@ -78,21 +78,21 @@ class ApplyCompOffViewModel(
         if (!_isViewLoading.value) {
             toggleIsViewLoading()
         }
-        numberOfFeatchProcess++
+        numberOfFetchProcess++
         appDataManager.fetchLastLeaveId(personEmailId){ id, status ->
             if (status == "Success") {
                 lastLeaveId = id
             } else {
             }
-            numberOfFeatchProcess--
-            if ((isViewLoading.value==true)&&(numberOfFeatchProcess==0)) {
+            numberOfFetchProcess--
+            if ((isViewLoading.value==true)&&(numberOfFetchProcess==0)) {
                 toggleIsViewLoading()
             }
         }
     }
 
     fun updateAttendanceDetails(attendanceDataQuerySnap: QuerySnapshot?,response: String){
-        numberOfFeatchProcess--
+        numberOfFetchProcess--
         if(response == "Success"){
             attendanceDataQuerySnap?.first()?.let{ attendanceLog ->
                 _attendanceData.value = attendanceLog.toObject(AttendanceData::class.java)
@@ -102,13 +102,13 @@ class ApplyCompOffViewModel(
             //handle errors
             TODO()
         }
-        if ((isViewLoading.value==true)&&(numberOfFeatchProcess==0)) {
+        if ((isViewLoading.value==true)&&(numberOfFetchProcess==0)) {
             toggleIsViewLoading()
         }
     }
 
     fun addAnnualLeaveDataResponseListener(response: String){
-        numberOfFeatchProcess--
+        numberOfFetchProcess--
         if(response == "Success"){
             Log.d("ApplyCompOffViewModel","addAnnualLeaveDataResponseListener1 record added $response")
             clearAllUiFields()
@@ -117,7 +117,7 @@ class ApplyCompOffViewModel(
             //handle errors
             triggerToast("Error occurred. Try again!")
         }
-        if ((isViewLoading.value == true) && (numberOfFeatchProcess == 0))
+        if ((isViewLoading.value == true) && (numberOfFetchProcess == 0))
             toggleIsViewLoading()
     }
 
@@ -125,7 +125,7 @@ class ApplyCompOffViewModel(
         if (!_isViewLoading.value) {
             toggleIsViewLoading()
         }
-        numberOfFeatchProcess++
+        numberOfFetchProcess++
         val calendar = Calendar.getInstance()
         calendar.timeInMillis = workDate.value
         year = calendar.get(Calendar.YEAR)
@@ -200,7 +200,7 @@ class ApplyCompOffViewModel(
         if (timestamp != null && (personEmailId.isNotBlank() == true)) {
             if (isViewLoading.value==false) toggleIsViewLoading()
             _workDate.value = timestamp
-            numberOfFeatchProcess++
+            numberOfFetchProcess++
             appDataManager.getFirebaseAttendanceData(workDate.value,(workDate.value+86399990),personEmailId,::updateAttendanceDetails)
         }
     }

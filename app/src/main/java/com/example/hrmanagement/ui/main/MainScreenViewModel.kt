@@ -7,6 +7,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.hrmanagement.Service.MyApplication
 import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
 import com.example.hrmanagement.Service.MyApplication.Companion.appPreferenceDataStore
+import com.example.hrmanagement.Service.MyApplication.Companion.appUserDetails
+import com.example.hrmanagement.Service.MyApplication.Companion.appUserEmailId
 import com.example.hrmanagement.component.startOfTheDayInMillis
 import com.example.hrmanagement.data.AnnouncementData
 import com.example.hrmanagement.data.AnnouncementList
@@ -65,9 +67,7 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
 
     init {
         toggleIsViewLoading()
-        runBlocking {
-            userEmailUiState = appPreferenceDataStore.emailFlow.firstOrNull()
-        }
+        userEmailUiState = appUserEmailId
         calendarYear = Calendar.getInstance().get(Calendar.YEAR);
         fetchUserDetails()
         fetchUserSignInStatus()
@@ -99,6 +99,7 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
         Log.d("MainScreenViewModel", "updateUserDetails called $userDetails")
         if ((response == "Success") && (userDetails != null)) {
             _liveUserDetails.value = userDetails
+            appUserDetails = userDetails
 //            viewModelScope.launch {
 //                appPreferenceDataStore.updateUserDetails(UserLoginData.from(userDetails))
 //            }
@@ -423,12 +424,6 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
 //            "Active",
 //            0
 //        ))
-    }
-
-    fun logoutCurrentUser() {
-        viewModelScope.launch {
-            MyApplication.googleAuthenticationService.logout()
-        }
     }
 
     fun tempupdatedb() {

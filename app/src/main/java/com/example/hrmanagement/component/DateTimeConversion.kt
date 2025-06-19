@@ -26,7 +26,6 @@ fun startOfTheDayInMillis(timestamp: Long): Long{
     return calendar.timeInMillis
 }
 
-
 fun formatTimestampLegacy(timestamp: Long): String {
     if (timestamp > 0) {
         val sdf = SimpleDateFormat("hh:mm a", Locale.getDefault())

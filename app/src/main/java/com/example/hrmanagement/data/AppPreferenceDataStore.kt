@@ -34,7 +34,20 @@ class AppPreferenceDataStore(context: Context) {
         val PROFILE_URL = stringPreferencesKey("emp_id")
         val DEPARTMENT_NAME = stringPreferencesKey("department_name")
         val STATUS = stringPreferencesKey("status")
+        val THEME_KEY = stringPreferencesKey("theme_mode")
     }
+
+    suspend fun saveThemeMode(themeMode: AppThemeMode) {
+        appContext.dataStore.edit { preferences ->
+            preferences[THEME_KEY] = themeMode.name
+        }
+    }
+
+    val themeModeFlow: Flow<AppThemeMode> = appContext.dataStore.data
+            .map { preferences ->
+                val modeName = preferences[THEME_KEY] ?: AppThemeMode.SYSTEM.name
+                AppThemeMode.valueOf(modeName)
+            }
 
     val tokenFlow: Flow<String?> = context.dataStore.data
         .catch { exception ->

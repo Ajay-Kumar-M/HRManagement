@@ -14,8 +14,7 @@ import kotlin.collections.forEach
 
 class FeedsViewModel: ViewModel() {
 
-    private var _userLoginData: MutableStateFlow<UserLoginData> = MutableStateFlow(UserLoginData())
-    val userLoginData = _userLoginData.asStateFlow()
+    var userLoginData = UserLoginData()
     private var _viewRecords: MutableStateFlow<TreeMap<Long,Any>> = MutableStateFlow(TreeMap<Long,Any>(compareByDescending { it }))
     val viewRecords = _viewRecords.asStateFlow()
     private var _isViewLoading: MutableStateFlow<Boolean> = MutableStateFlow(false)
@@ -41,7 +40,7 @@ class FeedsViewModel: ViewModel() {
         numberOfFetchProcess--
         Log.d("FeedsViewModel", "updateUserDetails called $userDetails")
         if ((response == "Success") && (userDetails != null)) {
-            _userLoginData.value = userDetails
+            userLoginData = userDetails
 //            viewModelScope.launch {
 //                appPreferenceDataStore.updateUserDetails(UserLoginData.from(userDetails))
 //            }
@@ -59,7 +58,7 @@ class FeedsViewModel: ViewModel() {
             toggleIsViewLoading()
         }
         numberOfFetchProcess++
-        appDataManager.fetchLeaveLogs(2025,userEmail) { querySnapshot, response ->
+        appDataManager.fetchLeaveLogs(2025, userEmail, 0) { querySnapshot, response, documentSnapshot ->
             Log.d("FeedsViewModel", "fetchLeaveRequestsData response called $response")
             if ((response == "Success")&&(querySnapshot!=null)) {
                 querySnapshot.forEach { documentSnapshot ->

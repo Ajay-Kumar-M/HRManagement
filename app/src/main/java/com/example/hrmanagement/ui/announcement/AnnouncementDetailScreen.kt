@@ -391,7 +391,11 @@ fun AnnouncementDetailScreen(
                     )
                     IconButton(
                         onClick = {
-                            navController.popBackStack()
+                            if ((announcementComment.value.isNotBlank()) && (announcementData.value.commentsEnabled == true)) {
+                                viewModel.addAnnouncementCommentTrigger()
+                            } else {
+                                Toast.makeText(context,"Either comments are disabled or comment is empty",Toast.LENGTH_LONG).show()
+                            }
                         }
                     ) {
                         Icon(
@@ -399,13 +403,6 @@ fun AnnouncementDetailScreen(
                             contentDescription = "Add comment",
                             tint = Color.Unspecified,
                             modifier = Modifier.size(25.dp)
-                                .clickable{
-                                    if ((announcementComment.value.isNotBlank()) && (announcementData.value.commentsEnabled == true)) {
-                                        viewModel.addAnnouncementCommentTrigger()
-                                    } else {
-                                        Toast.makeText(context,"Either comments are disabled or comment is empty",Toast.LENGTH_LONG).show()
-                                    }
-                                }
                         )
                     }
                 }

@@ -28,7 +28,10 @@ import com.example.hrmanagement.ui.leave.LeaveReportScreen
 import com.example.hrmanagement.ui.main.FavouritesScreen
 import com.example.hrmanagement.ui.main.NotificationScreen
 import com.example.hrmanagement.ui.main.StatusScreen
+import com.example.hrmanagement.ui.more.FeedDetailScreen
 import com.example.hrmanagement.ui.more.FeedsScreen
+import com.example.hrmanagement.ui.more.SettingsScreen
+import com.example.hrmanagement.ui.more.ThemeChangeScreen
 import com.example.hrmanagement.ui.services.AttendanceComposableView
 import com.example.hrmanagement.ui.services.AttendanceInformationScreen
 import com.example.hrmanagement.ui.services.ColleaguesScreen
@@ -70,6 +73,10 @@ fun AppNavigation(modifier: Modifier = Modifier) {
             MainScreen(modifier,navController)
         }
 
+        composable(route = "ThemeChangeScreen") {
+            ThemeChangeScreen(navController)
+        }
+
         composable(
             route = "UserInfoScreen/{userEmailId}",
             arguments = listOf(navArgument("userEmailId") { type = NavType.StringType })
@@ -77,6 +84,36 @@ fun AppNavigation(modifier: Modifier = Modifier) {
             val userEmailId = backStackEntry.arguments?.getString("userEmailId")
             if (userEmailId != null) {
                 UserInfoScreen(modifier,navController,userEmailId)
+            }
+        }
+
+        composable(
+            route = "SettingsScreen/{userEmailId}/{username}",
+            arguments = listOf(
+                navArgument("userEmailId") { type = NavType.StringType },
+                navArgument("username") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val userEmailId = backStackEntry.arguments?.getString("userEmailId")
+            val username = backStackEntry.arguments?.getString("username")
+            if ((userEmailId != null)&&(username != null)) {
+                SettingsScreen(modifier, navController, userEmailId, username)
+            }
+        }
+
+        composable(
+            route = "FeedDetailScreen/{userEmailId}/{feedId}/{feedType}",
+            arguments = listOf(
+                navArgument("userEmailId") { type = NavType.StringType },
+                navArgument("feedId") { type = NavType.IntType },
+                navArgument("feedType") { type = NavType.StringType },
+            )
+        ) { backStackEntry ->
+            val userEmailId = backStackEntry.arguments?.getString("userEmailId")
+            val feedId = backStackEntry.arguments?.getInt("feedId")
+            val feedType = backStackEntry.arguments?.getString("feedType")
+            if ((userEmailId != null)&&(feedType != null)&&(feedId != null)) {
+                FeedDetailScreen(modifier, navController, userEmailId, feedId, feedType)
             }
         }
 

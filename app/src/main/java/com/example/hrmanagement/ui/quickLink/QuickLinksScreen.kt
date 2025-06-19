@@ -83,7 +83,7 @@ fun QuickLinksScreen(
                     )
                 }
                 Text("Leave Details",
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(20.dp,5.dp)
                 )
             }
@@ -93,7 +93,6 @@ fun QuickLinksScreen(
             modifier = Modifier
                 .clip(shape = RoundedCornerShape(15.dp))
                 .fillMaxSize()
-                .height(250.dp)
                 .background(Color.White)
 //                                .verticalScroll(rememberScrollState())
                 .padding(innerPadding)

@@ -74,7 +74,6 @@ fun FeedsScreen(
 
     val isViewLoading = viewModel.isViewLoading.collectAsStateWithLifecycle()
     val viewRecords = viewModel.viewRecords.collectAsStateWithLifecycle()
-    val userLoginData = viewModel.userLoginData.collectAsStateWithLifecycle()
 
     Scaffold(
         modifier = Modifier.padding(5.dp),
@@ -145,7 +144,7 @@ fun FeedsScreen(
                                             .padding(5.dp)
                                             .background(Color.White,RoundedCornerShape(20.dp))
                                             .clickable{
-
+                                                navController.navigate("FeedDetailScreen/{$userEmailId}/${(record.value as FeedData).feedID}/Status")
                                             }
                                     ) {
                                         Row(
@@ -214,14 +213,14 @@ fun FeedsScreen(
                                             .padding(5.dp)
                                             .background(Color.White,RoundedCornerShape(20.dp))
                                             .clickable{
-
+                                                navController.navigate("FeedDetailScreen/{$userEmailId}/${(record.value as LeaveData).leaveId}/LeaveRequest")
                                             }
                                     ) {
                                         Row(
                                             modifier = Modifier.fillMaxWidth()
                                                 .padding(10.dp)
                                         ) {
-                                            UserProfileImage(userLoginData.value.imageUrl)
+                                            UserProfileImage(viewModel.userLoginData.imageUrl)
                                             Column {
                                                 val annotatedString = buildAnnotatedString {
                                                     append("You have raised an request for ")

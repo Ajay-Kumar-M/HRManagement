@@ -63,7 +63,7 @@ class LeaveTrackerViewModel: ViewModel() {
         if (isViewLoading.value==false) toggleIsViewLoading()
         numberOfFeatchProcess++
         if (userEmailId!=null){
-            appDataManager.fetchLeaveLogs(calendarYear.value,userEmailId!!) { querySnapshot, response ->
+            appDataManager.fetchLeaveLogs(calendarYear.value,userEmailId!!,0) { querySnapshot, response, documentSnapshot ->
                 if (response == "Success") {
                     _leaveRequests.value = querySnapshot?.toObjects(LeaveData::class.java) ?: listOf()
                 } else {

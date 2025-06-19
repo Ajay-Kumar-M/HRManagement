@@ -1,8 +1,12 @@
 package com.example.hrmanagement.Service
 
 import android.app.Application
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
 import com.example.hrmanagement.data.AppDataManager
 import com.example.hrmanagement.data.AppPreferenceDataStore
+import com.example.hrmanagement.data.AppThemeMode
+import com.example.hrmanagement.data.UserLoginData
 import com.example.hrmanagement.misc.NetworkStatusMonitor
 import com.google.firebase.Firebase
 import com.google.firebase.FirebaseApp
@@ -26,14 +30,17 @@ class MyApplication: Application() {
         runBlocking {
             appUserEmailId = appPreferenceDataStore.emailFlow.firstOrNull().toString()
         }
+        themeModeState = mutableStateOf(AppThemeMode.SYSTEM)
     }
 
     companion object {
-        lateinit var appPreferenceDataStore: AppPreferenceDataStore
-        lateinit var googleAuthenticationService: GoogleAuthenticationService
-        val apiService = ApiService(client = HttpClient(OkHttp))
-        lateinit var networkMonitor: NetworkStatusMonitor
-        lateinit var appDataManager: AppDataManager
-        lateinit var appUserEmailId: String
+        internal lateinit var appPreferenceDataStore: AppPreferenceDataStore
+        internal lateinit var googleAuthenticationService: GoogleAuthenticationService
+        internal val apiService = ApiService(client = HttpClient(OkHttp))
+        internal lateinit var networkMonitor: NetworkStatusMonitor
+        internal lateinit var appDataManager: AppDataManager
+        internal lateinit var appUserEmailId: String
+        internal lateinit var appUserDetails: UserLoginData
+        internal lateinit var themeModeState: MutableState<AppThemeMode>
     }
 }

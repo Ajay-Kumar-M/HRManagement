@@ -281,8 +281,8 @@ class AppDataManager {
             }
     }
 
-    fun getUserLastFeedData(emaailId: String, successResponse: (FeedMetadata?, String) -> Unit) {
-        val docRef = firestoreDB.collection("feeds").document(emaailId)
+    fun getUserLastFeedData(emailId: String, successResponse: (FeedMetadata?, String) -> Unit) {
+        val docRef = firestoreDB.collection("feeds").document(emailId)
         docRef.get()
             .addOnSuccessListener { document ->
                 if (document != null) {
@@ -388,24 +388,23 @@ class AppDataManager {
             }
     }
 
-    fun fetchLeaveLogs(year: Int, emailId: String, response: (QuerySnapshot?,String) -> Unit) {
-        if (year == 0) {
-            val leaveRequestsCollectionRef = firestoreDB.collection("leavelogs").document(emailId).collection("leaveRequests")
+    fun fetchLeaveLogs(year: Int, emailId: String, id: Int, response: (QuerySnapshot?, String, DocumentSnapshot?) -> Unit) {
+        if ( id != 0 ) {
+            val leaveRequestsCollectionRef = firestoreDB.collection("leavelogs").document(emailId).collection("leaveRequests").document("$id")
             leaveRequestsCollectionRef.get()
-                .addOnSuccessListener { querySnap ->
-                    if (querySnap != null) {
-                        Log.d(TAG, "fetchLeaveLogs data ${querySnap.size()}")
-                        response(querySnap, "Success")
+                .addOnSuccessListener { documentSnap ->
+                    if (documentSnap != null) {
+                        response(null, "Success", documentSnap)
                     } else {
                         Log.d(TAG, "No such document")
-                        response(null, "No such document")
+                        response(null, "No such document", null)
                     }
                 }
                 .addOnFailureListener { exception ->
                     Log.d(TAG, "get failed with ", exception)
-                    response(null, "Error Exception $exception")
+                    response(null, "Error Exception $exception", null)
                 }
-        } else {
+        } else if (year != 0) {
             val leaveRequestsCollectionRef = firestoreDB.collection("leavelogs").document(emailId).collection("leaveRequests")
             leaveRequestsCollectionRef.orderBy("year",Query.Direction.DESCENDING)
                 .whereEqualTo("year",year)
@@ -413,15 +412,31 @@ class AppDataManager {
                 .addOnSuccessListener { querySnap ->
                     if (querySnap != null) {
                         Log.d(TAG, "fetchLeaveLogs data ${querySnap.size()}")
-                        response(querySnap, "Success")
+                        response(querySnap, "Success", null)
                     } else {
                         Log.d(TAG, "No such document")
-                        response(null, "No such document")
+                        response(null, "No such document", null)
                     }
                 }
                 .addOnFailureListener { exception ->
                     Log.d(TAG, "get failed with ", exception)
-                    response(null, "Error Exception $exception")
+                    response(null, "Error Exception $exception", null)
+                }
+        } else {
+            val leaveRequestsCollectionRef = firestoreDB.collection("leavelogs").document(emailId).collection("leaveRequests")
+            leaveRequestsCollectionRef.get()
+                .addOnSuccessListener { querySnap ->
+                    if (querySnap != null) {
+                        Log.d(TAG, "fetchLeaveLogs data ${querySnap.size()}")
+                        response(querySnap, "Success", null)
+                    } else {
+                        Log.d(TAG, "No such document")
+                        response(null, "No such document", null)
+                    }
+                }
+                .addOnFailureListener { exception ->
+                    Log.d(TAG, "get failed with ", exception)
+                    response(null, "Error Exception $exception", null)
                 }
         }
     }
@@ -495,6 +510,34 @@ class AppDataManager {
         emailId: String, responseHandler: (QuerySnapshot?, String) -> Unit
     ) {
         val usersCollection = firestoreDB.collection("feeds").document(emailId).collection("userfeeds")
+        usersCollection.get()
+            .addOnSuccessListener { result ->
+                responseHandler(result, "Success")
+            }
+            .addOnFailureListener { exception ->
+                Log.d(TAG, "Error getting goals: ", exception)
+                responseHandler(null, "Failure")
+            }
+    }
+
+    fun setUserFeed(
+        feedData: FeedData, responseHandler: (String) -> Unit
+    ) {
+        val feedDocumentRef = firestoreDB.collection("feeds").document(feedData.email).collection("userfeeds").document(feedData.feedID)
+        feedDocumentRef.set(feedData)
+            .addOnSuccessListener {
+                responseHandler("Success")
+            }
+            .addOnFailureListener { exception ->
+                Log.d(TAG, "Error getting goals: ", exception)
+                responseHandler("Failure")
+            }
+    }
+
+    fun getUserFeedID(
+        emailId: String, id: Int, responseHandler: (DocumentSnapshot?, String) -> Unit
+    ) {
+        val usersCollection = firestoreDB.collection("feeds").document(emailId).collection("userfeeds").document("$id")
         usersCollection.get()
             .addOnSuccessListener { result ->
                 responseHandler(result, "Success")
@@ -806,7 +849,7 @@ class AppDataManager {
             }
     }
 
-    fun addCommentLikeData(
+    fun addAnnouncementCommentLikeData(
         commentsData: MutableMap<String, CommentsData>,
         announcementID: Int,
         returnResponse: (String) -> Unit
@@ -827,6 +870,48 @@ class AppDataManager {
             }
     }
 
+    fun addLeaveDataCommentLikeData(
+        commentsData: MutableMap<String, CommentsData>,
+        leaveId: Int,
+        emailId: String,
+        returnResponse: (String) -> Unit
+    ) {
+        val leaveLogDocument =
+            firestoreDB.collection("leavelogs").document(emailId)
+                .collection("leaveRequests").document(leaveId.toString())
+        leaveLogDocument
+            .update("comments", commentsData)
+            .addOnSuccessListener {
+                Log.d(TAG, "addCommentLikeData added/updated with ID: $commentsData")
+                returnResponse("Success")
+            }
+            .addOnFailureListener { e ->
+                Log.w(TAG, "Error adding document", e)
+                returnResponse("Failure")
+            }
+    }
+
+    fun addFeedDataCommentLikeData(
+        commentsData: MutableMap<String, CommentsData>,
+        feedId: Int,
+        emailId: String,
+        returnResponse: (String) -> Unit
+    ) {
+        val leaveLogDocument =
+            firestoreDB.collection("feeds").document(emailId)
+                .collection("userfeeds").document(feedId.toString())
+        leaveLogDocument
+            .update("comments", commentsData)
+            .addOnSuccessListener {
+                Log.d(TAG, "addCommentLikeData added/updated with ID: $commentsData")
+                returnResponse("Success")
+            }
+            .addOnFailureListener { e ->
+                Log.w(TAG, "Error adding document", e)
+                returnResponse("Failure")
+            }
+    }
+
     fun getNotificationData(responseHandler: (QuerySnapshot?, String) -> Unit) {
         val notificationCollection =
             firestoreDB.collection("notifications").document("organization1")
@@ -838,6 +923,23 @@ class AppDataManager {
             .addOnFailureListener { exception ->
                 Log.d(TAG, "Error getting goals: ", exception)
                 responseHandler(null, "Failure")
+            }
+    }
+
+    fun addLeaveData(leaveData: LeaveData, responseHandler: (String) -> Unit) {
+        val document =
+            firestoreDB.collection("leavelogs").document(leaveData.emailId).collection("leaveRequests").document("${leaveData.leaveId}")
+        document.set(leaveData)
+            .addOnSuccessListener {
+                Log.d(
+                    TAG,
+                    "DocumentSnapshot added/updated with ID: ${leaveData.leaveId}"
+                )
+                responseHandler("Success")
+            }
+            .addOnFailureListener { e ->
+                Log.w(TAG, "Error adding document", e)
+                responseHandler("Failure")
             }
     }
 

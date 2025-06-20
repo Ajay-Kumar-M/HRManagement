@@ -2,7 +2,7 @@ package com.example.hrmanagement.ui.quickLink
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
-import com.example.hrmanagement.service.MyApplication.Companion.appDataManager
+import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
 import com.google.firebase.firestore.QuerySnapshot
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,7 +13,7 @@ class QuickLinksViewModel: ViewModel() {
     val quickLinksData = _quickLinksData.asStateFlow()
     private var _isViewLoading: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val isViewLoading = _isViewLoading.asStateFlow()
-    private var numberOfFeatchProcess: Int = 0
+    private var numberOfFetchProcess: Int = 0
 
     init {
         fetchQuickLinks()
@@ -23,7 +23,7 @@ class QuickLinksViewModel: ViewModel() {
         if (!_isViewLoading.value) {
             toggleIsViewLoading()
         }
-        numberOfFeatchProcess++
+        numberOfFetchProcess++
         appDataManager.getAllQuickLinks(::updateQuickLinksData)
     }
 
@@ -39,8 +39,8 @@ class QuickLinksViewModel: ViewModel() {
             //handle errors
             TODO()
         }
-        numberOfFeatchProcess--
-        if ((isViewLoading.value==true)&&(numberOfFeatchProcess==0))
+        numberOfFetchProcess--
+        if ((isViewLoading.value==true)&&(numberOfFetchProcess==0))
             toggleIsViewLoading()
     }
 

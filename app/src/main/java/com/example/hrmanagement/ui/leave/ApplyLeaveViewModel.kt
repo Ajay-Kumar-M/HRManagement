@@ -4,7 +4,8 @@ import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.hrmanagement.service.MyApplication.Companion.appDataManager
+import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
+import com.example.hrmanagement.Service.MyApplication.Companion.appPreferenceDataStore
 import com.example.hrmanagement.data.LeaveData
 import com.example.hrmanagement.data.LeaveTrackerData
 import com.example.hrmanagement.ui.userinfo.getPropertyValue
@@ -12,7 +13,9 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -43,11 +46,14 @@ class ApplyLeaveViewModel(
         Pair("Optional Holidays","optionalLeaveBalance"),
         Pair("Comp Off","compOffLeaveBalance"))
     var leaveType: String = checkNotNull(savedStateHandle["leaveType"])
-    var personEmailId: String = checkNotNull(savedStateHandle["personEmailId"])
     var lastLeaveId: Int? = null
-    private var numberOfFeatchProcess: Int = 0
+    private var numberOfFetchProcess: Int = 0
+    var userEmailId: String? = null
 
     init {
+        runBlocking {
+            userEmailId = appPreferenceDataStore.emailFlow.firstOrNull()
+        }
         year = Calendar.getInstance().get(Calendar.YEAR)
         val startOfTheDay = Calendar.getInstance()
         startOfTheDay.apply {
@@ -68,22 +74,24 @@ class ApplyLeaveViewModel(
         if (!_isViewLoading.value) {
             toggleIsViewLoading()
         }
-        numberOfFeatchProcess++
-        appDataManager.fetchLastLeaveId(personEmailId){ id, status ->
-            if (status == "Success") {
-                lastLeaveId = id
-            } else {
+        numberOfFetchProcess++
+        if ((userEmailId!=null)&&(userEmailId!!.isNotBlank())) {
+            appDataManager.fetchLastLeaveId(userEmailId!!){ id, status ->
+                if (status == "Success") {
+                    lastLeaveId = id
+                } else {
 
-            }
-            numberOfFeatchProcess--
-            if ((isViewLoading.value==true)&&(numberOfFeatchProcess==0)) {
-                toggleIsViewLoading()
+                }
+                numberOfFetchProcess--
+                if ((isViewLoading.value==true)&&(numberOfFetchProcess==0)) {
+                    toggleIsViewLoading()
+                }
             }
         }
     }
 
     fun addAnnualLeaveDataResponseListener(response: String){
-        numberOfFeatchProcess--
+        numberOfFetchProcess--
         if(response == "Success"){
             Log.d("ApplyLeaveViewModel","addAnnualLeaveDataResponseListener record added $response")
             clearAllUiFields()
@@ -92,7 +100,7 @@ class ApplyLeaveViewModel(
             //handle errors
             triggerToast("Error occurred. Try again!")
         }
-        if ((isViewLoading.value == true) && (numberOfFeatchProcess == 0))
+        if ((isViewLoading.value == true) && (numberOfFetchProcess == 0))
             toggleIsViewLoading()
     }
 
@@ -100,7 +108,7 @@ class ApplyLeaveViewModel(
         if (!_isViewLoading.value) {
             toggleIsViewLoading()
         }
-        numberOfFeatchProcess++
+        numberOfFetchProcess++
         val calendar = Calendar.getInstance()
         calendar.timeInMillis = fromDate.value
         year = calendar.get(Calendar.YEAR)

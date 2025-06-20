@@ -69,6 +69,7 @@ class AppDataManager {
         emailId: String,
         checkInOrCheckOutTimestamp: Long,
         currentDayTimestamp: Long,
+        location: String,
         responseHandler: (String, String) -> Unit
     ) {
 
@@ -123,7 +124,7 @@ class AppDataManager {
                         userSignInStatus.checkouttimestamp = checkInOrCheckOutTimestamp
                         userSignInStatus.status = "Checked-Out"
                         attendanceLog.checkOutTime = checkInOrCheckOutTimestamp
-                        attendanceLog.checkOutLocation = "Chennai"
+                        attendanceLog.checkOutLocation = location
                         attendanceLog.totalHours = "$hours.$minutes".toFloat()
                     } else {
                         if (attendanceLog.checkInTime == 0L) { //will be executed when the user checks-in for the first time on a particular day
@@ -132,7 +133,7 @@ class AppDataManager {
                             attendanceLog.status = "Present"
                         }
                         userSignInStatus.status = "Checked-In"
-                        attendanceLog.checkInLocation = "Chennai"
+                        attendanceLog.checkInLocation = location
                     }
                     transaction.set(signInStatusDocumentRef, userSignInStatus)
                     transaction.set(attendanceDocumentCollectionRef, attendanceLog)
@@ -247,7 +248,7 @@ class AppDataManager {
         goalData: GoalData,
         lastGoalIndex: Int,
         updateLastGoalIndex: Boolean,
-        returnResponse: (String) -> Unit
+//        returnResponse: (String) -> Unit
     ) {
         firestoreDB.runBatch { batch ->
             val goalDocument =
@@ -261,10 +262,10 @@ class AppDataManager {
             }
         }.addOnSuccessListener {
             Log.d(TAG, "DocumentSnapshot goal added/updated with ID: goal$lastGoalIndex")
-            returnResponse("Success")
+//            returnResponse("Success")
         }.addOnFailureListener { e ->
             Log.w(TAG, "Error adding goal", e)
-            returnResponse("Failure")
+//            returnResponse("Failure")
         }
     }
 
@@ -1003,6 +1004,23 @@ class AppDataManager {
                 Log.d(
                     TAG,
                     "DocumentSnapshot added/updated with ID: ${notificationData.notificationId}"
+                )
+            }
+            .addOnFailureListener { e ->
+                Log.w(TAG, "Error adding document", e)
+            }
+    }
+
+    fun addAttendanceData(attendanceData: AttendanceData) {
+        val notificationDocumentRef =
+            firestoreDB.collection("attendance").document(attendanceData.emailId)
+                .collection("attendanceLogs").document("${attendanceData.date}")
+        notificationDocumentRef
+            .set(attendanceData)
+            .addOnSuccessListener {
+                Log.d(
+                    TAG,
+                    "addAttendanceData DocumentSnapshot added/updated with ID: ${attendanceData.date}"
                 )
             }
             .addOnFailureListener { e ->

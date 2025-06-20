@@ -1,6 +1,7 @@
 package com.example.hrmanagement.ui.main
 
 import android.R.attr.text
+import android.app.Application
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -59,6 +60,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
@@ -78,6 +80,7 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.PopupProperties
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -91,16 +94,14 @@ import kotlinx.coroutines.delay
 fun StatusScreen(
     modifier: Modifier,
     navController: NavController,
-    userEmailID: String,
-    viewModel: StatusViewModel = viewModel()
+    viewModel: StatusViewModel = viewModel(factory = ViewModelProvider.AndroidViewModelFactory(LocalContext.current.applicationContext as Application))
 ) {
-    val allUsersData = viewModel.allUsersData.collectAsStateWithLifecycle()
     val filteredUsersData = viewModel.filteredUsersData.collectAsStateWithLifecycle()
     val isSearchDropdownExpanded = viewModel.isSearchDropdownExpanded.collectAsStateWithLifecycle()
     val isViewLoading = viewModel.isViewLoading.collectAsStateWithLifecycle()
     val isSuccessDialogVisible = viewModel.isSuccessDialogVisible.collectAsStateWithLifecycle()
     val statusData = viewModel.statusData.collectAsStateWithLifecycle()
-    val dollorMapData = viewModel.dollorMapData.collectAsStateWithLifecycle()
+    val dollarMapData = viewModel.dollarMapData.collectAsStateWithLifecycle()
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
     var expanded by remember { mutableStateOf(false) }
@@ -112,8 +113,12 @@ fun StatusScreen(
 
     if (navigateFeed.value && !isSuccessDialogVisible.value) {
         LaunchedEffect(Unit) {
-            navController.navigate("MainScreen")
-            navigateFeed.value = false // Reset flag
+            navController.navigate("FeedsScreen") {
+                popUpTo("StatusScreen") { inclusive = true }
+            }
+
+
+            navigateFeed.value = false
         }
     }
 
@@ -174,7 +179,7 @@ fun StatusScreen(
                             .size(25.dp)
                             .clickable {
                                 focusManager.clearFocus()
-                                viewModel.addUserStatus(userEmailID)
+                                viewModel.addUserStatus(viewModel.userData.email)
                             }
                     )
                 }
@@ -214,7 +219,7 @@ fun StatusScreen(
                             .padding(5.dp)
                     ) {
 //                        var textState by remember { mutableStateOf(statusData.value.text) }
-//                        var indexMap by remember { mutableStateOf(dollorMapData.value.toMutableMap()) }
+//                        var indexMap by remember { mutableStateOf(dollarMapData.value.toMutableMap()) }
                         // Find all $ positions
                         fun getDollarIndices(text: String): List<Int> =
                             text.indices.filter { text[it] == '$' }
@@ -227,7 +232,7 @@ fun StatusScreen(
                             val dollarIndices = getDollarIndices(text.text)
                             dollarIndices.forEachIndexed { i, idx ->
                                 builder.append(text.text.substring(lastIndex, idx))
-                                val mapped = dollorMapData.value[idx]
+                                val mapped = dollarMapData.value[idx]
                                 if (mapped != null) {
                                     builder.pushStringAnnotation(tag = "unit", annotation = mapped)
                                     builder.withStyle(
@@ -244,15 +249,15 @@ fun StatusScreen(
                                 lastIndex = idx + 1
                             }
                             builder.append(text.text.substring(lastIndex))
-                            TransformedText(builder.toAnnotatedString(), DollarReplacementOffsetMapping(text.text,dollorMapData.value))
+                            TransformedText(builder.toAnnotatedString(), DollarReplacementOffsetMapping(text.text,dollarMapData.value))
                         }
 
                         fun handleValueChange(newValue: TextFieldValue) {
 //                            val oldText = textState
                             val newText = newValue.text
                             // Detect which mapped unit was removed by comparing old and new text
-                            val removedIndices = dollorMapData.value.keys.filter { it >= newText.length || newText[it] != '$' }
-                            removedIndices.forEach { viewModel.removeDollorMap(it) }
+                            val removedIndices = dollarMapData.value.keys.filter { it >= newText.length || newText[it] != '$' }
+                            removedIndices.forEach { viewModel.removeDollarMap(it) }
 //                            textState = newText
                         }
 
@@ -362,7 +367,7 @@ fun StatusScreen(
                     icon = {
                         Icon(
                             Icons.Filled.CheckCircle,
-                            contentDescription = "Example Icon",
+                            contentDescription = "Success Icon",
                             tint = Color(0xFF097969),
                             modifier = Modifier.size(30.dp)
                         )

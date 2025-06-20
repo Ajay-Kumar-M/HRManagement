@@ -1,5 +1,6 @@
 package com.example.hrmanagement.ui.services
 
+import android.app.Application
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -55,6 +56,7 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -70,8 +72,7 @@ import javax.annotation.meta.When
 @Composable
 fun ColleaguesScreen(
     navController: NavController,
-    emailId: String,
-    viewModel: ColleaguesViewModel = viewModel()
+    viewModel: ColleaguesViewModel = viewModel(factory = ViewModelProvider.AndroidViewModelFactory(LocalContext.current.applicationContext as Application))
 ) {
     val isViewLoading = viewModel.isViewLoading.collectAsStateWithLifecycle()
     val isViewTypeList = viewModel.isViewTypeList.collectAsStateWithLifecycle()
@@ -220,10 +221,10 @@ fun ColleaguesScreen(
                     }
                     when (selectedTabIndex) {
                         0 -> {
-                            FavoritesListView(viewModel,emailId,navController)
+                            FavoritesListView(viewModel,viewModel.appUserData.email,navController)
                         }
                         1 -> {
-                            ColleaguesGridView(viewModel,emailId,navController)
+                            ColleaguesGridView(viewModel,viewModel.appUserData.email,navController)
                         }
                         2 -> {
                             Column(
@@ -265,7 +266,7 @@ fun FavoritesListView(
                             if (favoriteUserData.email == emailId) {
                                 navController.navigate("UserInfoScreen/${emailId}")
                             } else {
-                                navController.navigate("ColleagueInfoScreen/${emailId}/${favoriteUserData.email}")
+                                navController.navigate("ColleagueInfoScreen/${favoriteUserData.email}/${emailId}")
                             }
                         }
                 ) {
@@ -324,7 +325,7 @@ fun ColleaguesGridView(
                             if (userData.email == emailId) {
                                 navController.navigate("UserInfoScreen/${emailId}")
                             } else {
-                                navController.navigate("ColleagueInfoScreen/${emailId}/${userData.email}")
+                                navController.navigate("ColleagueInfoScreen/${userData.email}/${emailId}")
                             }
                         }
                 ) {
@@ -379,7 +380,7 @@ fun ColleaguesGridView(
                             if (userData.email == emailId) {
                                 navController.navigate("UserInfoScreen/${emailId}")
                             } else {
-                                navController.navigate("ColleagueInfoScreen/${emailId}/${userData.email}")
+                                navController.navigate("ColleagueInfoScreen/${userData.email}/${emailId}")
                             }
                         }
                 ) {

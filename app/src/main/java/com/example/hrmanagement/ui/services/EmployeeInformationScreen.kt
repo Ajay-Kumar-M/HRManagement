@@ -1,5 +1,6 @@
 package com.example.hrmanagement.ui.services
 
+import android.app.Application
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -31,7 +32,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 
@@ -39,7 +42,6 @@ import androidx.navigation.NavController
 fun EmployeeInformationScreen(
     modifier: Modifier,
     navController: NavController,
-    emailId: String,
     viewModel: EmployeeInformationViewModel = viewModel()
 ) {
     val listOfActions: List<Pair<String,String>> = listOf(
@@ -98,7 +100,7 @@ fun EmployeeInformationScreen(
                         .clickable{
                             when(action.first) {
                                 "Employee Details","Colleagues" -> {
-                                    navController.navigate("${action.second}/$emailId")
+                                    navController.navigate(action.second)
                                 }
                             }
                         }

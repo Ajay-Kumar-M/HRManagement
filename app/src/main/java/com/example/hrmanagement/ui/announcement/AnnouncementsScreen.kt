@@ -99,6 +99,7 @@ fun AnnouncementsScreen(
                     .statusBarsPadding()
                     .background(Color.White)
                     .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
                     onClick = {
@@ -119,7 +120,7 @@ fun AnnouncementsScreen(
                 }
                 Text(
                     "Announcements",
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(20.dp, 5.dp)
                         .weight(1f,true)
                 )

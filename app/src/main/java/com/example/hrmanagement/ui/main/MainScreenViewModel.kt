@@ -1,15 +1,21 @@
 package com.example.hrmanagement.ui.main
 
+import android.app.Application
+import android.content.Context
+import android.location.Location
 import android.util.Log
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.hrmanagement.service.MyApplication.Companion.appDataManager
-import com.example.hrmanagement.service.MyApplication.Companion.appPreferenceDataStore
-import com.example.hrmanagement.service.MyApplication.Companion.appUserDetails
-import com.example.hrmanagement.service.MyApplication.Companion.appUserEmailId
+import com.example.hrmanagement.Service.MyApplication
+import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
+import com.example.hrmanagement.Service.MyApplication.Companion.appPreferenceDataStore
+import com.example.hrmanagement.Service.MyApplication.Companion.appUserEmailId
+import com.example.hrmanagement.component.getAddressFromLocation
 import com.example.hrmanagement.component.startOfTheDayInMillis
 import com.example.hrmanagement.data.AttendanceData
+import com.example.hrmanagement.data.GoalData
 import com.example.hrmanagement.data.LeaveData
 import com.example.hrmanagement.data.LeaveTrackerData
 import com.example.hrmanagement.data.UserLoginData
@@ -21,7 +27,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.Calendar
 
-class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
+class MainScreenViewModel(application: Application) : AndroidViewModel(application), DefaultLifecycleObserver {
 
     val userImageUriUiState = appPreferenceDataStore.userImageURLFlow
         .stateIn(
@@ -36,8 +42,7 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
     private var _liveUserDetails: MutableStateFlow<UserLoginData> =
         MutableStateFlow(UserLoginData())
     val liveUserDetails = _liveUserDetails.asStateFlow()
-    private var _userAttendanceData: MutableStateFlow<AttendanceData> =
-        MutableStateFlow(AttendanceData())
+    private var _userAttendanceData: MutableStateFlow<AttendanceData> = MutableStateFlow(AttendanceData())
     val userAttendanceData = _userAttendanceData.asStateFlow()
     private var _favouritesLimitedData: MutableStateFlow<QuerySnapshot?> = MutableStateFlow(null)
     val favouritesLimitedData = _favouritesLimitedData.asStateFlow()
@@ -47,12 +52,16 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
     val announcementsLimitedData = _announcementsLimitedData.asStateFlow()
     private var _holidaysData: MutableStateFlow<QuerySnapshot?> = MutableStateFlow(null)
     val holidaysData = _holidaysData.asStateFlow()
+    private var _isSignInViewLoading: MutableStateFlow<Boolean> = MutableStateFlow(false)
+    val isSignInViewLoading = _isSignInViewLoading.asStateFlow()
     private var _isViewLoading: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val isViewLoading = _isViewLoading.asStateFlow()
     private var _addTaskShowBottomSheet: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val addTaskShowBottomSheet = _addTaskShowBottomSheet.asStateFlow()
     private var numberOfFetchProcess: Int = 0
+    private var numberOfSignInProcess: Int = 0
     private var calendarYear: Int = 0
+    private val myApplication = application as MyApplication
 
     init {
         toggleIsViewLoading()
@@ -68,9 +77,6 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
         if (!userEmailUiState.isNullOrBlank()) {
             appDataManager.listenForUserSignInStatusUpdates(userEmailUiState!!)
         }
-//        viewModelScope.launch {
-//
-//        }
     }
 
     fun fetchUserDetails() {
@@ -88,7 +94,7 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
         Log.d("MainScreenViewModel", "updateUserDetails called $userDetails")
         if ((response == "Success") && (userDetails != null)) {
             _liveUserDetails.value = userDetails
-            appUserDetails = userDetails
+            myApplication.updateAppUserData(userDetails)
 //            viewModelScope.launch {
 //                appPreferenceDataStore.updateUserDetails(UserLoginData.from(userDetails))
 //            }
@@ -101,9 +107,10 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
         }
     }
 
-    fun updateUserSignInStatus() {
+    fun updateUserSignInStatus(location: Location?, context: Context) {
         if ((userEmailUiState != null) && ((userEmailUiState?.isNotBlank()) == true)) {
-            if (isViewLoading.value == false) toggleIsViewLoading()
+            if (isSignInViewLoading.value == false) toggleIsSignInViewLoading()
+            var userLocation: String? = null
             val calendar = Calendar.getInstance()
             val startOfTheDay = Calendar.getInstance()
             startOfTheDay.apply {
@@ -112,18 +119,36 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
                 set(Calendar.SECOND, 0)       // Set seconds to 0
                 set(Calendar.MILLISECOND, 0)  // Set milliseconds to 0
             }
-            numberOfFetchProcess++
-            appDataManager.addSignInStatus(
-                userEmailUiState!!,
-                calendar.timeInMillis,
-                startOfTheDay.timeInMillis,
-                ::updateSignInResponse
-            )
+            if (location != null) {
+                viewModelScope.launch {
+                    getAddressFromLocation(context, location.latitude, location.longitude) { address ->
+                        userLocation = address
+                        numberOfSignInProcess++
+                        appDataManager.addSignInStatus(
+                            userEmailUiState!!,
+                            calendar.timeInMillis,
+                            startOfTheDay.timeInMillis,
+                            userLocation ?: "",
+                            ::updateSignInResponse
+                        )
+                    }
+                }
+            } else {
+                numberOfSignInProcess++
+                appDataManager.addSignInStatus(
+                    userEmailUiState!!,
+                    calendar.timeInMillis,
+                    startOfTheDay.timeInMillis,
+                    "",
+                    ::updateSignInResponse
+                )
+            }
+
         }
     }
 
     fun updateSignInResponse(response: String, error: String) {
-        numberOfFetchProcess--
+        numberOfSignInProcess--
         if (response == "Success") {
             Log.d("MainScreenViewModel", "updateSignInResponse called $response")
         } else {
@@ -131,17 +156,17 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
             TODO()
         }
         fetchUserSignInStatus()
-        if ((isViewLoading.value == true) && (numberOfFetchProcess == 0))
-            toggleIsViewLoading()
+        if ((isSignInViewLoading.value == true) && (numberOfSignInProcess == 0))
+            toggleIsSignInViewLoading()
     }
 
     fun fetchUserSignInStatus() {
         val startOfTheDayInMillis = startOfTheDayInMillis(Calendar.getInstance().timeInMillis)
         if (!userEmailUiState.isNullOrBlank()) {
-            if (!_isViewLoading.value) {
-                toggleIsViewLoading()
+            if (!isSignInViewLoading.value) {
+                toggleIsSignInViewLoading()
             }
-            numberOfFetchProcess++
+            numberOfSignInProcess++
             appDataManager.getFirebaseAttendanceData(
                 startOfTheDayInMillis,
                 startOfTheDayInMillis + 86399990,
@@ -152,7 +177,7 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
     }
 
     fun updateAttendanceDetails(attendanceData: QuerySnapshot?, response: String) {
-        numberOfFetchProcess--
+        numberOfSignInProcess--
         if (response == "Success") {
             Log.d("UserInfoScreenViewModel", "updateAttendanceDetails called $attendanceData")
             val documentSnapshot = attendanceData?.first()
@@ -163,8 +188,8 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
             //handle errors
             TODO()
         }
-        if ((isViewLoading.value == true) && (numberOfFetchProcess == 0))
-            toggleIsViewLoading()
+        if ((isSignInViewLoading.value == true) && (numberOfSignInProcess == 0))
+            toggleIsSignInViewLoading()
     }
 
     fun fetchLimitedQuickLinks() {
@@ -210,6 +235,8 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
             favouritesData?.count()?.let {
                 if (it > 0) {
                     _favouritesLimitedData.value = favouritesData
+                } else {
+                    _favouritesLimitedData.value = null
                 }
             }
         } else {
@@ -297,6 +324,10 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
 
     fun toggleIsViewLoading() {
         _isViewLoading.value = !_isViewLoading.value
+    }
+
+    fun toggleIsSignInViewLoading() {
+        _isSignInViewLoading.value = !_isSignInViewLoading.value
     }
 
     fun addUserToDB() {
@@ -435,6 +466,101 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
         }
     }
 
+    fun addAttendanceInitialData(){
+        val startofthemonth = Calendar.getInstance()
+        startofthemonth.apply {
+            set(Calendar.MONTH,8)
+            set(Calendar.DAY_OF_MONTH, 1) // Set to the first day of the month
+            set(Calendar.HOUR_OF_DAY, 0)  // Set hour to midnight
+            set(Calendar.MINUTE, 0)       // Set minutes to 0
+            set(Calendar.SECOND, 0)       // Set seconds to 0
+            set(Calendar.MILLISECOND, 0)  // Set milliseconds to 0
+        }
+        var startDate = startofthemonth.timeInMillis
+        val calendar = Calendar.getInstance()
+
+        for(i in 1..30) {
+            calendar.timeInMillis = startDate
+            val day = calendar.get(Calendar.DAY_OF_MONTH)
+            val month = calendar.get(Calendar.MONTH) + 1 // Months are 0-based
+            val year = calendar.get(Calendar.YEAR)
+            appDataManager.addAttendanceData(
+                AttendanceData(
+                    startDate,
+                    0,
+                    0,
+                    "",
+                    "",
+                    "",
+                    "",
+                    "ajaym04021994@gmail.com",
+                    "",
+                    0.0f,
+                    day,
+                    month,
+                    year,
+                    ""
+                )
+            )
+            startDate = startDate+86400000
+        }
+    }
+
+    fun addGoalInitialData(){
+
+        val startofthemonth = Calendar.getInstance()
+        startofthemonth.apply {
+            set(Calendar.MONTH,6)
+            set(Calendar.DAY_OF_MONTH, 1) // Set to the first day of the month
+            set(Calendar.HOUR_OF_DAY, 0)  // Set hour to midnight
+            set(Calendar.MINUTE, 0)       // Set minutes to 0
+            set(Calendar.SECOND, 0)       // Set seconds to 0
+            set(Calendar.MILLISECOND, 0)  // Set milliseconds to 0
+        }
+        var startDate = startofthemonth.timeInMillis
+        val calendar = Calendar.getInstance()
+
+        for (i in 1..30) {
+            appDataManager.addGoalData(
+                GoalData(
+                    "Project$i to be completed",
+                    "$startDate",
+                    "${startDate + 86400000}",
+                    "Low",
+                    "Project to be released before end of the year",
+                    i,
+                    "ajaym04021994@gmail.com",
+                    mapOf(
+                        Pair("1", "project comment1"),
+                        Pair("2", "project comment2"),
+                        Pair("3", "project comment3")
+                    )
+                ),
+                i,
+                true
+            )
+            startDate = startDate+604800000
+        }
+    }
+
+    fun addLeaveTrackerInitialData() {
+        for (i in 2026..2026) {
+            appDataManager.addLeaveTrackerDataTemp(
+                LeaveTrackerData(
+                    "ajay.kumar0495@gmail.com",
+                    i,
+                    1001,
+                    0,
+                    8, 4, 8, 4, 8, 4, 8, 4, 8, 4,
+                    mutableMapOf(),
+                    "",
+                    "Ajay Kumar M",
+                    "teamMailId@gmail.com"
+                ),
+                i
+            )
+        }
+    }
 }
 
 /*
@@ -934,26 +1060,6 @@ appDataManager.addDepartmentData(
                     ""
                 ),
                 i
-            )
-
-
-appDataManager.addGoalData(
-                GoalData(
-                    "Goal$i",
-                    "${Calendar.getInstance().timeInMillis}",
-                    "${Calendar.getInstance().timeInMillis+86400000}",
-                    "Low",
-                    "goal description",
-                    15,
-                    "ajay.kumar0495@gmail.com",
-                    mapOf(
-                        Pair("1", "comment1"),
-                        Pair("2", "comment2"),
-                        Pair("3", "comment3")
-                    )
-                ),
-                i,
-                true
             )
 
 

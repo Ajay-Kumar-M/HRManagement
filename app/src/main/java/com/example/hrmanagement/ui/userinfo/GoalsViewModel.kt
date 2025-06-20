@@ -1,44 +1,41 @@
 package com.example.hrmanagement.ui.userinfo
 
+import android.app.Application
 import android.util.Log
-import androidx.lifecycle.ViewModel
-import com.example.hrmanagement.service.MyApplication.Companion.appDataManager
-import com.example.hrmanagement.service.MyApplication.Companion.appPreferenceDataStore
+import androidx.lifecycle.AndroidViewModel
+import com.example.hrmanagement.Service.MyApplication
+import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
 import com.google.firebase.firestore.QuerySnapshot
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.runBlocking
 
-class GoalsViewModel: ViewModel() {
+class GoalsViewModel(application: Application): AndroidViewModel(application) {
 
 
     private var _goalsQuerySnapshot: MutableStateFlow<QuerySnapshot?> = MutableStateFlow(null)
     val goalsQuerySnapshot = _goalsQuerySnapshot.asStateFlow()
-    var numberOfFeatchProcess: Int = 0
-    var userEmailId: String? = ""
+    var numberOfFetchProcess: Int = 0
     private var _isViewLoading: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val isViewLoading = _isViewLoading.asStateFlow()
+    private val myApplication = application as MyApplication
+    val appUserData = myApplication.appUserDetails
 
     init {
         toggleIsViewLoading()
-        runBlocking {
-            userEmailId = appPreferenceDataStore.emailFlow.firstOrNull()
-        }
         getGoals()
     }
 
     fun getGoals(){
-        if ((userEmailId!=null)&&((userEmailId?.isNotBlank())==true)) {
+        if (appUserData.email.isNotBlank() == true) {
             if (isViewLoading.value==false) toggleIsViewLoading()
-            numberOfFeatchProcess++
-            appDataManager.getUserGoalsData(userEmailId!!,::updateUserGoalsData)
+            numberOfFetchProcess++
+            appDataManager.getUserGoalsData(appUserData.email,::updateUserGoalsData)
         }
     }
 
     fun updateUserGoalsData(goalsData: QuerySnapshot?, status: String){
         Log.d("UserInfoScreenViewModel","updateLeaveTrackerData called $goalsData")
-        numberOfFeatchProcess--
+        numberOfFetchProcess--
         if(status == "Success"){
 //            _liveLeaveTrackerDetails.value = leaveTrackerData
             _goalsQuerySnapshot.value = goalsData
@@ -46,7 +43,7 @@ class GoalsViewModel: ViewModel() {
             //handle errors
             TODO()
         }
-        if ((isViewLoading.value==true)&&(numberOfFeatchProcess==0))
+        if ((isViewLoading.value==true)&&(numberOfFetchProcess==0))
             toggleIsViewLoading()
     }
 

@@ -536,7 +536,7 @@ fun ColleagueInfoScreen(
                                 }
                                 Spacer(modifier = Modifier.height(15.dp))
                                 getAllFieldsAndValues(liveColleagueDetails.value).forEach { value ->
-                                    if (!((value.first == "token")||(value.first == "reportingTo"))) {
+                                    if ((value.first != "token")&&(value.first != "reportingTo")&&(value.first != "imageUrl")) {
                                         Text(
                                             value.first,
                                             style = MaterialTheme.typography.bodyMedium
@@ -580,8 +580,6 @@ fun ColleagueInfoScreen(
                                     val teamMemberInfo = person.toObject(UserLoginData::class.java)
                                     Row(
                                         modifier = Modifier.clickable{
-                                            val userJson = Json.encodeToString(person)
-                                            val encodedUserJson = URLEncoder.encode(userJson, StandardCharsets.UTF_8.toString())
                                             navController.navigate("ColleagueInfoScreen/${teamMemberInfo.email}/$myEmailId")
                                         }
                                     ) {

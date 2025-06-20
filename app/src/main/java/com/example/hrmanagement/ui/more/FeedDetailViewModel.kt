@@ -3,8 +3,8 @@ package com.example.hrmanagement.ui.more
 import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import com.example.hrmanagement.service.MyApplication.Companion.appDataManager
-import com.example.hrmanagement.service.MyApplication.Companion.appUserEmailId
+import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
+import com.example.hrmanagement.Service.MyApplication.Companion.appPreferenceDataStore
 import com.example.hrmanagement.data.CommentsData
 import com.example.hrmanagement.data.FeedData
 import com.example.hrmanagement.data.LeaveData
@@ -12,9 +12,9 @@ import com.example.hrmanagement.data.LikeData
 import com.example.hrmanagement.data.UserLoginData
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.runBlocking
 import java.util.Calendar
-import kotlin.collections.component1
-import kotlin.collections.component2
 
 class FeedDetailViewModel(
     savedStateHandle: SavedStateHandle
@@ -30,12 +30,15 @@ class FeedDetailViewModel(
     private var _isViewLoading: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val isViewLoading = _isViewLoading.asStateFlow()
     var numberOfFetchProcess: Int = 0
-    val userEmail = appUserEmailId
+    var userEmail: String = ""
     var feedType: String = ""
     var leaveId: Int = 0
     var feedId: Int = 0
 
     init {
+        runBlocking {
+            userEmail = appPreferenceDataStore.emailFlow.firstOrNull() ?: ""
+        }
         feedType = checkNotNull(savedStateHandle["feedType"])
         fetchUserDetails()
         if (feedType == "LeaveRequest") {

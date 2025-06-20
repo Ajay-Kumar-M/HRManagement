@@ -25,6 +25,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -48,7 +49,8 @@ fun LeaveDetailsScreen(
         topBar = {
             Row(
                 modifier = Modifier
-                    .statusBarsPadding()
+                    .statusBarsPadding(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
                     onClick = {
@@ -68,7 +70,7 @@ fun LeaveDetailsScreen(
                     )
                 }
                 Text("Leave Details",
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(20.dp,5.dp)
                 )
             }

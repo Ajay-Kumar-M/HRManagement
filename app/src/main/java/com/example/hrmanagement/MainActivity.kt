@@ -11,8 +11,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
-import com.example.hrmanagement.service.MyApplication.Companion.appPreferenceDataStore
-import com.example.hrmanagement.service.MyApplication.Companion.themeModeState
+import com.example.hrmanagement.Service.MyApplication.Companion.appPreferenceDataStore
+import com.example.hrmanagement.Service.MyApplication.Companion.themeModeState
 import com.example.hrmanagement.ui.navigation.AppNavigation
 import com.example.hrmanagement.ui.theme.HRManagementTheme
 import kotlinx.coroutines.launch

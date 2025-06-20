@@ -7,7 +7,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.example.hrmanagement.service.MyApplication
+import com.example.hrmanagement.Service.MyApplication
 import com.example.hrmanagement.data.LeaveData
 import com.example.hrmanagement.ui.announcement.AnnouncementDetailScreen
 import com.example.hrmanagement.ui.announcement.AnnouncementsFilterScreen
@@ -56,16 +56,22 @@ fun AppNavigation(modifier: Modifier = Modifier) {
 
     NavHost(
         navController = navController,
-        startDestination = if(token == null) "FlashScreen" else "MainScreen"
+        startDestination = if (token == null) {
+            println("token - $token")
+            "FlashScreen"
+        } else {
+            println("token - $token")
+            "MainScreen"
+        }
     ) {
         composable(route = "FlashScreen") {
-            FlashScreen(modifier,navController)
+            FlashScreen(modifier, navController)
         }
         composable(route = "SignUpScreen") {
-            SignUpScreen(modifier,navController)
+            SignUpScreen(modifier, navController)
         }
         composable(route = "MainScreen") {
-            MainScreen(modifier,navController)
+            MainScreen(modifier, navController)
         }
 
         composable(route = "ThemeChangeScreen") {
@@ -78,148 +84,106 @@ fun AppNavigation(modifier: Modifier = Modifier) {
         ) { backStackEntry ->
             val userEmailId = backStackEntry.arguments?.getString("userEmailId")
             if (userEmailId != null) {
-                UserInfoScreen(modifier,navController,userEmailId)
+                UserInfoScreen(modifier, navController, userEmailId)
             }
         }
 
         composable(
-            route = "SettingsScreen/{userEmailId}/{username}",
-            arguments = listOf(
-                navArgument("userEmailId") { type = NavType.StringType },
-                navArgument("username") { type = NavType.StringType }
-            )
-        ) { backStackEntry ->
-            val userEmailId = backStackEntry.arguments?.getString("userEmailId")
-            val username = backStackEntry.arguments?.getString("username")
-            if ((userEmailId != null)&&(username != null)) {
-                SettingsScreen(modifier, navController, userEmailId, username)
-            }
+            route = "SettingsScreen"
+        ) {
+            SettingsScreen(modifier, navController)
         }
 
         composable(
-            route = "FeedDetailScreen/{userEmailId}/{feedId}/{feedType}",
+            route = "FeedDetailScreen/{feedId}/{feedType}",
             arguments = listOf(
-                navArgument("userEmailId") { type = NavType.StringType },
                 navArgument("feedId") { type = NavType.IntType },
                 navArgument("feedType") { type = NavType.StringType },
             )
         ) { backStackEntry ->
-            val userEmailId = backStackEntry.arguments?.getString("userEmailId")
             val feedId = backStackEntry.arguments?.getInt("feedId")
             val feedType = backStackEntry.arguments?.getString("feedType")
-            if ((userEmailId != null)&&(feedType != null)&&(feedId != null)) {
-                FeedDetailScreen(modifier, navController, userEmailId, feedId, feedType)
+            if ((feedType != null) && (feedId != null)) {
+                FeedDetailScreen(modifier, navController, feedId, feedType)
             }
         }
 
         composable(
-            route = "FeedsScreen/{userEmailId}",
-            arguments = listOf(navArgument("userEmailId") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val userEmailId = backStackEntry.arguments?.getString("userEmailId")
-            if (userEmailId != null) {
-                FeedsScreen(modifier, navController, userEmailId)
-            }
+            route = "FeedsScreen"
+        ) {
+            FeedsScreen(modifier, navController)
         }
 
         composable(
-            route = "FavouritesScreen/{userEmailId}",
-            arguments = listOf(navArgument("userEmailId") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val userEmailId = backStackEntry.arguments?.getString("userEmailId")
-            if (userEmailId != null) {
-                FavouritesScreen(modifier, navController, userEmailId)
-            }
+            route = "FavouritesScreen"
+        ) {
+            FavouritesScreen(modifier, navController)
         }
 
-        composable (
+        composable(
             route = "ColleagueInfoScreen/{colleagueEmailId}/{myEmailId}",
             arguments = listOf(
                 navArgument("colleagueEmailId") { type = NavType.StringType },
                 navArgument("myEmailId") { type = NavType.StringType }
-                )
-        ){ backStackEntry ->
+            )
+        ) { backStackEntry ->
             val colleagueEmailId = backStackEntry.arguments?.getString("colleagueEmailId")
             val myEmailId = backStackEntry.arguments?.getString("myEmailId")
-            if ((colleagueEmailId != null)&&(myEmailId != null)) {
-                ColleagueInfoScreen(modifier,navController,colleagueEmailId,myEmailId)
+            if ((colleagueEmailId != null) && (myEmailId != null)) {
+                ColleagueInfoScreen(modifier, navController, colleagueEmailId, myEmailId)
             }
         }
 
-        composable (
+        composable(
             route = "LeaveDetailsScreen/{leaveData}",
             arguments = listOf(navArgument("leaveData") { type = NavType.StringType })
-        ){ backStackEntry ->
+        ) { backStackEntry ->
             val encodedPersonJson = backStackEntry.arguments?.getString("leaveData")
             val leaveData = encodedPersonJson?.let {
                 val decodedJson = URLDecoder.decode(it, StandardCharsets.UTF_8.toString())
                 Json.decodeFromString<LeaveData>(decodedJson)
             }
             if (leaveData != null) {
-                LeaveDetailsScreen(modifier,navController,leaveData)
+                LeaveDetailsScreen(modifier, navController, leaveData)
             }
         }
 
-        composable (
-            route = "ApplyLeaveScreen/{personEmailId}/{leaveType}",
+        composable(
+            route = "ApplyLeaveScreen/{leaveType}",
             arguments = listOf(
-                navArgument("personEmailId") { type = NavType.StringType },
                 navArgument("leaveType") { type = NavType.StringType }
-                )
-        ){ backStackEntry ->
+            )
+        ) { backStackEntry ->
             val leaveType = backStackEntry.arguments?.getString("leaveType")
-            val personEmailId = backStackEntry.arguments?.getString("personEmailId")
-            if ((personEmailId != null) && (leaveType != null)) {
-                ApplyLeaveScreen(modifier,navController, personEmailId, leaveType)
+            if (leaveType != null) {
+                ApplyLeaveScreen(modifier, navController, leaveType)
             }
         }
 
-        composable (
-            route = "AttendanceInformationScreen/{email}/{username}/{employeeId}",
-            arguments = listOf(
-                navArgument("email") { type = NavType.StringType },
-                navArgument("username") { type = NavType.StringType },
-                navArgument("employeeId") { type = NavType.StringType }
-                )
-        ){ backStackEntry ->
-            val email = backStackEntry.arguments?.getString("email")
-            val username = backStackEntry.arguments?.getString("username")
-            val employeeId = backStackEntry.arguments?.getString("employeeId")
-            if ((username != null) && (email != null)) {
-                AttendanceInformationScreen(navController, email, username,employeeId)
-            }
+        composable(
+            route = "AttendanceInformationScreen"
+        ) {
+            AttendanceInformationScreen(navController)
         }
 
-        composable (
-            route = "LeaveTrackerInformationScreen/{email}",
-            arguments = listOf(
-                navArgument("email") { type = NavType.StringType }
-                )
-        ){ backStackEntry ->
-            val email = backStackEntry.arguments?.getString("email")
-            if (email != null) {
-                LeaveTrackerInformationScreen(email,navController)
-            }
+        composable(
+            route = "LeaveTrackerInformationScreen"
+        ) {
+                LeaveTrackerInformationScreen(navController)
         }
 
         composable(route = "QuickLinksScreen") {
-            QuickLinksScreen(modifier,navController)
+            QuickLinksScreen(modifier, navController)
         }
 
         composable(route = "GoalsComposableView") {
-            GoalsComposableView(modifier,navController)
+            GoalsComposableView(modifier, navController)
         }
 
-        composable (
-            route = "LeaveTrackerComposableView/{email}",
-            arguments = listOf(
-                navArgument("email") { type = NavType.StringType }
-            )
-        ){ backStackEntry ->
-            val email = backStackEntry.arguments?.getString("email")
-            if (email != null) {
-                LeaveTrackerComposableView(email,navController)
-            }
+        composable(
+            route = "LeaveTrackerComposableView"
+        ) {
+                LeaveTrackerComposableView(navController)
         }
 
         composable(route = "AttendanceComposableView") {
@@ -227,122 +191,92 @@ fun AppNavigation(modifier: Modifier = Modifier) {
         }
 
         composable(route = "AnnouncementsScreen") {
-            AnnouncementsScreen(modifier,navController)
+            AnnouncementsScreen(modifier, navController)
         }
 
         composable(route = "AnnouncementsFilterScreen") {
-            AnnouncementsFilterScreen(modifier,navController,listOf())
+            AnnouncementsFilterScreen(modifier, navController, listOf())
         }
 
         composable(route = "UpcomingHolidaysScreen") {
-            UpcomingHolidaysScreen(modifier,navController)
+            UpcomingHolidaysScreen(modifier, navController)
         }
 
         composable(
-            route = "LeaveRegularisationScreen/{userEmailId}/{username}/{employeeId}",
-            arguments = listOf(
-                navArgument("userEmailId") { type = NavType.StringType },
-                navArgument("username") { type = NavType.StringType },
-                navArgument("employeeId") { type = NavType.StringType }
-            )
+            route = "LeaveRegularisationScreen"
         ) { backStackEntry ->
-            val userEmailId = backStackEntry.arguments?.getString("userEmailId")
-            val username = backStackEntry.arguments?.getString("username")
-            val employeeId = backStackEntry.arguments?.getString("employeeId")
-            if (userEmailId != null)
-                LeaveRegularisationScreen(modifier,navController, userEmailId,username, employeeId)
+            LeaveRegularisationScreen(modifier, navController)
         }
 
         composable(
-            route = "ColleaguesScreen/{userEmailId}",
-            arguments = listOf(navArgument("userEmailId") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val userEmailId = backStackEntry.arguments?.getString("userEmailId")
-            if (userEmailId != null)
-                ColleaguesScreen(navController, userEmailId)
+            route = "ColleaguesScreen"
+        ) {
+            ColleaguesScreen(navController)
         }
 
         composable(
-            route = "EmployeeDetailsScreen/{userEmailId}",
-            arguments = listOf(navArgument("userEmailId") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val userEmailId = backStackEntry.arguments?.getString("userEmailId")
-            if (userEmailId != null)
-                EmployeeDetailsScreen(navController, userEmailId)
+            route = "EmployeeDetailsScreen"
+        ) {
+                EmployeeDetailsScreen(navController)
         }
 
         composable(
             route = "PerformanceInformationScreen"
         ) {
-                PerformanceInformationScreen(navController)
+            PerformanceInformationScreen(navController)
         }
 
         composable(
-            route = "NotificationScreen/{userEmailId}",
-            arguments = listOf(navArgument("userEmailId") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val userEmailId = backStackEntry.arguments?.getString("userEmailId")
-            if (userEmailId != null)
-                NotificationScreen(modifier,navController, userEmailId)
+            route = "NotificationScreen"
+        ) {
+            NotificationScreen(modifier, navController)
         }
 
         composable(
-            route = "EmployeeInformationScreen/{userEmailId}",
-            arguments = listOf(navArgument("userEmailId") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val userEmailId = backStackEntry.arguments?.getString("userEmailId")
-            if (userEmailId != null)
-                EmployeeInformationScreen(modifier,navController, userEmailId)
+            route = "EmployeeInformationScreen"
+        ) {
+                EmployeeInformationScreen(modifier, navController)
         }
 
         composable(
-            route = "ApplyCompOffScreen/{userEmailId}",
-            arguments = listOf(navArgument("userEmailId") { type = NavType.StringType })
+            route = "ApplyCompOffScreen",
         ) { backStackEntry ->
-            val userEmailId = backStackEntry.arguments?.getString("userEmailId")
-            if (userEmailId != null)
-                ApplyCompOffScreen(modifier,navController, userEmailId)
+            ApplyCompOffScreen(modifier, navController)
         }
 
         composable(
-            route = "StatusScreen/{userEmailId}",
-            arguments = listOf(navArgument("userEmailId") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val userEmailId = backStackEntry.arguments?.getString("userEmailId")
-            if (userEmailId != null)
-                StatusScreen(modifier,navController, userEmailId)
+            route = "StatusScreen"
+        ) {
+            StatusScreen(modifier, navController)
         }
 
         composable(
-            route = "LeaveReportScreen/{userEmailId}",
-            arguments = listOf(navArgument("userEmailId") { type = NavType.StringType })
+            route = "LeaveReportScreen"
         ) { backStackEntry ->
-            val userEmailId = backStackEntry.arguments?.getString("userEmailId")
-            if (userEmailId != null)
-            LeaveReportScreen(modifier,navController, userEmailId)
+            LeaveReportScreen(modifier, navController)
         }
 
-        composable (
+        composable(
             route = "AnnouncementsFilterScreen/{filterData}",
             arguments = listOf(navArgument("filterData") { type = NavType.StringType })
-        ){ backStackEntry ->
+        ) { backStackEntry ->
             val encodedLeaveJson = backStackEntry.arguments?.getString("filterData")
             val filterData = encodedLeaveJson?.let {
                 val decodedJson = URLDecoder.decode(it, StandardCharsets.UTF_8.toString())
                 Json.decodeFromString<List<Map<String, Boolean>>>(decodedJson)
             }
             if (filterData != null) {
-                AnnouncementsFilterScreen(modifier,navController, filterData)
+                AnnouncementsFilterScreen(modifier, navController, filterData)
             }
         }
 
-        composable (
+        composable(
             route = "AnnouncementDetailScreen/{announcementId}",
             arguments = listOf(navArgument("announcementId") { type = NavType.IntType })
-        ){ backStackEntry ->
+        ) { backStackEntry ->
             val announcementId = backStackEntry.arguments?.getInt("announcementId")
             if (announcementId != null) {
-                AnnouncementDetailScreen(modifier,navController,announcementId)
+                AnnouncementDetailScreen(modifier, navController, announcementId)
             }
         }
 

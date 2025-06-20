@@ -30,7 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.hrmanagement.service.MyApplication.Companion.themeModeState
+import com.example.hrmanagement.Service.MyApplication.Companion.themeModeState
 import com.example.hrmanagement.data.AppThemeMode
 
 @Composable

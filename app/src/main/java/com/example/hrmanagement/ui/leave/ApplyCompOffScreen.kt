@@ -1,5 +1,6 @@
 package com.example.hrmanagement.ui.leave
 
+import android.app.Application
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -60,6 +61,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -82,8 +84,7 @@ import kotlin.time.Duration.Companion.milliseconds
 fun ApplyCompOffScreen(
     modifier: Modifier,
     navController: NavController,
-    emailId: String,
-    viewModel: ApplyCompOffViewModel = viewModel()
+    viewModel: ApplyCompOffViewModel = viewModel(factory = ViewModelProvider.AndroidViewModelFactory(LocalContext.current.applicationContext as Application))
 ) {
 
     val startTimeData = viewModel.startTimeData.collectAsStateWithLifecycle()
@@ -124,6 +125,7 @@ fun ApplyCompOffScreen(
                 modifier = Modifier
                     .statusBarsPadding()
                     .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
                     onClick = {
@@ -222,7 +224,7 @@ fun ApplyCompOffScreen(
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    emailId,
+                    viewModel.appUserData.email,
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(20.dp, 2.dp, 5.dp, 15.dp)
                 )

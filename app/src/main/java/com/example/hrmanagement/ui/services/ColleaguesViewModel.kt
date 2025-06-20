@@ -1,16 +1,18 @@
 package com.example.hrmanagement.ui.services
 
+import android.app.Application
 import android.util.Log
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
-import com.example.hrmanagement.service.MyApplication.Companion.appDataManager
-import com.example.hrmanagement.service.MyApplication.Companion.appUserDetails
+import com.example.hrmanagement.Service.MyApplication
+import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
 import com.example.hrmanagement.data.FavoritePerson
 import com.example.hrmanagement.data.UserLoginData
 import com.google.firebase.firestore.QuerySnapshot
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class ColleaguesViewModel(): ViewModel() {
+class ColleaguesViewModel(application: Application): AndroidViewModel(application) {
 
     var numberOfFetchProcess: Int = 0
     private var _isViewLoading: MutableStateFlow<Boolean> = MutableStateFlow(false)
@@ -25,7 +27,8 @@ class ColleaguesViewModel(): ViewModel() {
     val allUsersData = _allUsersData.asStateFlow()
     private var _filteredUsersData: MutableStateFlow<List<UserLoginData>> = MutableStateFlow(listOf(UserLoginData()))
     val filteredUsersData = _filteredUsersData.asStateFlow()
-    val userEmailId = appUserDetails.email
+    private val myApplication = application as MyApplication
+    val appUserData = myApplication.appUserDetails
 //    var personEmailId: String = checkNotNull(savedStateHandle["userEmailId"])
 
     init {
@@ -61,7 +64,7 @@ class ColleaguesViewModel(): ViewModel() {
             toggleIsViewLoading()
         }
         numberOfFetchProcess++
-        appDataManager.getFirebaseUserFavorites(userEmailId,::updateFavouritesData)
+        appDataManager.getFirebaseUserFavorites(appUserData.email,::updateFavouritesData)
 
     }
 

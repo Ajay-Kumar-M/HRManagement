@@ -52,6 +52,7 @@ fun PerformanceInformationScreen(
                     .statusBarsPadding()
                     .background(Color.White)
                     .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
                     onClick = {

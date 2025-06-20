@@ -3,8 +3,8 @@ package com.example.hrmanagement.ui.announcement
 import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import com.example.hrmanagement.service.MyApplication.Companion.appDataManager
-import com.example.hrmanagement.service.MyApplication.Companion.appPreferenceDataStore
+import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
+import com.example.hrmanagement.Service.MyApplication.Companion.appPreferenceDataStore
 import com.example.hrmanagement.data.AnnouncementData
 import com.example.hrmanagement.data.CommentsData
 import com.example.hrmanagement.data.LikeData

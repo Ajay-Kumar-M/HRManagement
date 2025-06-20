@@ -29,7 +29,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.hrmanagement.R
-import com.example.hrmanagement.service.MyApplication
+import com.example.hrmanagement.Service.MyApplication
 import com.example.hrmanagement.component.CircularProgressIndicatorComposable
 import com.example.hrmanagement.data.UserSignInStatusData
 import kotlinx.coroutines.CoroutineScope
@@ -73,7 +73,7 @@ fun FlashScreen(modifier: Modifier,navController: NavController) {
 //                    signInWithGoogle(context, navController, scope)
                     scope.launch {
                         val result = MyApplication.googleAuthenticationService.signIn(context)
-                        if((result!=null)&&(result.token.isNotEmpty())&&(result.status=="Success")) {
+                        if((result!=null)&&(result.token.isNotEmpty())){ //&&(result.status=="Active")) {
 //                            Log.d("FlashScreen","${result.token} user token")
 //            MyApplication.appPreferenceDataStore.updateToken(result.token)
                             MyApplication.appPreferenceDataStore.updateGoogleAuthDetails(result)
@@ -92,6 +92,7 @@ fun FlashScreen(modifier: Modifier,navController: NavController) {
                             }
                         } else {
                             Toast.makeText(context, "Error while authenticating user. Try again!", Toast.LENGTH_LONG).show()
+                            isViewLoading = false
                         }
                     }
                 },

@@ -10,7 +10,7 @@ data class FeedData(
     val type: String = "",
     val message: String = "",
     val isLikeEnabled: Boolean = false,
-    val isCommentEnabled: Boolean = false,
+    val commentEnabled: Boolean = false,
     var lastCommentId: Int = 0,
     var lastLikeId: Int = 0,
     var likesCount: Int = 0,

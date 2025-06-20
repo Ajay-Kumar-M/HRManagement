@@ -1,20 +1,20 @@
 package com.example.hrmanagement.ui.leave
 
+import android.app.Application
 import android.util.Log
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.hrmanagement.service.MyApplication.Companion.appDataManager
-import com.example.hrmanagement.service.MyApplication.Companion.appPreferenceDataStore
+import com.example.hrmanagement.Service.MyApplication
+import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
 import com.example.hrmanagement.data.AttendanceRegularisationData
 import com.google.firebase.firestore.QuerySnapshot
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.ZoneId
@@ -23,9 +23,8 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
-class LeaveRegularisationViewModel: ViewModel() {
+class LeaveRegularisationViewModel(application: Application): AndroidViewModel(application) {
 
-    var userEmailDBState: String? = ""
     private var _isViewLoading: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val isViewLoading = _isViewLoading.asStateFlow()
     private var _attendanceData: MutableStateFlow<MutableList<AttendanceRegularisationData>> = MutableStateFlow(mutableListOf())
@@ -49,12 +48,11 @@ class LeaveRegularisationViewModel: ViewModel() {
     val toastEvent = _toastEvent.asSharedFlow()
     var year: Int = 0
     var month: Int = 0
+    private val myApplication = application as MyApplication
+    val appUserData = myApplication.appUserDetails
 
     init {
         toggleIsViewLoading()
-        runBlocking {
-            userEmailDBState = appPreferenceDataStore.emailFlow.firstOrNull()
-        }
         year = Calendar.getInstance().get(Calendar.YEAR)
         month = Calendar.getInstance().get(Calendar.MONTH).plus(1)
         getCurrentDayRangeUsingCalendar()
@@ -127,10 +125,10 @@ class LeaveRegularisationViewModel: ViewModel() {
     }
 
     fun getAttendanceDetails(){
-        if ((userEmailDBState!=null)&&((userEmailDBState?.isNotBlank())==true)) {
+        if (appUserData.email.isNotBlank()) {
             if (isViewLoading.value==false) toggleIsViewLoading()
             numberOfFeatchProcess++
-            appDataManager.getFirebaseAttendanceData(periodStartDateTimestamp.value,periodEndDateTimestamp.value,userEmailDBState!!,::updateAttendanceDetails)
+            appDataManager.getFirebaseAttendanceData(periodStartDateTimestamp.value,periodEndDateTimestamp.value,appUserData.email,::updateAttendanceDetails)
         }
     }
 

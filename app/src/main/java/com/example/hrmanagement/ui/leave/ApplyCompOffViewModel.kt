@@ -1,10 +1,12 @@
 package com.example.hrmanagement.ui.leave
 
+import android.app.Application
 import android.util.Log
-import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.hrmanagement.service.MyApplication.Companion.appDataManager
+import com.example.hrmanagement.Service.MyApplication
+import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
 import com.example.hrmanagement.component.formatTimestampLegacy
 import com.example.hrmanagement.component.isWeekend
 import com.example.hrmanagement.component.startOfTheDayInMillis
@@ -22,9 +24,7 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
-class ApplyCompOffViewModel(
-    savedStateHandle: SavedStateHandle
-): ViewModel() {
+class ApplyCompOffViewModel(application: Application): AndroidViewModel(application) {
 
     private var _attendanceData: MutableStateFlow<AttendanceData> = MutableStateFlow(AttendanceData())
     val attendanceData = _attendanceData.asStateFlow()
@@ -41,7 +41,8 @@ class ApplyCompOffViewModel(
     val workDate = _workDate.asStateFlow()
     var _leaveReason: MutableStateFlow<String> = MutableStateFlow("")
     val leaveReason = _leaveReason.asStateFlow()
-    var personEmailId: String = ""
+    private val myApplication = application as MyApplication
+    val appUserData = myApplication.appUserDetails
     var year: Int = 0
     var _timeDurationHr: MutableStateFlow<Int> = MutableStateFlow(0)
     val timeDurationHr = _timeDurationHr.asStateFlow()
@@ -59,7 +60,6 @@ class ApplyCompOffViewModel(
 
     init {
         year = Calendar.getInstance().get(Calendar.YEAR)
-        personEmailId = checkNotNull(savedStateHandle["userEmailId"])
         val startOfTheDay = Calendar.getInstance()
         startOfTheDay.apply {
             set(Calendar.HOUR_OF_DAY, 0)
@@ -77,7 +77,7 @@ class ApplyCompOffViewModel(
             toggleIsViewLoading()
         }
         numberOfFetchProcess++
-        appDataManager.fetchLastLeaveId(personEmailId){ id, status ->
+        appDataManager.fetchLastLeaveId(appUserData.email){ id, status ->
             if (status == "Success") {
                 lastLeaveId = id
             } else {
@@ -127,7 +127,7 @@ class ApplyCompOffViewModel(
         val calendar = Calendar.getInstance()
         calendar.timeInMillis = workDate.value
         year = calendar.get(Calendar.YEAR)
-        appDataManager.getFirebaseLeaveTrackerData(year, personEmailId,::processLeaveRequest)
+        appDataManager.getFirebaseLeaveTrackerData(year, appUserData.email,::processLeaveRequest)
     }
 
     fun processLeaveRequest(responseLeaveTrackerData: LeaveTrackerData, response: String) {
@@ -195,11 +195,11 @@ class ApplyCompOffViewModel(
     }
 
     fun onWorkDateSelected(timestamp: Long?){
-        if (timestamp != null && (personEmailId.isNotBlank() == true)) {
+        if (timestamp != null && (appUserData.email.isNotBlank() == true)) {
             if (isViewLoading.value==false) toggleIsViewLoading()
             _workDate.value = timestamp
             numberOfFetchProcess++
-            appDataManager.getFirebaseAttendanceData(workDate.value,(workDate.value+86399990),personEmailId,::updateAttendanceDetails)
+            appDataManager.getFirebaseAttendanceData(workDate.value,(workDate.value+86399990),appUserData.email,::updateAttendanceDetails)
         }
     }
 

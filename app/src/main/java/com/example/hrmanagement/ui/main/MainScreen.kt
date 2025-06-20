@@ -1,6 +1,11 @@
 package com.example.hrmanagement.ui.main
 
+import android.Manifest
+import android.annotation.SuppressLint
+import android.app.Application
+import android.location.Location
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.tween
@@ -103,13 +108,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.hrmanagement.R
-import com.example.hrmanagement.service.MyApplication.Companion.appDataManager
+import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
 import com.example.hrmanagement.component.CircularProgressIndicatorComposable
 import com.example.hrmanagement.component.truncate
 import com.example.hrmanagement.data.AnnouncementList
@@ -120,6 +126,10 @@ import com.example.hrmanagement.data.UserLoginData
 import com.example.hrmanagement.ui.more.MoreScreen
 import com.example.hrmanagement.ui.requests.MyRequestsScreen
 import com.example.hrmanagement.ui.userinfo.getPropertyValue
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
+import com.google.android.gms.location.LocationServices
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -132,7 +142,7 @@ import java.util.Locale
 fun MainScreen(
     modifier: Modifier,
     navController: NavController,
-    viewModel: MainScreenViewModel = viewModel()
+    viewModel: MainScreenViewModel = viewModel(factory = ViewModelProvider.AndroidViewModelFactory(LocalContext.current.applicationContext as Application))
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     val userImageUri = viewModel.userImageUriUiState.collectAsStateWithLifecycle()
@@ -208,7 +218,7 @@ fun MainScreen(
                                 Row {
                                     IconButton(
                                         onClick = {
-                                            navController.navigate("ColleaguesScreen/${liveUserDetails.value.email}")
+                                            navController.navigate("ColleaguesScreen")
                                         },
                                         colors = IconButtonDefaults.iconButtonColors(
                                             containerColor = Color(0xFFF2F2F2),
@@ -224,7 +234,7 @@ fun MainScreen(
                                     }
                                     IconButton(
                                         onClick = {
-                                            navController.navigate("NotificationScreen/${liveUserDetails.value.email}")
+                                            navController.navigate("NotificationScreen")
                                         },
                                         colors = IconButtonDefaults.iconButtonColors(
                                             containerColor = Color(0xFFF2F2F2),
@@ -243,7 +253,7 @@ fun MainScreen(
                             3 -> {
                                 IconButton(
                                     onClick = {
-//                                        navController.navigate("ColleaguesScreen/${liveUserDetails.value.email}")
+//                                        navController.navigate("ColleaguesScreen")
                                     },
                                     colors = IconButtonDefaults.iconButtonColors(
                                         containerColor = Color(0xFFF2F2F2),
@@ -263,7 +273,7 @@ fun MainScreen(
                             4 -> {
                                 IconButton(
                                     onClick = {
-                                        navController.navigate("SettingsScreen/${liveUserDetails.value.email}/${liveUserDetails.value.username}")
+                                        navController.navigate("SettingsScreen")
                                     },
                                     colors = IconButtonDefaults.iconButtonColors(
                                         containerColor = Color(0xFFF2F2F2),
@@ -349,18 +359,18 @@ fun MainScreen(
             } else {
                 when (selectedItem) {
                     0 -> {
-                        ServicesScreen(outerPadding, navController, liveUserDetails.value)
+                        ServicesScreen(outerPadding, navController)
                     }
 
                     1 -> {
                         HomeScreen(outerPadding, navController, viewModel)
                     }
                     3 -> {
-                        MyRequestsScreen(outerPadding, navController, liveUserDetails.value.email)
+                        MyRequestsScreen(outerPadding, navController)
                     }
 
                     4 -> {
-                        MoreScreen(outerPadding, navController, liveUserDetails.value)
+                        MoreScreen(outerPadding, navController)
                     }
                 }
             }
@@ -370,16 +380,15 @@ fun MainScreen(
 
 fun handleServiceNavigation(
     service: String,
-    navController: NavController,
-    userLoginData: UserLoginData
+    navController: NavController
 ) {
     when (service) {
         "Employee Information" -> {
-            navController.navigate("EmployeeInformationScreen/${userLoginData.email}")
+            navController.navigate("EmployeeInformationScreen")
         }
 
         "Attendance" -> {
-            navController.navigate("AttendanceInformationScreen/${userLoginData.email}/${userLoginData.username}/${userLoginData.emp_Id}")
+            navController.navigate("AttendanceInformationScreen")
         }
 
         "Time Tracker" -> {
@@ -395,7 +404,7 @@ fun handleServiceNavigation(
         }
 
         "Leave Tracker" -> {
-            navController.navigate("LeaveTrackerInformationScreen/${userLoginData.email}")
+            navController.navigate("LeaveTrackerInformationScreen")
         }
 
         "Tasks" -> {
@@ -412,8 +421,7 @@ fun handleServiceNavigation(
 @Composable
 fun ServicesScreen(
     outerPadding: PaddingValues,
-    navController: NavController,
-    userLoginData: UserLoginData
+    navController: NavController
 ) {
     val isListView = remember { mutableStateOf(false) }
     val isPullDownRefreshing = remember { mutableStateOf(false) }
@@ -543,7 +551,7 @@ fun ServicesScreen(
                                 .fillMaxWidth()
                                 .background(Color.White, RoundedCornerShape(20.dp))
                                 .clickable {
-                                    handleServiceNavigation(service, navController, userLoginData)
+                                    handleServiceNavigation(service, navController)
                                 }
                                 .padding(15.dp)
                         ) {
@@ -578,7 +586,7 @@ fun ServicesScreen(
                                 .padding(20.dp)
                                 .height(120.dp)
                                 .clickable {
-                                    handleServiceNavigation(service, navController, userLoginData)
+                                    handleServiceNavigation(service, navController)
                                 }
                         ) {
                             Icon(
@@ -777,79 +785,79 @@ fun HomeScreen(
                         style = MaterialTheme.typography.titleLarge
                     )
                 }
-                favouritesLimitedData.value?.let {
-                    if (it.size() > 0) {
-                        it.forEach { favourite ->
-                            val favouritePerson =
-                                favourite.toObject(FavoritePerson::class.java)
-                            Log.d("MainScreen", "announcementData $favouritePerson")
-                            Row(
-                                modifier = Modifier
-                                    .padding(10.dp)
-                                    .clickable {
-                                        navController.navigate("ColleagueInfoScreen/${favouritePerson.email}/${liveUserDetails.value.email}")
-                                    },
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                UserProfileImage(favouritePerson.imageUrl)
-                                Spacer(Modifier.width(10.dp))
-                                Column {
-                                    Text(
-                                        text = favouritePerson.username,
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = Color.Black,
-                                        fontWeight = FontWeight.Bold
+                if ((favouritesLimitedData.value != null)&&(favouritesLimitedData.value!!.size() > 0)) {
+                    favouritesLimitedData.value!!.forEach { favourite ->
+                        val favouritePerson =
+                            favourite.toObject(FavoritePerson::class.java)
+                        Log.d("MainScreen", "announcementData $favouritePerson")
+                        Row(
+                            modifier = Modifier
+                                .padding(10.dp)
+                                .clickable {
+                                    navController.navigate("ColleagueInfoScreen/${favouritePerson.email}/${liveUserDetails.value.email}")
+                                },
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            UserProfileImage(favouritePerson.imageUrl)
+                            Spacer(Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    text = favouritePerson.username,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = Color.Black,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(Modifier.height(2.dp))
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = ImageVector.vectorResource(R.drawable.id_card_svg),
+                                        contentDescription = "ID",
+                                        modifier = Modifier.size(20.dp)
                                     )
-                                    Spacer(Modifier.height(2.dp))
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Icon(
-                                            imageVector = ImageVector.vectorResource(R.drawable.id_card_svg),
-                                            contentDescription = "ID",
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                        Text(
-                                            favouritePerson.employeeId,
-                                            style = MaterialTheme.typography.bodySmall
-                                        )
-                                    }
+                                    Text(
+                                        favouritePerson.employeeId,
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
                                 }
                             }
-                            Spacer(Modifier.width(20.dp))
                         }
-                        Spacer(Modifier.width(30.dp))
-                        Button(
-                            onClick = {
-                                quickLinksData.value?.let {
-                                    navController.navigate("FavouritesScreen/${liveUserDetails.value.email}")
-                                }
-                            },
-                            modifier = Modifier
-                                .align(Alignment.CenterHorizontally),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFFADD8E6)
-                            ),
-                        ) {
-                            Text(
-                                text = "View All",
-                                style = MaterialTheme.typography.titleSmall,
-                                color = Color.Black,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                        Spacer(Modifier.width(10.dp))
-                    } else {
-                        Column(
-                            verticalArrangement = Arrangement.Center,
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            Text(
-                                text = "No Data Found",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        }
+                        Spacer(Modifier.width(20.dp))
+                    }
+                    Spacer(Modifier.width(30.dp))
+                    Button(
+                        onClick = {
+                            quickLinksData.value?.let {
+                                navController.navigate("FavouritesScreen")
+                            }
+                        },
+                        modifier = Modifier
+                            .align(Alignment.CenterHorizontally),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFADD8E6)
+                        ),
+                    ) {
+                        Text(
+                            text = "View All",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = Color.Black,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Spacer(Modifier.width(10.dp))
+                } else {
+                    Column(
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        Spacer(modifier = Modifier.height(20.dp))
+                        Text(
+                            text = "No Data Found",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Spacer(modifier = Modifier.height(20.dp))
                     }
                 }
             }
@@ -882,7 +890,7 @@ fun HomeScreen(
                         modifier = Modifier
                             .padding(10.dp)
                             .clickable {
-                                navController.navigate("ApplyLeaveScreen/${leaveTrackerDetails.value.emailId}/${leaveType}")
+                                navController.navigate("ApplyLeaveScreen/${leaveType}")
                             },
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -920,7 +928,7 @@ fun HomeScreen(
                 Button(
                     onClick = {
                         quickLinksData.value?.let {
-                            navController.navigate("LeaveReportScreen/${liveUserDetails.value.email}")
+                            navController.navigate("LeaveReportScreen")
                         }
                     },
                     modifier = Modifier
@@ -1116,9 +1124,7 @@ fun HomeScreen(
                 ClickableText(
                     text = AnnotatedString("Show Snackbar"),
                     onClick = {
-                        //viewModel.toggleIsViewLoading()
-                        viewModel.addUserToDB()
-//                            viewModel.logoutCurrentUser()
+//                        viewModel.addLeaveTrackerInitialData()
                         scope.launch {
                             snackbarHostState.showSnackbar("Custom Snackbar!")
                         }
@@ -1130,18 +1136,22 @@ fun HomeScreen(
 
 }
 
-@OptIn(ExperimentalAnimationApi::class)
+@OptIn(ExperimentalAnimationApi::class, ExperimentalPermissionsApi::class)
 @Composable
 fun SignInStatus(
     viewModel: MainScreenViewModel
 ) {
     val userSignInStatus = appDataManager.liveUserSignInStatus.collectAsStateWithLifecycle()
     val userAttendanceData = viewModel.userAttendanceData.collectAsStateWithLifecycle()
+    val isSignInViewLoading = viewModel.isSignInViewLoading.collectAsStateWithLifecycle()
     var elapsedSigninTime by remember { mutableStateOf(0L) }
     val (hours, minutes, seconds) = elapsedSigninTime.toHms()
     val parts = userAttendanceData.value.totalHours.toString().split('.')
     val totalHrsIntPart = parts[0]
     val totalHrsDecimalPart = if (parts.size > 1) parts[1] else "0"
+    val permissionState = rememberPermissionState(Manifest.permission.ACCESS_COARSE_LOCATION)
+    var location by remember { mutableStateOf<Location?>(null) }
+    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
         while (true) {
@@ -1159,151 +1169,190 @@ fun SignInStatus(
             .height(200.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(Modifier.height(10.dp))
-        Row(
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            if (userSignInStatus.value == "Checked-In") {
-                Box(
-                    modifier = Modifier
-                        .background(Color(0xFFFFD6D7))
-                        .padding(10.dp),
-                ) {
-                    AnimatedContent(
-                        targetState = hours,
-                        transitionSpec = {
-                            slideInVertically(animationSpec = tween(durationMillis = 1000)) { height -> height } + fadeIn() togetherWith
-                                    slideOutVertically(animationSpec = tween(durationMillis = 1000)) { height -> -height } + fadeOut()
+        if (isSignInViewLoading.value) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                CircularProgressIndicatorComposable()
+            }
+        } else {
+            Spacer(Modifier.height(10.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (userSignInStatus.value == "Checked-In") {
+                    Box(
+                        modifier = Modifier
+                            .background(Color(0xFFFFD6D7))
+                            .padding(10.dp),
+                    ) {
+                        AnimatedContent(
+                            targetState = hours,
+                            transitionSpec = {
+                                slideInVertically(animationSpec = tween(durationMillis = 1000)) { height -> height } + fadeIn() togetherWith
+                                        slideOutVertically(animationSpec = tween(durationMillis = 1000)) { height -> -height } + fadeOut()
+                            }
+                        ) { targetHours ->
+                            Text(
+                                text = String.format(Locale.getDefault(), "%02d", targetHours),
+                                style = MaterialTheme.typography.titleLarge,
+                            )
                         }
-                    ) { targetHours ->
-                        Text(
-                            text = String.format(Locale.getDefault(),"%02d", targetHours),
-                            style = MaterialTheme.typography.titleLarge,
-                        )
                     }
-                }
-                Text(
-                    text = " : ",
-                    fontWeight = FontWeight.Bold
-                )
-                Box(
-                    modifier = Modifier
-                        .background(Color(0xFFFFD6D7))
-                        .padding(10.dp),
-                ) {
-                    AnimatedContent(
-                        targetState = minutes,
-                        transitionSpec = {
-                            slideInVertically(animationSpec = tween(durationMillis = 1000)) { height -> height } + fadeIn() togetherWith
-                                    slideOutVertically(animationSpec = tween(durationMillis = 1000)) { height -> -height } + fadeOut()
+                    Text(
+                        text = " : ",
+                        fontWeight = FontWeight.Bold
+                    )
+                    Box(
+                        modifier = Modifier
+                            .background(Color(0xFFFFD6D7))
+                            .padding(10.dp),
+                    ) {
+                        AnimatedContent(
+                            targetState = minutes,
+                            transitionSpec = {
+                                slideInVertically(animationSpec = tween(durationMillis = 1000)) { height -> height } + fadeIn() togetherWith
+                                        slideOutVertically(animationSpec = tween(durationMillis = 1000)) { height -> -height } + fadeOut()
+                            }
+                        ) { targetMinutes ->
+                            Text(
+                                text = String.format(Locale.getDefault(), "%02d", targetMinutes),
+                                style = MaterialTheme.typography.titleLarge,
+                            )
                         }
-                    ) { targetMinutes ->
-                        Text(
-                            text = String.format(Locale.getDefault(),"%02d", targetMinutes),
-                            style = MaterialTheme.typography.titleLarge,
-                        )
                     }
-                }
-                Text(
-                    text = " : ",
-                    fontWeight = FontWeight.Bold
-                )
-                Box(
-                    modifier = Modifier
-                        .background(Color(0xFFFFD6D7))
-                        .padding(10.dp),
-                ) {
-                    AnimatedContent(
-                        targetState = seconds,
-                        transitionSpec = {
-                            slideInVertically(animationSpec = tween(durationMillis = 1000)) { height -> height } + fadeIn() togetherWith
-                                    slideOutVertically(animationSpec = tween(durationMillis = 1000)) { height -> -height } + fadeOut()
+                    Text(
+                        text = " : ",
+                        fontWeight = FontWeight.Bold
+                    )
+                    Box(
+                        modifier = Modifier
+                            .background(Color(0xFFFFD6D7))
+                            .padding(10.dp),
+                    ) {
+                        AnimatedContent(
+                            targetState = seconds,
+                            transitionSpec = {
+                                slideInVertically(animationSpec = tween(durationMillis = 1000)) { height -> height } + fadeIn() togetherWith
+                                        slideOutVertically(animationSpec = tween(durationMillis = 1000)) { height -> -height } + fadeOut()
+                            }
+                        ) { targetSeconds ->
+                            Text(
+                                text = String.format(Locale.getDefault(), "%02d", targetSeconds),
+                                style = MaterialTheme.typography.titleLarge,
+                            )
                         }
-                    ) { targetSeconds ->
-                        Text(
-                            text = String.format(Locale.getDefault(),"%02d", targetSeconds),
-                            style = MaterialTheme.typography.titleLarge,
-                        )
                     }
-                }
 
-            } else {
+                } else {
+                    Text(
+                        text = String.format(Locale.getDefault(), "%02d", totalHrsIntPart.toInt()),
+                        modifier = Modifier
+                            .background(Color(0xFFFFD6D7))
+                            .padding(10.dp),
+                        style = MaterialTheme.typography.titleLarge,
+                    )
+                    Text(
+                        text = " : ",
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = String.format(
+                            Locale.getDefault(),
+                            "%02d",
+                            totalHrsDecimalPart.toInt()
+                        ),
+                        modifier = Modifier
+                            .background(Color(0xFFFFD6D7))
+                            .padding(10.dp),
+                        style = MaterialTheme.typography.titleLarge,
+                    )
+                    Text(
+                        text = " : ",
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "00",
+                        modifier = Modifier
+                            .background(Color(0xFFFFD6D7))
+                            .padding(10.dp),
+                        style = MaterialTheme.typography.titleLarge,
+                    )
+                }
+            }
+            Spacer(Modifier.height(10.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(0.8f)
+            ) {
+                if (userSignInStatus.value == "Checked-In") {
+                    LinearProgressIndicator(
+                        progress = { hours.toFloat() / 9 },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(4.dp),
+                        color = Color.Green,
+                        trackColor = Color.LightGray
+                    )
+                } else {
+                    LinearProgressIndicator(
+                        progress = { userAttendanceData.value.totalHours.toFloat() / 9 },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(4.dp),
+                        color = Color.Green,
+                        trackColor = Color.LightGray
+                    )
+                }
+            }
+            Spacer(Modifier.height(10.dp))
+            Text(
+                text = "General",
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            )
+            Text(
+                text = "09:00 AM To 06:00 PM",
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            )
+            Spacer(Modifier.height(15.dp))
+            Button(
+                onClick = {
+                    if (permissionState.status.isGranted) {
+                        val fusedLocationClient =
+                            LocationServices.getFusedLocationProviderClient(context)
+                        @SuppressLint("MissingPermission")
+                        fusedLocationClient.lastLocation.addOnSuccessListener { loc ->
+                            location = loc
+                            viewModel.updateUserSignInStatus(location, context)
+                        }
+                    } else {
+                        Toast.makeText(
+                            context, "Location permission is required for Check-in / Check-out",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        permissionState.launchPermissionRequest()
+                    }
+                },
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor =
+                        if (userSignInStatus.value == "Checked-In") Color(0xFFD2042D)
+                        else Color(0xFF0E7305),
+                ),
+            ) {
                 Text(
-                    text = totalHrsIntPart,
-                    modifier = Modifier
-                        .background(Color(0xFFFFD6D7))
-                        .padding(10.dp),
-                    style = MaterialTheme.typography.titleLarge,
-                )
-                Text(
-                    text = " : ",
+                    text = if (userSignInStatus.value == "Checked-In") "Check Out" else "Check In",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.White,
                     fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = totalHrsDecimalPart,
-                    modifier = Modifier
-                        .background(Color(0xFFFFD6D7))
-                        .padding(10.dp),
-                    style = MaterialTheme.typography.titleLarge,
-                )
-                Text(
-                    text = " : ",
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "00",
-                    modifier = Modifier
-                        .background(Color(0xFFFFD6D7))
-                        .padding(10.dp),
-                    style = MaterialTheme.typography.titleLarge,
                 )
             }
         }
-        Spacer(Modifier.height(10.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(0.8f)
-        ) {
-            LinearProgressIndicator(
-                progress = { hours.toFloat() / 9 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(4.dp),
-                color = Color.Green,
-                trackColor = Color.LightGray
-            )
-        }
-        Spacer(Modifier.height(10.dp))
-        Text(
-            text = "General",
-            style = MaterialTheme.typography.bodySmall,
-            modifier = Modifier.align(Alignment.CenterHorizontally)
-        )
-        Text(
-            text = "09:00 AM To 06:00 PM",
-            style = MaterialTheme.typography.bodySmall,
-            modifier = Modifier.align(Alignment.CenterHorizontally)
-        )
-        Spacer(Modifier.height(15.dp))
-        Button(
-            onClick = {
-                viewModel.updateUserSignInStatus()
-            },
-            modifier = Modifier
-                .align(Alignment.CenterHorizontally),
-            colors = ButtonDefaults.buttonColors(
-                containerColor =
-                    if (userSignInStatus.value == "Checked-In") Color(0xFFD2042D)
-                    else Color(0xFF0E7305),
-            ),
-        ) {
-            Text(
-                text = if (userSignInStatus.value == "Checked-In") "Check Out" else "Check In",
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.White,
-                fontWeight = FontWeight.Bold
-            )
-        }
-
     }
 }
 
@@ -1348,7 +1397,6 @@ fun AddTaskShowModalSheet(
 ) {
     var sheetState = rememberModalBottomSheetState()
     val coroutineScope = rememberCoroutineScope()
-    val leaveTrackerDetails = viewModel.liveLeaveTrackerDetails.collectAsStateWithLifecycle()
 
     Column {
         ModalBottomSheet(
@@ -1365,13 +1413,11 @@ fun AddTaskShowModalSheet(
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.clickable {
-                        viewModel.userEmailUiState?.let {
-                            coroutineScope.launch {
-                                sheetState.hide()
-                                viewModel.toggleAddTaskShowBottomSheet()
-                                if (!sheetState.isVisible) {
-                                    navController.navigate("StatusScreen/${it}")
-                                }
+                        coroutineScope.launch {
+                            sheetState.hide()
+                            viewModel.toggleAddTaskShowBottomSheet()
+                            if (!sheetState.isVisible) {
+                                navController.navigate("StatusScreen")
                             }
                         }
                     }
@@ -1395,7 +1441,7 @@ fun AddTaskShowModalSheet(
                             sheetState.hide()
                             viewModel.toggleAddTaskShowBottomSheet()
                             if (!sheetState.isVisible) {
-                                navController.navigate("ApplyCompOffScreen/${liveUserDetails.email}")
+                                navController.navigate("ApplyCompOffScreen")
                             }
                         }
                     }
@@ -1427,7 +1473,7 @@ fun AddTaskShowModalSheet(
                             sheetState.hide()
                             viewModel.toggleAddTaskShowBottomSheet()
                             if (!sheetState.isVisible) {
-                                navController.navigate("ApplyLeaveScreen/${leaveTrackerDetails.value.emailId}/All")
+                                navController.navigate("ApplyLeaveScreen/All")
                             }
                         }
                     }
@@ -1457,7 +1503,7 @@ fun AddTaskShowModalSheet(
                             sheetState.hide()
                             viewModel.toggleAddTaskShowBottomSheet()
                             if (!sheetState.isVisible && (liveUserDetails.emp_Id.isNotBlank())) {
-                                navController.navigate("LeaveRegularisationScreen/${liveUserDetails.email}/${liveUserDetails.username}/${liveUserDetails.emp_Id}")
+                                navController.navigate("LeaveRegularisationScreen")
                             }
                         }
                     }
@@ -1589,5 +1635,23 @@ fun Modifier.singleClick(
 //                    Icon(Icons.Default.Add, contentDescription = "Add")
 //                }
 //            },
+
+//                    @SuppressLint("MissingPermission")
+//                    fusedLocationClient.getCurrentLocation(
+//                        CurrentLocationRequest.Builder()
+//                            .setPriority(Priority.PRIORITY_HIGH_ACCURACY)
+//                            .build(),
+//                        null)
+//                        .addOnSuccessListener { loc ->
+//                            if (loc != null) {
+//                                location = loc
+//                                viewModel.updateUserSignInStatus(location, context)
+//                            } else {
+//                                viewModel.updateUserSignInStatus(location, context)
+//                            }
+//                        }
+//                        .addOnFailureListener { temp ->
+//                            viewModel.updateUserSignInStatus(location, context)
+//                        }
 
  */

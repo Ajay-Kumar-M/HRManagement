@@ -1,10 +1,13 @@
 package com.example.hrmanagement.ui.userinfo
 
+import android.app.Application
 import android.util.Log
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.hrmanagement.service.MyApplication.Companion.appDataManager
-import com.example.hrmanagement.service.MyApplication.Companion.appPreferenceDataStore
+import com.example.hrmanagement.Service.MyApplication
+import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
+import com.example.hrmanagement.Service.MyApplication.Companion.appPreferenceDataStore
 import com.example.hrmanagement.data.UserLoginData
 import com.google.firebase.firestore.QuerySnapshot
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,7 +21,7 @@ import java.time.format.TextStyle
 import java.util.Locale
 import kotlin.reflect.full.memberProperties
 
-class UserInfoScreenViewModel: ViewModel() {
+class UserInfoScreenViewModel(application: Application): AndroidViewModel(application) {
 
     val userImageUriFlowState = appPreferenceDataStore.userImageURLFlow
         .stateIn(
@@ -28,20 +31,18 @@ class UserInfoScreenViewModel: ViewModel() {
         )
     private val _userLoginData: MutableStateFlow<UserLoginData> = MutableStateFlow(UserLoginData())
     val userLoginData = _userLoginData.asStateFlow()
-    var userEmailId: String? = ""
     private var _isViewLoading: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val isViewLoading = _isViewLoading.asStateFlow()
 //    var _liveUserDetails: MutableStateFlow<UserLoginData> = MutableStateFlow(UserLoginData())
 //    val liveUserDetails = _liveUserDetails.asStateFlow()
     private var _liveDepartmentDetails: MutableStateFlow<QuerySnapshot?> = MutableStateFlow(null)
     val liveDepartmentDetails = _liveDepartmentDetails.asStateFlow()
-    var numberOfFeatchProcess: Int = 0
+    var numberOfFetchProcess: Int = 0
+    private val myApplication = application as MyApplication
+    val appUserData = myApplication.appUserDetails
 
     init {
         toggleIsViewLoading()
-        runBlocking {
-            userEmailId = appPreferenceDataStore.emailFlow.firstOrNull()
-        }
         fetchUserDetails()
     }
 
@@ -49,12 +50,12 @@ class UserInfoScreenViewModel: ViewModel() {
         if (!_isViewLoading.value) {
             toggleIsViewLoading()
         }
-        numberOfFeatchProcess++
-        userEmailId?.let { appDataManager.getFirebaseUser(it,::updateUserDetails) }
+        numberOfFetchProcess++
+        appUserData.email.let { appDataManager.getFirebaseUser(it,::updateUserDetails) }
     }
 
     fun updateUserDetails(userDetails: UserLoginData?, response: String){
-        numberOfFeatchProcess--
+        numberOfFetchProcess--
         Log.d("MainScreenViewModel","updateUserDetails called $userDetails")
         if((response == "Success")&&(userDetails!=null)){
             _userLoginData.value = userDetails
@@ -62,7 +63,7 @@ class UserInfoScreenViewModel: ViewModel() {
             //handle errors
             TODO()
         }
-        if((isViewLoading.value)&&(numberOfFeatchProcess==0)) {
+        if((isViewLoading.value)&&(numberOfFetchProcess==0)) {
             toggleIsViewLoading()
         }
     }
@@ -79,21 +80,21 @@ class UserInfoScreenViewModel: ViewModel() {
 
     fun getDepartmentDetails(departmentName: String){
         if (isViewLoading.value==false) toggleIsViewLoading()
-        numberOfFeatchProcess++
+        numberOfFetchProcess++
         appDataManager.getFirebaseDepartment(departmentName,::updateDepartmentDetails)
     }
 
 
     fun updateDepartmentDetails(departmentInfoQuerySnapshot: QuerySnapshot?, response: String){
         Log.d("UserInfoScreenViewModel","updateDepartmentDetails called ${departmentInfoQuerySnapshot?.size()}")
-        numberOfFeatchProcess--
+        numberOfFetchProcess--
         if((response == "Success")&&(departmentInfoQuerySnapshot!=null)){
             _liveDepartmentDetails.value = departmentInfoQuerySnapshot
         } else {
             //handle errors
             TODO()
         }
-        if ((isViewLoading.value==true)&&(numberOfFeatchProcess==0))
+        if ((isViewLoading.value==true)&&(numberOfFetchProcess==0))
             toggleIsViewLoading()
     }
 

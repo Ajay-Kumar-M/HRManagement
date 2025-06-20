@@ -117,5 +117,8 @@ dependencies {
     //to observeasstate
     implementation("androidx.compose.runtime:runtime-livedata:1.8.2")
 
+    //Accompanist Permissions
+    implementation("com.google.accompanist:accompanist-permissions:0.36.0")
+    implementation("com.google.android.gms:play-services-location:21.3.0")
 
 }

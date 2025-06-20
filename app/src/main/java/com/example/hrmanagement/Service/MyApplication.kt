@@ -1,7 +1,9 @@
-package com.example.hrmanagement.service
+package com.example.hrmanagement.Service
 
 import android.app.Application
+import android.content.Context
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import com.example.hrmanagement.data.AppDataManager
 import com.example.hrmanagement.data.AppPreferenceDataStore
@@ -14,6 +16,10 @@ import kotlinx.coroutines.runBlocking
 
 class MyApplication: Application() {
 
+    private lateinit var _appUserDetails: UserLoginData
+    val appUserDetails: UserLoginData
+        get() = _appUserDetails
+
     override fun onCreate() {
         super.onCreate()
         FirebaseApp.initializeApp(this)
@@ -25,6 +31,7 @@ class MyApplication: Application() {
             appUserEmailId = appPreferenceDataStore.emailFlow.firstOrNull().toString()
         }
         themeModeState = mutableStateOf(AppThemeMode.SYSTEM)
+        appContext = this
     }
 
     companion object {
@@ -34,7 +41,11 @@ class MyApplication: Application() {
         internal lateinit var networkMonitor: NetworkStatusMonitor
         internal lateinit var appDataManager: AppDataManager
         internal lateinit var appUserEmailId: String
-        internal lateinit var appUserDetails: UserLoginData
         internal lateinit var themeModeState: MutableState<AppThemeMode>
+        internal lateinit var appContext: Context
+    }
+
+    fun updateAppUserData(userLoginData: UserLoginData){
+        _appUserDetails = userLoginData
     }
 }

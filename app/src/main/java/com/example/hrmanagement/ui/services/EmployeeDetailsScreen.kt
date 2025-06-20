@@ -1,5 +1,6 @@
 package com.example.hrmanagement.ui.services
 
+import android.app.Application
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -39,6 +40,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -53,8 +55,7 @@ import com.example.hrmanagement.ui.userinfo.ProfileComposable
 @Composable
 fun EmployeeDetailsScreen(
     navController: NavController,
-    userEmailId: String,
-    viewModel: EmployeeDetailsViewModel = viewModel()
+    viewModel: EmployeeDetailsViewModel = viewModel(factory = ViewModelProvider.AndroidViewModelFactory(LocalContext.current.applicationContext as Application))
 ) {
 
     val isViewLoading = viewModel.isViewLoading.collectAsStateWithLifecycle()
@@ -69,6 +70,7 @@ fun EmployeeDetailsScreen(
                     .statusBarsPadding()
                     .background(Color.White)
                     .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
                     onClick = {
@@ -88,7 +90,7 @@ fun EmployeeDetailsScreen(
                     )
                 }
                 Text("Employee Details",
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(20.dp,5.dp)
                 )
             }
@@ -96,11 +98,9 @@ fun EmployeeDetailsScreen(
     ) { innerPadding ->
         Column(
             modifier = Modifier
-                .clip(shape = RoundedCornerShape(15.dp))
-                .fillMaxSize()
+                .padding(innerPadding)
                 .background(Color.White)
                 .verticalScroll(rememberScrollState())
-                .padding(innerPadding)
         ) {
             if (isViewLoading.value){
                 Column(

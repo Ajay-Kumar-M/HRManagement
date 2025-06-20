@@ -67,7 +67,6 @@ import java.nio.charset.StandardCharsets
 fun FeedDetailScreen(
     modifier: Modifier,
     navController: NavController,
-    userEmailId: String,
     feedId: Int,
     feedType: String,
     viewModel: FeedDetailViewModel = viewModel()
@@ -87,6 +86,7 @@ fun FeedDetailScreen(
                 modifier = Modifier
                     .statusBarsPadding()
                     .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
                     onClick = {
@@ -396,7 +396,7 @@ fun FeedDetailScreen(
                             }
 
                             Spacer(Modifier.height(20.dp))
-                            if (!feedRecord.value.isCommentEnabled) {
+                            if (!feedRecord.value.commentEnabled) {
                                 Row(
                                     modifier = Modifier.fillMaxWidth()
                                         .background(Color(0xFFFFD6D7)),
@@ -551,7 +551,7 @@ fun FeedDetailScreen(
                             if (feedComment.value.isNotBlank()){
                                 if ((feedType == "LeaveRequest")&&(leaveRecord.value.isCommentsEnabled == true)) {
                                     viewModel.addFeedComment()
-                                } else if ((feedType == "Status")&&(feedRecord.value.isCommentEnabled == true)) {
+                                } else if ((feedType == "Status")&&(feedRecord.value.commentEnabled == true)) {
                                     viewModel.addFeedComment()
                                 } else {
                                     Toast.makeText(context,"Comments are disabled for this feed.",Toast.LENGTH_LONG).show()

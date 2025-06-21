@@ -141,7 +141,7 @@ fun SettingsScreen(
                     )
                     Text(
                         viewModel.userLoginData.email,
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodyLarge,
                         modifier = Modifier.padding(20.dp, 5.dp)
                     )
                 }
@@ -176,7 +176,7 @@ fun SettingsScreen(
             ) {
                 Text(
                     "Light Mode",
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.padding(20.dp, 10.dp, 0.dp, 15.dp)
                 )
                 Icon(
@@ -193,12 +193,12 @@ fun SettingsScreen(
             )
             Text(
                 "Privacy Policy",
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.padding(20.dp, 10.dp, 0.dp, 15.dp)
             )
             Text(
                 "Terms of Service",
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.padding(20.dp, 10.dp, 0.dp, 15.dp)
             )
             Text(
@@ -209,16 +209,17 @@ fun SettingsScreen(
             )
             Text(
                 "Version (1.0.0)",
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.padding(20.dp, 10.dp, 0.dp, 15.dp)
             )
             Text(
                 "Feedback",
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.padding(20.dp, 10.dp, 0.dp, 15.dp)
+                    .fillMaxWidth()
                     .clickable{
                         val intent = Intent(Intent.ACTION_SENDTO).apply {
-                            data = "mailto:${viewModel.userLoginData.email}".toUri()
+                            data = "mailto:feedback@gmail.com".toUri()
 //                                    putExtra(Intent.EXTRA_SUBJECT, subject)
 //                                    putExtra(Intent.EXTRA_TEXT, body)
                         }
@@ -238,7 +239,7 @@ fun SettingsScreen(
             )
             Text(
                 "Sign Out",
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier
                     .padding(20.dp, 10.dp, 0.dp, 15.dp)
                     .clickable {

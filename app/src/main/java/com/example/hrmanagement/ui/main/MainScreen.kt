@@ -85,6 +85,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -683,7 +684,6 @@ fun HomeScreen(
     navController: NavController,
     viewModel: MainScreenViewModel
 ) {
-    val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val isPullDownRefreshing = remember { mutableStateOf(false) }
     val quickLinksData = viewModel.quickLinksLimitedData.collectAsStateWithLifecycle()
@@ -1207,8 +1207,8 @@ fun SignInStatus(
     val userSignInStatus = appDataManager.liveUserSignInStatus.collectAsStateWithLifecycle()
     val userAttendanceData = viewModel.userAttendanceData.collectAsStateWithLifecycle()
     val isSignInViewLoading = viewModel.isSignInViewLoading.collectAsStateWithLifecycle()
-    var elapsedSigninTime by remember { mutableStateOf(0L) }
-    val (hours, minutes, seconds) = elapsedSigninTime.toHms()
+    var elapsedSignInTime by remember { mutableLongStateOf(0L) }
+    val (hours, minutes, seconds) = elapsedSignInTime.toHms()
     val parts = userAttendanceData.value.totalHours.toString().split('.')
     val totalHrsIntPart = parts[0]
     val totalHrsDecimalPart = if (parts.size > 1) parts[1] else "0"
@@ -1218,7 +1218,7 @@ fun SignInStatus(
 
     LaunchedEffect(Unit) {
         while (true) {
-            elapsedSigninTime = getElapsedTime(userAttendanceData.value.checkInTime)
+            elapsedSignInTime = getElapsedTime(userAttendanceData.value.checkInTime)
             delay(1000)
         }
     }

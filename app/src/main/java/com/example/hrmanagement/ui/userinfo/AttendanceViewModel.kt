@@ -84,7 +84,7 @@ class AttendanceViewModel(application: Application): AndroidViewModel(applicatio
     fun updateAttendanceDetails(attendanceData: QuerySnapshot?,response: String){
         numberOfFetchProcess--
         if(response == "Success"){
-            Log.d("UserInfoScreenViewModel","updateAttendanceDetails called $attendanceData")
+            Log.d("UserInfoScreenViewModel","updateAttendanceDetails called ${attendanceData?.size()}")
             var tempTotalHours = 0.0f
             attendanceData?.forEach { attendanceLog ->
                 tempTotalHours += attendanceLog.data.getValue("totalHours").toString().toFloat()
@@ -121,6 +121,7 @@ class AttendanceViewModel(application: Application): AndroidViewModel(applicatio
                             calendar.timeInMillis,
                             startOfTheDay.timeInMillis,
                             userLocation ?: "",
+                            appUserData.reportingTo.getValue("emailId"),
                             ::updateSignInResponse
                         )
                     }
@@ -132,6 +133,7 @@ class AttendanceViewModel(application: Application): AndroidViewModel(applicatio
                     calendar.timeInMillis,
                     startOfTheDay.timeInMillis,
                     "",
+                    appUserData.reportingTo.getValue("emailId"),
                     ::updateSignInResponse
                 )
             }
@@ -234,7 +236,7 @@ class AttendanceViewModel(application: Application): AndroidViewModel(applicatio
         }
         attendanceStartDateTimestamp = calendar.timeInMillis
         _attendanceStartDate.value = SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault()).format(Date(attendanceStartDateTimestamp))
-        calendar.add(Calendar.DAY_OF_WEEK, 6)
+        calendar.add(Calendar.DAY_OF_WEEK, 7)
         attendanceEndDateTimestamp = calendar.timeInMillis
         _attendanceEndDate.value = SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault()).format(Date(attendanceEndDateTimestamp))
     }

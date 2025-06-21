@@ -1,8 +1,11 @@
 package com.example.hrmanagement.ui.more
 
+import android.app.Application
 import android.util.Log
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
+import com.example.hrmanagement.Service.MyApplication
 import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
 import com.example.hrmanagement.Service.MyApplication.Companion.appPreferenceDataStore
 import com.example.hrmanagement.data.CommentsData
@@ -17,8 +20,9 @@ import kotlinx.coroutines.runBlocking
 import java.util.Calendar
 
 class FeedDetailViewModel(
+    application: Application,
     savedStateHandle: SavedStateHandle
-) : ViewModel() {
+) : AndroidViewModel(application) {
 
     private var _feedComment: MutableStateFlow<String> = MutableStateFlow("")
     val feedComment = _feedComment.asStateFlow()
@@ -30,15 +34,13 @@ class FeedDetailViewModel(
     private var _isViewLoading: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val isViewLoading = _isViewLoading.asStateFlow()
     var numberOfFetchProcess: Int = 0
-    var userEmail: String = ""
     var feedType: String = ""
     var leaveId: Int = 0
     var feedId: Int = 0
+    private val myApplication = application as MyApplication
+    val appUserData = myApplication.appUserDetails
 
     init {
-        runBlocking {
-            userEmail = appPreferenceDataStore.emailFlow.firstOrNull() ?: ""
-        }
         feedType = checkNotNull(savedStateHandle["feedType"])
         fetchUserDetails()
         if (feedType == "LeaveRequest") {
@@ -56,7 +58,7 @@ class FeedDetailViewModel(
             toggleIsViewLoading()
         }
         numberOfFetchProcess++
-        appDataManager.getFirebaseUser(userEmail, ::updateUserDetails)
+        appDataManager.getFirebaseUser(appUserData.email, ::updateUserDetails)
     }
 
     fun updateUserDetails(userDetails: UserLoginData?, response: String) {
@@ -80,7 +82,7 @@ class FeedDetailViewModel(
         numberOfFetchProcess++
         appDataManager.fetchLeaveLogs(
             2025,
-            userEmail,
+            appUserData.email,
             leaveId
         ) { querySnapshot, response, documentSnapshot ->
             Log.d("FeedsViewModel", "fetchLeaveRequestData response called $response")
@@ -101,7 +103,7 @@ class FeedDetailViewModel(
             toggleIsViewLoading()
         }
         numberOfFetchProcess++
-        appDataManager.getUserFeedID(userEmail, feedId) { documentSnapshot, response ->
+        appDataManager.getUserFeedID(appUserData.email, feedId) { documentSnapshot, response ->
             Log.d("FeedsViewModel", "fetchLeaveRequestsData response called $response")
             if ((response == "Success") && (documentSnapshot != null)) {
                 _feedRecord.value = documentSnapshot.toObject(FeedData::class.java) ?: FeedData()
@@ -177,7 +179,7 @@ class FeedDetailViewModel(
     }
 
     fun modifyCommentLikeData(isCommentLiked: Boolean, commentID: Int) {
-        if (userEmail.isNotBlank()) {
+        if (appUserData.email.isNotBlank()) {
             if (!_isViewLoading.value) {
                 toggleIsViewLoading()
             }
@@ -190,14 +192,14 @@ class FeedDetailViewModel(
                         commentData.getValue(commentID.toString()).likeUsers.remove(
                             commentData.getValue(
                                 commentID.toString()
-                            ).likeUsers.filter { (_, value) -> value.emailId == userEmail }.keys.first()
+                            ).likeUsers.filter { (_, value) -> value.emailId == appUserData.email }.keys.first()
                         )
                         commentData.getValue(commentID.toString()).likeCount =
                             commentData.getValue(commentID.toString()).likeCount - 1
                         appDataManager.addLeaveDataCommentLikeData(
                             commentData,
                             _leaveRecord.value.leaveId,
-                            userEmail,
+                            appUserData.email,
                             ::modifyCommentLikeDataResponse
                         )
                     }
@@ -208,14 +210,14 @@ class FeedDetailViewModel(
                         commentData.getValue(commentID.toString()).likeUsers.remove(
                             commentData.getValue(
                                 commentID.toString()
-                            ).likeUsers.filter { (_, value) -> value.emailId == userEmail }.keys.first()
+                            ).likeUsers.filter { (_, value) -> value.emailId == appUserData.email }.keys.first()
                         )
                         commentData.getValue(commentID.toString()).likeCount =
                             commentData.getValue(commentID.toString()).likeCount - 1
                         appDataManager.addFeedDataCommentLikeData(
                             commentData,
                             _feedRecord.value.feedID.toInt(),
-                            userEmail,
+                            appUserData.email,
                             ::modifyCommentLikeDataResponse
                         )
                     }
@@ -239,7 +241,7 @@ class FeedDetailViewModel(
                         appDataManager.addLeaveDataCommentLikeData(
                             commentData,
                             _leaveRecord.value.leaveId,
-                            userEmail,
+                            appUserData.email,
                             ::modifyCommentLikeDataResponse
                         )
                     }
@@ -261,7 +263,7 @@ class FeedDetailViewModel(
                         appDataManager.addLeaveDataCommentLikeData(
                             commentData,
                             _feedRecord.value.feedID.toInt(),
-                            userEmail,
+                            appUserData.email,
                             ::modifyCommentLikeDataResponse
                         )
                     }
@@ -285,14 +287,14 @@ class FeedDetailViewModel(
 
 
     fun modifyLikeData(isFeedLiked: Boolean) {
-        if (userEmail.isNotBlank()) {
+        if (appUserData.email.isNotBlank()) {
             if (!_isViewLoading.value) {
                 toggleIsViewLoading()
             }
             numberOfFetchProcess++
             if (isFeedLiked) {
                 val currentData = _feedRecord.value
-                currentData.likeUsers.remove(currentData.likeUsers.filter { (_, value) -> value.emailId == userEmail }.keys.first())
+                currentData.likeUsers.remove(currentData.likeUsers.filter { (_, value) -> value.emailId == appUserData.email }.keys.first())
                 currentData.likesCount = currentData.likesCount - 1
                 appDataManager.setUserFeed(currentData, ::addFeedDataResponse)
             } else {

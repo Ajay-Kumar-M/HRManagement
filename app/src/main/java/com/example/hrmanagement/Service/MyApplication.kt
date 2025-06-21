@@ -31,7 +31,6 @@ class MyApplication: Application() {
             appUserEmailId = appPreferenceDataStore.emailFlow.firstOrNull().toString()
         }
         themeModeState = mutableStateOf(AppThemeMode.SYSTEM)
-        appContext = this
     }
 
     companion object {
@@ -42,7 +41,6 @@ class MyApplication: Application() {
         internal lateinit var appDataManager: AppDataManager
         internal lateinit var appUserEmailId: String
         internal lateinit var themeModeState: MutableState<AppThemeMode>
-        internal lateinit var appContext: Context
     }
 
     fun updateAppUserData(userLoginData: UserLoginData){

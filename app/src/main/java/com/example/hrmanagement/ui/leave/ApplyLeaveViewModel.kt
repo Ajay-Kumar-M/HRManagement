@@ -1,9 +1,12 @@
 package com.example.hrmanagement.ui.leave
 
+import android.app.Application
 import android.util.Log
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.hrmanagement.Service.MyApplication
 import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
 import com.example.hrmanagement.Service.MyApplication.Companion.appPreferenceDataStore
 import com.example.hrmanagement.data.LeaveData
@@ -23,8 +26,9 @@ import java.util.Locale
 import kotlin.time.Duration.Companion.milliseconds
 
 class ApplyLeaveViewModel(
+    application: Application,
     savedStateHandle: SavedStateHandle
-): ViewModel() {
+): AndroidViewModel(application) {
 
     var year: Int = 0
     var _isViewLoading: MutableStateFlow<Boolean> = MutableStateFlow(false)
@@ -48,12 +52,10 @@ class ApplyLeaveViewModel(
     var leaveType: String = checkNotNull(savedStateHandle["leaveType"])
     var lastLeaveId: Int? = null
     private var numberOfFetchProcess: Int = 0
-    var userEmailId: String? = null
+    private val myApplication = application as MyApplication
+    val appUserData = myApplication.appUserDetails
 
     init {
-        runBlocking {
-            userEmailId = appPreferenceDataStore.emailFlow.firstOrNull()
-        }
         year = Calendar.getInstance().get(Calendar.YEAR)
         val startOfTheDay = Calendar.getInstance()
         startOfTheDay.apply {
@@ -75,8 +77,8 @@ class ApplyLeaveViewModel(
             toggleIsViewLoading()
         }
         numberOfFetchProcess++
-        if ((userEmailId!=null)&&(userEmailId!!.isNotBlank())) {
-            appDataManager.fetchLastLeaveId(userEmailId!!){ id, status ->
+        if (appUserData.email.isNotBlank()) {
+            appDataManager.fetchLastLeaveId(appUserData.email){ id, status ->
                 if (status == "Success") {
                     lastLeaveId = id
                 } else {
@@ -122,7 +124,7 @@ class ApplyLeaveViewModel(
         val processedLeaveDaysRemaining = (getPropertyValue(
             responseLeaveTrackerData,
             selectedLeaveTypeDataClass
-        ).toString().toInt())-differenceInDays
+        ).toString().toFloat())-differenceInDays
         if ((processedLeaveDaysRemaining>=0)&&(lastLeaveId!=null)){
             val fromSelectedDate = SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault()).format(Date(fromDate.value))?: ""
             val toSelectedDate = SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault()).format(Date(toDate.value))?: ""
@@ -174,7 +176,8 @@ class ApplyLeaveViewModel(
                 fromSelectedDate,
                 toSelectedDate,
                 dateOfRequest,
-                mapOf()
+                mapOf(),
+                reportingTo = appUserData.reportingTo.getValue("emailId")
             )
 //            appDataManager.addLeaveLogTemp(leaveData)
             appDataManager.addLeaveTrackerData(responseLeaveTrackerData, year, leaveData, ::addAnnualLeaveDataResponseListener)

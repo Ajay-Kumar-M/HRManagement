@@ -1,15 +1,21 @@
 package com.example.hrmanagement.ui.navigation
 
+import android.app.Application
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.SavedStateViewModelFactory
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.hrmanagement.Service.MyApplication
+import com.example.hrmanagement.data.AttendanceRegularisationData
 import com.example.hrmanagement.data.LeaveData
 import com.example.hrmanagement.ui.announcement.AnnouncementDetailScreen
+import com.example.hrmanagement.ui.announcement.AnnouncementDetailViewModel
 import com.example.hrmanagement.ui.announcement.AnnouncementsFilterScreen
 import com.example.hrmanagement.ui.announcement.AnnouncementsScreen
 import com.example.hrmanagement.ui.holiday.UpcomingHolidaysScreen
@@ -19,14 +25,17 @@ import com.example.hrmanagement.ui.quickLink.QuickLinksScreen
 import com.example.hrmanagement.ui.signin.FlashScreen
 import com.example.hrmanagement.ui.signin.SignUpScreen
 import com.example.hrmanagement.ui.leave.ApplyLeaveScreen
+import com.example.hrmanagement.ui.leave.ApplyLeaveViewModel
 import com.example.hrmanagement.ui.userinfo.ColleagueInfoScreen
 import com.example.hrmanagement.ui.leave.LeaveDetailsScreen
+import com.example.hrmanagement.ui.leave.LeaveRegularisationDetailsScreen
 import com.example.hrmanagement.ui.leave.LeaveRegularisationScreen
 import com.example.hrmanagement.ui.leave.LeaveReportScreen
 import com.example.hrmanagement.ui.main.FavouritesScreen
 import com.example.hrmanagement.ui.main.NotificationScreen
 import com.example.hrmanagement.ui.main.StatusScreen
 import com.example.hrmanagement.ui.more.FeedDetailScreen
+import com.example.hrmanagement.ui.more.FeedDetailViewModel
 import com.example.hrmanagement.ui.more.FeedsScreen
 import com.example.hrmanagement.ui.more.SettingsScreen
 import com.example.hrmanagement.ui.more.ThemeChangeScreen
@@ -79,13 +88,9 @@ fun AppNavigation(modifier: Modifier = Modifier) {
         }
 
         composable(
-            route = "UserInfoScreen/{userEmailId}",
-            arguments = listOf(navArgument("userEmailId") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val userEmailId = backStackEntry.arguments?.getString("userEmailId")
-            if (userEmailId != null) {
-                UserInfoScreen(modifier, navController, userEmailId)
-            }
+            route = "UserInfoScreen"
+        ) {
+                UserInfoScreen(modifier, navController)
         }
 
         composable(
@@ -103,8 +108,14 @@ fun AppNavigation(modifier: Modifier = Modifier) {
         ) { backStackEntry ->
             val feedId = backStackEntry.arguments?.getInt("feedId")
             val feedType = backStackEntry.arguments?.getString("feedType")
+            val feedDetailViewModel: FeedDetailViewModel = viewModel(
+                factory = SavedStateViewModelFactory(
+                    LocalContext.current.applicationContext as Application,
+                    backStackEntry
+                )
+            )
             if ((feedType != null) && (feedId != null)) {
-                FeedDetailScreen(modifier, navController, feedId, feedType)
+                FeedDetailScreen(modifier, navController, viewModel = feedDetailViewModel)
             }
         }
 
@@ -135,16 +146,38 @@ fun AppNavigation(modifier: Modifier = Modifier) {
         }
 
         composable(
-            route = "LeaveDetailsScreen/{leaveData}",
-            arguments = listOf(navArgument("leaveData") { type = NavType.StringType })
+            route = "LeaveRegularisationDetailsScreen/{attendanceData}/{isApproval}",
+            arguments = listOf(
+                navArgument("attendanceData") { type = NavType.StringType },
+                navArgument("isApproval") { type = NavType.BoolType }
+            )
+        ) { backStackEntry ->
+            val encodedPersonJson = backStackEntry.arguments?.getString("attendanceData")
+            val attendanceData = encodedPersonJson?.let {
+                val decodedJson = URLDecoder.decode(it, StandardCharsets.UTF_8.toString())
+                Json.decodeFromString<AttendanceRegularisationData>(decodedJson)
+            }
+            val isApproval = backStackEntry.arguments?.getBoolean("isApproval",false)
+            if ((attendanceData != null)&&(isApproval != null)) {
+                LeaveRegularisationDetailsScreen(modifier, navController, attendanceData, isApproval)
+            }
+        }
+
+        composable(
+            route = "LeaveDetailsScreen/{leaveData}/{isApproval}",
+            arguments = listOf(
+                navArgument("leaveData") { type = NavType.StringType },
+                navArgument("isApproval") { type = NavType.BoolType }
+            )
         ) { backStackEntry ->
             val encodedPersonJson = backStackEntry.arguments?.getString("leaveData")
             val leaveData = encodedPersonJson?.let {
                 val decodedJson = URLDecoder.decode(it, StandardCharsets.UTF_8.toString())
                 Json.decodeFromString<LeaveData>(decodedJson)
             }
-            if (leaveData != null) {
-                LeaveDetailsScreen(modifier, navController, leaveData)
+            val isApproval = backStackEntry.arguments?.getBoolean("isApproval",false)
+            if ((leaveData != null)&&(isApproval != null)) {
+                LeaveDetailsScreen(modifier, navController, leaveData, isApproval)
             }
         }
 
@@ -155,8 +188,14 @@ fun AppNavigation(modifier: Modifier = Modifier) {
             )
         ) { backStackEntry ->
             val leaveType = backStackEntry.arguments?.getString("leaveType")
+            val applyLeaveViewModel: ApplyLeaveViewModel = viewModel(
+                factory = SavedStateViewModelFactory(
+                    LocalContext.current.applicationContext as Application,
+                    backStackEntry
+                )
+            )
             if (leaveType != null) {
-                ApplyLeaveScreen(modifier, navController, leaveType)
+                ApplyLeaveScreen(modifier, navController, viewModel = applyLeaveViewModel)
             }
         }
 
@@ -275,8 +314,14 @@ fun AppNavigation(modifier: Modifier = Modifier) {
             arguments = listOf(navArgument("announcementId") { type = NavType.IntType })
         ) { backStackEntry ->
             val announcementId = backStackEntry.arguments?.getInt("announcementId")
+            val announcementViewModel: AnnouncementDetailViewModel = viewModel(
+                factory = SavedStateViewModelFactory(
+                    LocalContext.current.applicationContext as Application,
+                    backStackEntry
+                )
+            )
             if (announcementId != null) {
-                AnnouncementDetailScreen(modifier, navController, announcementId)
+                AnnouncementDetailScreen(modifier, navController, viewModel = announcementViewModel)
             }
         }
 

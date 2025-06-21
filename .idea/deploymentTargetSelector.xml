@@ -4,7 +4,7 @@
     <selectionStates>
       <SelectionState runConfigName="HR_Management.app">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2025-06-20T12:52:34.145092Z">
+        <DropdownSelection timestamp="2025-06-21T17:18:28.955964Z">
           <Target type="DEFAULT_BOOT">
             <handle>
               <DeviceId pluginId="PhysicalDevice" identifier="serial=R5CT72HC39K" />

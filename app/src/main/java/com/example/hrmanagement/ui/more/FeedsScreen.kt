@@ -234,7 +234,7 @@ fun FeedsScreen(
                                                                 val userJson = Json.encodeToString(record.value as LeaveData)
                                                                 val encodedUserJson =
                                                                     URLEncoder.encode(userJson, StandardCharsets.UTF_8.toString())
-                                                                navController.navigate("LeaveDetailsScreen/${encodedUserJson}")
+                                                                navController.navigate("LeaveDetailsScreen/${encodedUserJson}/false")
                                                             }
                                                         )
                                                     ) {
@@ -288,7 +288,7 @@ fun FeedsScreen(
                                                                 val userJson = Json.encodeToString(record.value as LeaveData)
                                                                 val encodedUserJson =
                                                                     URLEncoder.encode(userJson, StandardCharsets.UTF_8.toString())
-                                                                navController.navigate("LeaveDetailsScreen/${encodedUserJson}")
+                                                                navController.navigate("LeaveDetailsScreen/${encodedUserJson}/false")
                                                             }
                                                     )
                                                 }

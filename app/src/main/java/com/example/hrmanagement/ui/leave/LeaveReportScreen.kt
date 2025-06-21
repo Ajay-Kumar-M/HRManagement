@@ -37,12 +37,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.vectorResource
-import androidx.compose.ui.text.LinkAnnotation
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.TextLinkStyles
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.withLink
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -50,14 +44,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.hrmanagement.R
 import com.example.hrmanagement.component.CircularProgressIndicatorComposable
-import com.example.hrmanagement.data.LinkData
-import com.example.hrmanagement.data.UserLoginData
-import com.example.hrmanagement.ui.userinfo.LeaveTrackerShowModalSheet
-import com.example.hrmanagement.ui.userinfo.UserInfoScreenViewModel
 import com.example.hrmanagement.ui.userinfo.getPropertyValue
-import kotlinx.serialization.json.Json
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
 
 @Composable
 fun LeaveReportScreen(

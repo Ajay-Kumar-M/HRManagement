@@ -264,7 +264,7 @@ fun FavoritesListView(
                         .padding(15.dp,10.dp)
                         .clickable{
                             if (favoriteUserData.email == emailId) {
-                                navController.navigate("UserInfoScreen/${emailId}")
+                                navController.navigate("UserInfoScreen")
                             } else {
                                 navController.navigate("ColleagueInfoScreen/${favoriteUserData.email}/${emailId}")
                             }
@@ -323,7 +323,7 @@ fun ColleaguesGridView(
                         .height(140.dp)
                         .clickable {
                             if (userData.email == emailId) {
-                                navController.navigate("UserInfoScreen/${emailId}")
+                                navController.navigate("UserInfoScreen")
                             } else {
                                 navController.navigate("ColleagueInfoScreen/${userData.email}/${emailId}")
                             }
@@ -378,7 +378,7 @@ fun ColleaguesGridView(
                         .padding(15.dp,10.dp)
                         .clickable{
                             if (userData.email == emailId) {
-                                navController.navigate("UserInfoScreen/${emailId}")
+                                navController.navigate("UserInfoScreen")
                             } else {
                                 navController.navigate("ColleagueInfoScreen/${userData.email}/${emailId}")
                             }

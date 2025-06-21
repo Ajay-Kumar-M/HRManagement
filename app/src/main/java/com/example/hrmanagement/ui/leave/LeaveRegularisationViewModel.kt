@@ -37,7 +37,7 @@ class LeaveRegularisationViewModel(application: Application): AndroidViewModel(a
     val periodStartDateTimestamp = _periodStartDateTimestamp.asStateFlow()
     private var _periodEndDateTimestamp: MutableStateFlow<Long> = MutableStateFlow(0L)
     val periodEndDateTimestamp = _periodEndDateTimestamp.asStateFlow()
-    private var numberOfFeatchProcess: Int = 0
+    private var numberOfFetchProcess: Int = 0
 //    private var periodStartDateTimestamp: Long = 0
 //    private var periodEndDateTimestamp: Long = 0
     private val _periodStartDate: MutableStateFlow<String> = MutableStateFlow("")
@@ -105,12 +105,12 @@ class LeaveRegularisationViewModel(application: Application): AndroidViewModel(a
 
     fun addRegularisationAttendanceDetails(emailId: String){
         if (isViewLoading.value==false) toggleIsViewLoading()
-        numberOfFeatchProcess++
-        appDataManager.addRegularisationAttendanceData(emailId,_attendanceData.value,::addRegularisationDataResponse)
+        numberOfFetchProcess++
+        appDataManager.addNRegularisationAttendanceData(emailId,_attendanceData.value,::addRegularisationDataResponse)
     }
 
     fun addRegularisationDataResponse(response: String){
-        numberOfFeatchProcess--
+        numberOfFetchProcess--
         if(response == "Success"){
             Log.d("addRegularisationDataResponse","Record Added $response")
             triggerToast("Record Added")
@@ -120,20 +120,20 @@ class LeaveRegularisationViewModel(application: Application): AndroidViewModel(a
             TODO()
             triggerToast("Error try again!")
         }
-        if ((isViewLoading.value==true)&&(numberOfFeatchProcess==0))
+        if ((isViewLoading.value==true)&&(numberOfFetchProcess==0))
             toggleIsViewLoading()
     }
 
     fun getAttendanceDetails(){
         if (appUserData.email.isNotBlank()) {
             if (isViewLoading.value==false) toggleIsViewLoading()
-            numberOfFeatchProcess++
+            numberOfFetchProcess++
             appDataManager.getFirebaseAttendanceData(periodStartDateTimestamp.value,periodEndDateTimestamp.value,appUserData.email,::updateAttendanceDetails)
         }
     }
 
     fun updateAttendanceDetails(attendanceData: QuerySnapshot?,response: String){
-        numberOfFeatchProcess--
+        numberOfFetchProcess--
         if(response == "Success"){
             _attendanceData.value.clear()
             _attendanceData.value.addAll(attendanceData
@@ -142,7 +142,8 @@ class LeaveRegularisationViewModel(application: Application): AndroidViewModel(a
                     it.copy(
                         regularisedCheckInTime = it.checkInTime,
                         regularisedCheckOutTime = it.checkOutTime,
-                        regularisedTotalHours = it.totalHours
+                        regularisedTotalHours = it.totalHours,
+                        status = "Pending"
                     )
                 }
                 ?: emptyList()
@@ -153,7 +154,7 @@ class LeaveRegularisationViewModel(application: Application): AndroidViewModel(a
             //handle errors
             TODO()
         }
-        if ((isViewLoading.value==true)&&(numberOfFeatchProcess==0))
+        if ((isViewLoading.value==true)&&(numberOfFetchProcess==0))
             toggleIsViewLoading()
     }
 

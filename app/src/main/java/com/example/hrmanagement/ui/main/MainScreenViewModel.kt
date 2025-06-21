@@ -6,7 +6,6 @@ import android.location.Location
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.DefaultLifecycleObserver
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.hrmanagement.Service.MyApplication
 import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
@@ -14,10 +13,15 @@ import com.example.hrmanagement.Service.MyApplication.Companion.appPreferenceDat
 import com.example.hrmanagement.Service.MyApplication.Companion.appUserEmailId
 import com.example.hrmanagement.component.getAddressFromLocation
 import com.example.hrmanagement.component.startOfTheDayInMillis
+import com.example.hrmanagement.data.AnnouncementData
+import com.example.hrmanagement.data.AnnouncementList
 import com.example.hrmanagement.data.AttendanceData
+import com.example.hrmanagement.data.CommentsData
+import com.example.hrmanagement.data.DepartmentInfo
 import com.example.hrmanagement.data.GoalData
 import com.example.hrmanagement.data.LeaveData
 import com.example.hrmanagement.data.LeaveTrackerData
+import com.example.hrmanagement.data.LikeData
 import com.example.hrmanagement.data.UserLoginData
 import com.google.firebase.firestore.QuerySnapshot
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -129,6 +133,7 @@ class MainScreenViewModel(application: Application) : AndroidViewModel(applicati
                             calendar.timeInMillis,
                             startOfTheDay.timeInMillis,
                             userLocation ?: "",
+                            liveUserDetails.value.reportingTo.getValue("emailId"),
                             ::updateSignInResponse
                         )
                     }
@@ -140,6 +145,7 @@ class MainScreenViewModel(application: Application) : AndroidViewModel(applicati
                     calendar.timeInMillis,
                     startOfTheDay.timeInMillis,
                     "",
+                    liveUserDetails.value.reportingTo.getValue("emailId"),
                     ::updateSignInResponse
                 )
             }
@@ -446,7 +452,7 @@ class MainScreenViewModel(application: Application) : AndroidViewModel(applicati
 //        ))
     }
 
-    fun tempupdatedb() {
+    fun tempUpdateDb() {
         viewModelScope.launch {
             appPreferenceDataStore.updateUserDetails(
                 UserLoginData(
@@ -469,7 +475,7 @@ class MainScreenViewModel(application: Application) : AndroidViewModel(applicati
     fun addAttendanceInitialData(){
         val startofthemonth = Calendar.getInstance()
         startofthemonth.apply {
-            set(Calendar.MONTH,8)
+            set(Calendar.MONTH,4)
             set(Calendar.DAY_OF_MONTH, 1) // Set to the first day of the month
             set(Calendar.HOUR_OF_DAY, 0)  // Set hour to midnight
             set(Calendar.MINUTE, 0)       // Set minutes to 0
@@ -479,7 +485,7 @@ class MainScreenViewModel(application: Application) : AndroidViewModel(applicati
         var startDate = startofthemonth.timeInMillis
         val calendar = Calendar.getInstance()
 
-        for(i in 1..30) {
+        for(i in 1..31) {
             calendar.timeInMillis = startDate
             val day = calendar.get(Calendar.DAY_OF_MONTH)
             val month = calendar.get(Calendar.MONTH) + 1 // Months are 0-based
@@ -493,13 +499,14 @@ class MainScreenViewModel(application: Application) : AndroidViewModel(applicati
                     "",
                     "",
                     "",
-                    "ajaym04021994@gmail.com",
+                    liveUserDetails.value.email,
                     "",
                     0.0f,
                     day,
                     month,
                     year,
-                    ""
+                    "",
+                    liveUserDetails.value.reportingTo.getValue("emailId")
                 )
             )
             startDate = startDate+86400000
@@ -551,38 +558,38 @@ class MainScreenViewModel(application: Application) : AndroidViewModel(applicati
                     i,
                     1001,
                     0,
-                    8, 4, 8, 4, 8, 4, 8, 4, 8, 4,
+                    8.0f, 4, 8.0f, 4, 8.0f, 4, 8.0f, 4, 8.0f, 4.0f,
                     mutableMapOf(),
                     "",
                     "Ajay Kumar M",
-                    "teamMailId@gmail.com"
+                    "teamMailId@gmail.com",
+                    liveUserDetails.value.reportingTo.getValue("emailId")
                 ),
                 i
             )
         }
     }
-}
 
-/*
-
-        for (i in 2..10) {
-
-            appDataManager.addAnnouncementTemp(
-                AnnouncementList(
-                    i,
-                    "Announcement Title $i",
-                    Calendar.getInstance().timeInMillis,
-                    "General Awarness",
-                    1,
-                    3,
-                    "ajay.kumar0495@gmail.com",
-                    "Ajay Kumar M",
-                    "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c",
-                    false,
-                    "Chennai"
-                )
+    fun addAnnouncementListInitialData(){
+        appDataManager.addAnnouncementTemp(
+            AnnouncementList(
+                1,
+                "Announcement Title 1",
+                Calendar.getInstance().timeInMillis,
+                "General Awareness",
+                1,
+                3,
+                "ajay.kumar0495@gmail.com",
+                "Ajay Kumar M",
+                "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c",
+                false,
+                "Chennai"
             )
+        )
+    }
 
+    fun addAnnouncementInitialData(){
+        for (i in 1..5) {
             appDataManager.addAnnouncementDataTemp(
                 AnnouncementData(
                     i,
@@ -687,6 +694,99 @@ class MainScreenViewModel(application: Application) : AndroidViewModel(applicati
                 )
             )
         }
+    }
+
+    fun addDepartmentInitialData(){
+        for (i in 1..5) {
+            appDataManager.addDepartmentData(
+                DepartmentInfo(
+                    "Sub1Sub1Department${i}",
+                    "5",
+                    "Active",
+                    mapOf(
+                        Pair(
+                            "Person1", mapOf(
+                                Pair("Name", "Sub1Sub1Department${i}Person1"),
+                                Pair("Designation", "Employee"),
+                                Pair("Employee ID", "${i}1001"),
+                                Pair("Email ID", "Sub1Sub1Department${i}Person1@company.com"),
+                                Pair("Mobile Number", "1234"),
+                                Pair(
+                                    "Profile Image",
+                                    "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c"
+                                ),
+                                Pair("Profile URL", "www.google.com"),
+                                Pair("Department", "Sub1Sub1Department${i}")
+                            )
+                        ),
+                        Pair(
+                            "Person2", mapOf(
+                                Pair("Name", "Sub1Sub1Department${i}Person2"),
+                                Pair("Designation", "Employee"),
+                                Pair("Employee ID", "${i}1001"),
+                                Pair("Email ID", "Sub1Sub1Department${i}Person2@company.com"),
+                                Pair("Mobile Number", "1234"),
+                                Pair(
+                                    "Profile Image",
+                                    "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c"
+                                ),
+                                Pair("Profile URL", "www.google.com"),
+                                Pair("Department", "Sub1Sub1Department${i}")
+                            )
+                        ),
+                        Pair(
+                            "Person3", mapOf(
+                                Pair("Name", "Sub1Sub1Department${i}Person3"),
+                                Pair("Designation", "Employee"),
+                                Pair("Employee ID", "${i}1001"),
+                                Pair("Email ID", "Sub1Sub1Department${i}Person3@company.com"),
+                                Pair("Mobile Number", "1234"),
+                                Pair(
+                                    "Profile Image",
+                                    "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c"
+                                ),
+                                Pair("Profile URL", "www.google.com"),
+                                Pair("Department", "Sub1Sub1Department${i}")
+                            )
+                        ),
+                        Pair(
+                            "Person4", mapOf(
+                                Pair("Name", "Sub1Sub1Department${i}Person4"),
+                                Pair("Designation", "Employee"),
+                                Pair("Employee ID", "${i}1001"),
+                                Pair("Email ID", "Sub1Sub1Department${i}Person4@company.com"),
+                                Pair("Mobile Number", "1234"),
+                                Pair(
+                                    "Profile Image",
+                                    "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c"
+                                ),
+                                Pair("Profile URL", "www.google.com"),
+                                Pair("Department", "Sub1Sub1Department${i}")
+                            )
+                        ),
+                        Pair(
+                            "Person5", mapOf(
+                                Pair("Name", "Sub1Sub1Department${i}Person5"),
+                                Pair("Designation", "Employee"),
+                                Pair("Employee ID", "${i}1001"),
+                                Pair("Email ID", "Sub1Sub1Department${i}Person5@company.com"),
+                                Pair("Mobile Number", "1234"),
+                                Pair(
+                                    "Profile Image",
+                                    "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c"
+                                ),
+                                Pair("Profile URL", "www.google.com"),
+                                Pair("Department", "Sub1Sub1Department${i}")
+                            )
+                        ),
+                    )
+                )
+            )
+        }
+    }
+}
+
+/*
 
 fun search() {
         toggleCircularProgressIndicator()
@@ -732,91 +832,6 @@ fun search() {
 //                "Department1")
 //            )
 
-//            appDataManager.addDepartmentData(
-//                DepartmentInfo(
-//                    "Sub1Sub1Department${i}",
-//                    "5",
-//                    "Active",
-//                    mapOf(
-//                        Pair(
-//                            "Person1", mapOf(
-//                                Pair("Name", "Sub1Sub1Department${i}Person1"),
-//                                Pair("Designation", "Employee"),
-//                                Pair("Employee ID", "${i}1001"),
-//                                Pair("Email ID", "Sub1Sub1Department${i}Person1@company.com"),
-//                                Pair("Mobile Number", "1234"),
-//                                Pair(
-//                                    "Profile Image",
-//                                    "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c"
-//                                ),
-//                                Pair("Profile URL", "www.google.com"),
-//                                Pair("Department", "Sub1Sub1Department${i}")
-//                            )
-//                        ),
-//                        Pair(
-//                            "Person2", mapOf(
-//                                Pair("Name", "Sub1Sub1Department${i}Person2"),
-//                                Pair("Designation", "Employee"),
-//                                Pair("Employee ID", "${i}1001"),
-//                                Pair("Email ID", "Sub1Sub1Department${i}Person2@company.com"),
-//                                Pair("Mobile Number", "1234"),
-//                                Pair(
-//                                    "Profile Image",
-//                                    "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c"
-//                                ),
-//                                Pair("Profile URL", "www.google.com"),
-//                                Pair("Department", "Sub1Sub1Department${i}")
-//                            )
-//                        ),
-//                        Pair(
-//                            "Person3", mapOf(
-//                                Pair("Name", "Sub1Sub1Department${i}Person3"),
-//                                Pair("Designation", "Employee"),
-//                                Pair("Employee ID", "${i}1001"),
-//                                Pair("Email ID", "Sub1Sub1Department${i}Person3@company.com"),
-//                                Pair("Mobile Number", "1234"),
-//                                Pair(
-//                                    "Profile Image",
-//                                    "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c"
-//                                ),
-//                                Pair("Profile URL", "www.google.com"),
-//                                Pair("Department", "Sub1Sub1Department${i}")
-//                            )
-//                        ),
-//                        Pair(
-//                            "Person4", mapOf(
-//                                Pair("Name", "Sub1Sub1Department${i}Person4"),
-//                                Pair("Designation", "Employee"),
-//                                Pair("Employee ID", "${i}1001"),
-//                                Pair("Email ID", "Sub1Sub1Department${i}Person4@company.com"),
-//                                Pair("Mobile Number", "1234"),
-//                                Pair(
-//                                    "Profile Image",
-//                                    "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c"
-//                                ),
-//                                Pair("Profile URL", "www.google.com"),
-//                                Pair("Department", "Sub1Sub1Department${i}")
-//                            )
-//                        ),
-//                        Pair(
-//                            "Person5", mapOf(
-//                                Pair("Name", "Sub1Sub1Department${i}Person5"),
-//                                Pair("Designation", "Employee"),
-//                                Pair("Employee ID", "${i}1001"),
-//                                Pair("Email ID", "Sub1Sub1Department${i}Person5@company.com"),
-//                                Pair("Mobile Number", "1234"),
-//                                Pair(
-//                                    "Profile Image",
-//                                    "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c"
-//                                ),
-//                                Pair("Profile URL", "www.google.com"),
-//                                Pair("Department", "Sub1Sub1Department${i}")
-//                            )
-//                        ),
-//                    )
-//                )
-//            )
-
 ======================
 
 //        appDataManager.addUserSignInStatusTemp("ajay.kumar0495@gmail.com", UserSignInStatusData(
@@ -833,42 +848,6 @@ fun search() {
 //                0
 //            )
 //        )
-//        val startofthemonth = Calendar.getInstance()
-//        startofthemonth.apply {
-//            set(Calendar.DAY_OF_MONTH, 1) // Set to the first day of the month
-//            set(Calendar.HOUR_OF_DAY, 0)  // Set hour to midnight
-//            set(Calendar.MINUTE, 0)       // Set minutes to 0
-//            set(Calendar.SECOND, 0)       // Set seconds to 0
-//            set(Calendar.MILLISECOND, 0)  // Set milliseconds to 0
-//        }
-//        var startDate = startofthemonth.timeInMillis
-//
-//        for(i in 1..28) {
-//            val calendar = Calendar.getInstance()
-//            calendar.timeInMillis = startDate
-//            val day = calendar.get(Calendar.DAY_OF_MONTH)
-//            val month = calendar.get(Calendar.MONTH) + 1 // Months are 0-based
-//            val year = calendar.get(Calendar.YEAR)
-//            appDataManager.addAttendanceData(
-//                AttendanceData(
-//                    startDate,
-//                    (startDate+21600000),
-//                    (startDate+64800000),
-//                    "Chennai",
-//                    "Chennai",
-//                    "Check-in note",
-//                    "Check-out note",
-//                    "ajay.kumar0495@gmail.com",
-//                    "Present",
-//                    12.30,
-//                    day,
-//                    month,
-//                    year,
-//                    ""
-//                )
-//            )
-//            startDate = startDate+86400000
-//        }
 
 = appPreferenceDataStore.emailFlow
         .stateIn(
@@ -886,181 +865,4 @@ fun search() {
             "Success",
             "www.google.com"))
 
-appDataManager.addDepartmentData(
-                DepartmentInfo(
-                    "Department$i",
-                    "50",
-                    "",
-                    mapOf(
-                        Pair(
-                            "Person1", mapOf(
-                                Pair("Name", "Person1"),
-                                Pair("Designation", "Employee"),
-                                Pair("Employee ID", "1001"),
-                                Pair("Email ID", "person1@company.com"),
-                                Pair("Mobile Number", "1234"),
-                                Pair(
-                                    "Profile Image",
-                                    "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c"
-                                ),
-                                Pair("Profile URL", "www.google.com")
-                            )
-                        ),
-                        Pair(
-                            "Person2", mapOf(
-                                Pair("Name", "Person2"),
-                                Pair("Designation", "Employee"),
-                                Pair("Employee ID", "1002"),
-                                Pair("Email ID", "person2@company.com"),
-                                Pair("Mobile Number", "1234"),
-                                Pair(
-                                    "Profile Image",
-                                    "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c"
-                                ),
-                                Pair("Profile URL", "www.google.com")
-                            )
-                        ),
-                        Pair(
-                            "Person3", mapOf(
-                                Pair("Name", "Person3"),
-                                Pair("Designation", "Employee"),
-                                Pair("Employee ID", "1003"),
-                                Pair("Email ID", "person3@company.com"),
-                                Pair("Mobile Number", "1234"),
-                                Pair(
-                                    "Profile Image",
-                                    "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c"
-                                ),
-                                Pair("Profile URL", "www.google.com")
-                            )
-                        ),
-                        Pair(
-                            "Person4", mapOf(
-                                Pair("Name", "Person4"),
-                                Pair("Designation", "Employee"),
-                                Pair("Employee ID", "1004"),
-                                Pair("Email ID", "person4@company.com"),
-                                Pair("Mobile Number", "1234"),
-                                Pair(
-                                    "Profile Image",
-                                    "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c"
-                                ),
-                                Pair("Profile URL", "www.google.com")
-                            )
-                        ),
-                        Pair(
-                            "Person5", mapOf(
-                                Pair("Name", "Person5"),
-                                Pair("Designation", "Employee"),
-                                Pair("Employee ID", "1005"),
-                                Pair("Email ID", "person5@company.com"),
-                                Pair("Mobile Number", "1234"),
-                                Pair(
-                                    "Profile Image",
-                                    "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c"
-                                ),
-                                Pair("Profile URL", "www.google.com")
-                            )
-                        )
-                    )
-                )
-            )
-
-
-
-            appDataManager.addLeaveTrackerDataTemp(
-                LeaveTrackerData(
-                    "ajay.kumar0495@gmail.com",
-                    2025,
-                    1001,
-                    5,
-                    8,4,8,4,8,4,8,4,8,4,
-                    mutableMapOf(
-                        Pair("1001_1",
-                            mapOf(
-                                Pair("Leave ID","1"),
-                                Pair("Leave Type","Casual Leave"),
-                                Pair("Number Of Days","1"),
-                                Pair("Start Date","23-Jan-2025"),
-                                Pair("End Date","23-Jan-2025"),
-                                Pair("Status","Approved"),
-                                Pair("Email","ajay.kumar0495@gmail.com"),
-                                Pair("Employee ID","1001"),
-                                Pair("Employee Name","Ajay Kumar M"),
-                                Pair("Team Email Id","team@gmail.com"),
-                                Pair("Date Of Request","20-Jan-2025"),
-                                Pair("Reason For Leave","Reason")
-                            )
-                        ),
-                        Pair("1001_2",
-                            mapOf(
-                                Pair("Leave ID","2"),
-                                Pair("Leave Type","Sick Leave"),
-                                Pair("Number Of Days","2"),
-                                Pair("Start Date","23-Feb-2025"),
-                                Pair("End Date","24-Feb-2025"),
-                                Pair("Status","Approved"),
-                                Pair("Email","ajay.kumar0495@gmail.com"),
-                                Pair("Employee ID","1001"),
-                                Pair("Employee Name","Ajay Kumar M"),
-                                Pair("Team Email Id","team@gmail.com"),
-                                Pair("Date Of Request","20-Feb-2025"),
-                                Pair("Reason For Leave","Reason")
-                            )
-                        ),
-                        Pair("1001_3",
-                            mapOf(
-                                Pair("Leave ID","3"),
-                                Pair("Leave Type","On Duty"),
-                                Pair("Number Of Days","1"),
-                                Pair("Start Date","23-Mar-2025"),
-                                Pair("End Date","23-Mar-2025"),
-                                Pair("Status","Approved"),
-                                Pair("Email","ajay.kumar0495@gmail.com"),
-                                Pair("Employee ID","1001"),
-                                Pair("Employee Name","Ajay Kumar M"),
-                                Pair("Team Email Id","team@gmail.com"),
-                                Pair("Date Of Request","20-Mar-2025"),
-                                Pair("Reason For Leave","Reason")
-                            )
-                        ),
-                        Pair("1001_4",
-                            mapOf(
-                                Pair("Leave ID","4"),
-                                Pair("Leave Type","Optional Holiday"),
-                                Pair("Number Of Days","1"),
-                                Pair("Start Date","23-Apr-2025"),
-                                Pair("End Date","23-Apr-2025"),
-                                Pair("Status","Approved"),
-                                Pair("Email","ajay.kumar0495@gmail.com"),
-                                Pair("Employee ID","1001"),
-                                Pair("Employee Name","Ajay Kumar M"),
-                                Pair("Team Email Id","team@gmail.com"),
-                                Pair("Date Of Request","20-Mar-2025"),
-                                Pair("Reason For Leave","Reason")
-                            )
-                        ),
-                        Pair("1001_5",
-                            mapOf(
-                                Pair("Leave ID","5"),
-                                Pair("Leave Type","Comp Off"),
-                                Pair("Number Of Days","1"),
-                                Pair("Start Date","23-May-2025"),
-                                Pair("End Date","23-May-2025"),
-                                Pair("Status","Not Approved"),
-                                Pair("Email","ajay.kumar0495@gmail.com"),
-                                Pair("Employee ID","1001"),
-                                Pair("Employee Name","Ajay Kumar M"),
-                                Pair("Team Email Id","team@gmail.com"),
-                                Pair("Date Of Request","20-May-2025"),
-                                Pair("Reason For Leave","Reason")
-                            )
-                        )
-                    ),
-                    ""
-                ),
-                i
-            )
-
-
- */
+*/

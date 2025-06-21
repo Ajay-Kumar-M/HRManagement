@@ -42,10 +42,10 @@ import java.nio.charset.StandardCharsets
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MyRequestsScreen(
+fun MyApprovalsScreen(
     modifierPaddingValues: PaddingValues,
     navController: NavController,
-    viewModel: MyRequestsViewModel = viewModel(factory = ViewModelProvider.AndroidViewModelFactory(LocalContext.current.applicationContext as Application))
+    viewModel: MyApprovalsViewModel = viewModel(factory = ViewModelProvider.AndroidViewModelFactory(LocalContext.current.applicationContext as Application))
 ) {
     val tabs = listOf("Pending", "Approved", "Rejected")
     var selectedTabIndex by rememberSaveable { mutableIntStateOf(1) }
@@ -87,6 +87,8 @@ fun MyRequestsScreen(
                             modifier = Modifier.weight(1f),
                             onClick = {
                                 selectedTabIndex = index
+                                viewModel.fetchLeaveRequestsData()
+                                viewModel.fetchAttendanceRegularizationData()
                             },
                             text = { Text(title) }
                         )
@@ -94,13 +96,13 @@ fun MyRequestsScreen(
                 }
                 when (selectedTabIndex) {
                     0 -> {
-                        PendingListScreen(navController, viewModel)
+                        ApprovalsPendingListScreen(navController, viewModel)
                     }
                     1 -> {
-                        ApprovedListScreen(navController, viewModel)
+                        ApprovalsApprovedListScreen(navController, viewModel)
                     }
                     2 -> {
-                        RejectedListScreen(navController, viewModel)
+                        ApprovalsRejectedListScreen(navController, viewModel)
                     }
                 }
             }
@@ -109,9 +111,9 @@ fun MyRequestsScreen(
 }
 
 @Composable
-fun PendingListScreen(
+fun ApprovalsPendingListScreen(
     navController: NavController,
-    viewModel: MyRequestsViewModel
+    viewModel: MyApprovalsViewModel
 ) {
     var leaveRequestData = viewModel.pendingLeaveRequests.collectAsStateWithLifecycle()
     val pendingAttendanceRequests = viewModel.pendingAttendanceRequests.collectAsStateWithLifecycle()
@@ -129,7 +131,7 @@ fun PendingListScreen(
                             val userJson = Json.encodeToString(leaveData)
                             val encodedUserJson =
                                 URLEncoder.encode(userJson, StandardCharsets.UTF_8.toString())
-                            navController.navigate("LeaveDetailsScreen/${encodedUserJson}/false")
+                            navController.navigate("LeaveDetailsScreen/${encodedUserJson}/true")
                         }
                 ) {
                     Column(
@@ -153,7 +155,6 @@ fun PendingListScreen(
                         )
                     }
                 }
-//                    Spacer(modifier = Modifier.height(10.dp))
             }
             items(pendingAttendanceRequests.value) { attendanceData ->
                 Row(
@@ -164,7 +165,7 @@ fun PendingListScreen(
                             val attendanceJson = Json.encodeToString(attendanceData)
                             val encodedAttendanceJson =
                                 URLEncoder.encode(attendanceJson, StandardCharsets.UTF_8.toString())
-                            navController.navigate("LeaveRegularisationDetailsScreen/${encodedAttendanceJson}/false")
+                            navController.navigate("LeaveRegularisationDetailsScreen/${encodedAttendanceJson}/true")
                         }
                 ) {
                     Column(
@@ -181,7 +182,6 @@ fun PendingListScreen(
                         )
                     }
                 }
-//                    Spacer(modifier = Modifier.height(10.dp))
             }
         } else {
             item {
@@ -199,17 +199,16 @@ fun PendingListScreen(
                 }
             }
         }
-
     }
 }
 
 @Composable
-fun ApprovedListScreen(
+fun ApprovalsApprovedListScreen(
     navController: NavController,
-    viewModel: MyRequestsViewModel
+    viewModel: MyApprovalsViewModel
 ) {
     var approvedLeaveRequests = viewModel.approvedLeaveRequests.collectAsStateWithLifecycle()
-    val approvedAttendanceRequests = viewModel.approvedAttendanceRequests.collectAsStateWithLifecycle()
+    var approvedAttendanceRequests = viewModel.approvedAttendanceRequests.collectAsStateWithLifecycle()
 
     LazyColumn(
         modifier = Modifier.fillMaxWidth()
@@ -268,7 +267,6 @@ fun ApprovedListScreen(
                         )
                     }
                 }
-//                    Spacer(modifier = Modifier.height(10.dp))
             }
         } else {
             item {
@@ -290,12 +288,12 @@ fun ApprovedListScreen(
 }
 
 @Composable
-fun RejectedListScreen(
+fun ApprovalsRejectedListScreen(
     navController: NavController,
-    viewModel: MyRequestsViewModel
+    viewModel: MyApprovalsViewModel
 ) {
     var rejectedLeaveRequests = viewModel.rejectedLeaveRequests.collectAsStateWithLifecycle()
-    val rejectedAttendanceRequests = viewModel.rejectedAttendanceRequests.collectAsStateWithLifecycle()
+    var rejectedAttendanceRequests = viewModel.rejectedAttendanceRequests.collectAsStateWithLifecycle()
 
     LazyColumn(
         modifier = Modifier.fillMaxWidth()
@@ -355,7 +353,6 @@ fun RejectedListScreen(
                         )
                     }
                 }
-//                    Spacer(modifier = Modifier.height(10.dp))
             }
         } else {
             item {

@@ -112,7 +112,6 @@ import kotlin.reflect.full.memberProperties
 fun UserInfoScreen(
     modifier: Modifier,
     navController: NavController,
-    emailId: String,
     viewModel: UserInfoScreenViewModel = viewModel(factory = ViewModelProvider.AndroidViewModelFactory(LocalContext.current.applicationContext as Application))
 ) {
     val userImageUri = viewModel.userImageUriFlowState.collectAsStateWithLifecycle()
@@ -888,8 +887,8 @@ fun AttendanceMonthInfoModal(
                         Row(
                             horizontalArrangement = Arrangement.SpaceEvenly,
                             modifier = Modifier.fillMaxWidth()
-                                .padding(5.dp)
                                 .background(shape = RoundedCornerShape(16.dp), color = Color(0xFFE1E3E3))
+                                .padding(5.dp,10.dp)
                         ) {
                             Column {
                                 Text(
@@ -1128,7 +1127,7 @@ fun GoalsComposable(viewModel: GoalsViewModel = viewModel(factory = ViewModelPro
 //                        val userJson = Json.encodeToString(allLeaves.value)
 //                        val encodedUserJson =
 //                            URLEncoder.encode(userJson, StandardCharsets.UTF_8.toString())
-//                        navController.navigate("LeaveDetailsScreen/${encodedUserJson}")
+//                        navController.navigate("LeaveDetailsScreen/${encodedUserJson}/false")
                     }
             ) {
                 Row(
@@ -1391,7 +1390,7 @@ fun LeaveTrackerComposable(
                             val userJson = Json.encodeToString(leaveRequest)
                             val encodedUserJson =
                                 URLEncoder.encode(userJson, StandardCharsets.UTF_8.toString())
-                            navController.navigate("LeaveDetailsScreen/${encodedUserJson}")
+                            navController.navigate("LeaveDetailsScreen/${encodedUserJson}/false")
                         }
                 ) {
                     Text(

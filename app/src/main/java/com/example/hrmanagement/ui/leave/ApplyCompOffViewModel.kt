@@ -183,7 +183,8 @@ class ApplyCompOffViewModel(application: Application): AndroidViewModel(applicat
                     "lastOut" to formatTimestampLegacy(attendanceData.value.checkOutTime),
                     "overtime" to overtime,
                     "total" to "${String.format(Locale.US,"%.2f", attendanceData.value.totalHours)} Hr(s)",
-                )
+                ),
+                reportingTo = appUserData.reportingTo.getValue("emailId")
             )
             appDataManager.addLeaveTrackerData(responseLeaveTrackerData, year, leaveData, ::addAnnualLeaveDataResponseListener)
         } else {

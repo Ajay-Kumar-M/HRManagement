@@ -10,7 +10,7 @@ import com.example.hrmanagement.data.LeaveData
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class MyRequestsViewModel(application: Application): AndroidViewModel(application) {
+class MyApprovalsViewModel(application: Application): AndroidViewModel(application) {
 
     private var _isViewLoading: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val isViewLoading = _isViewLoading.asStateFlow()
@@ -42,8 +42,8 @@ class MyRequestsViewModel(application: Application): AndroidViewModel(applicatio
         }
         numberOfFetchProcess++
         if (appUserData.email.isNotBlank()) {
-            appDataManager.fetchLeaveLogs(0,appUserData.email,0) { querySnapshot, response, documentSnapshot ->
-                Log.d("MyRequestsViewModel", "response called ${appUserData.email}")
+            appDataManager.fetchReportingToLeaveRecords(appUserData.email) { querySnapshot, response ->
+                Log.d("MyApprovalsViewModel", "response called ${appUserData.email}")
                 if ((response == "Success")&&(querySnapshot!=null)) {
                     val tempPendingLeaveRequest: MutableList<LeaveData> = mutableListOf()
                     val tempApprovedLeaveRequest: MutableList<LeaveData> = mutableListOf()
@@ -83,7 +83,7 @@ class MyRequestsViewModel(application: Application): AndroidViewModel(applicatio
         numberOfFetchProcess++
         if (appUserData.email.isNotBlank()) {
             Log.d("MyRequestsViewModel", "fetchLeaveRequestsData called ${appUserData.email}")
-            appDataManager.getAttendanceRegularizationData(appUserData.email) { querySnapshot, response ->
+            appDataManager.getReportingToAttendanceRegularizationData(appUserData.email) { querySnapshot, response ->
                 Log.d("MyRequestsViewModel", "response called ${appUserData.email}")
                 if ((response == "Success")&&(querySnapshot!=null)) {
                     val tempPendingAttendanceRequest: MutableList<AttendanceRegularisationData> = mutableListOf()

@@ -70,6 +70,7 @@ class AppDataManager {
         checkInOrCheckOutTimestamp: Long,
         currentDayTimestamp: Long,
         location: String,
+        reportingToEmailId: String,
         responseHandler: (String, String) -> Unit
     ) {
 
@@ -113,7 +114,8 @@ class AppDataManager {
                         calendar.get(Calendar.DAY_OF_MONTH),
                         calendar.get(Calendar.MONTH) + 1,
                         calendar.get(Calendar.YEAR),
-                        ""
+                        "",
+                        reportingToEmailId
                     )
                 }
                 userAttendanceLog?.let { attendanceLog ->
@@ -197,7 +199,7 @@ class AppDataManager {
             }
     }
 
-    fun addRegularisationAttendanceData(
+    fun addNRegularisationAttendanceData(
         emailId: String,
         attendanceData: List<AttendanceRegularisationData>,
         returnResponse: (String) -> Unit
@@ -218,6 +220,44 @@ class AppDataManager {
                 Log.w(TAG, "Error adding document", e)
                 returnResponse("Failure")
             }
+    }
+
+    fun addRegularisationAttendanceData(
+        attendanceData: AttendanceRegularisationData,
+        returnResponse: (String) -> Unit
+    ) {
+        val attendanceDocumentRef = firestoreDB.collection("attendance").document(attendanceData.emailId).collection("attendanceRegularisationLogs").document("${attendanceData.date}")
+        attendanceDocumentRef
+            .set(attendanceData)
+            .addOnSuccessListener {
+                Log.d(
+                    TAG,
+                    "DocumentSnapshot added/updated with ID: ${attendanceData.emailId}"
+                )
+                returnResponse("Success")
+            }
+            .addOnFailureListener { e ->
+                Log.w(TAG, "Error adding document", e)
+                returnResponse("Failure")
+            }
+    }
+
+    fun removeAndAddAttendanceRegularizationData(
+        attendanceData: AttendanceRegularisationData,
+        returnResponse: (String) -> Unit
+    ) {
+        firestoreDB.runBatch { batch ->
+            val oldAttendanceDocumentRef = firestoreDB.collection("attendance").document(attendanceData.emailId).collection("attendanceRegularisationLogs").document("${attendanceData.date}")
+            batch.delete(oldAttendanceDocumentRef)
+            val newAttendanceDocumentRef = firestoreDB.collection("attendance").document(attendanceData.emailId).collection("attendanceLogs").document("${attendanceData.date}")
+            batch.set(newAttendanceDocumentRef,attendanceData)
+        }.addOnSuccessListener {
+            Log.d(TAG, "removeAndAddAttendanceRegularizationData record added/updated with ID: ${attendanceData.date}")
+            returnResponse("Success")
+        }.addOnFailureListener { e ->
+            Log.w(TAG, "removeAndAddAttendanceRegularizationData Error adding record", e)
+            returnResponse("Failure")
+        }
     }
 
     fun getFirebaseAttendanceData(
@@ -371,6 +411,20 @@ class AppDataManager {
             }
     }
 
+    fun fetchReportingToLeaveRecords(emailId: String, response: (QuerySnapshot?, String) -> Unit){
+        firestoreDB.collectionGroup("leaveRequests")
+            .whereEqualTo("reportingTo", emailId)
+            .get()
+            .addOnSuccessListener { querySnapshot ->
+                Log.d(TAG, "fetchReportingToLeaveRecords temp data ${querySnapshot.size()}")
+                response(querySnapshot, "Success")
+            }
+            .addOnFailureListener { exception ->
+                Log.e(TAG, "fetchReportingToLeaveRecords Error getting documents: ", exception)
+                response(null,"Failure")
+            }
+    }
+
     fun fetchLastLeaveId(emailId: String, response: (Int?, String) -> Unit){
         val docRef = firestoreDB.collection("leavelogs").document(emailId)
         docRef.get()
@@ -465,6 +519,20 @@ class AppDataManager {
             .addOnFailureListener { exception ->
                 Log.d(TAG, "get failed with ", exception)
                 successResponse(resultData ?: LeaveTrackerData(), "Error Exception $exception")
+            }
+    }
+
+    fun getReportingToAttendanceRegularizationData(emailId: String, response: (QuerySnapshot?, String) -> Unit) {
+        firestoreDB.collectionGroup("attendanceRegularisationLogs")
+            .whereEqualTo("reportingTo", emailId)
+            .get()
+            .addOnSuccessListener { querySnapshot ->
+                Log.d(TAG, "getReportingToAttendanceRegularizationData temp data ${querySnapshot.size()}")
+                response(querySnapshot, "Success")
+            }
+            .addOnFailureListener { exception ->
+                Log.e(TAG, "getReportingToAttendanceRegularizationData Error getting documents: ", exception)
+                response(null,"Failure")
             }
     }
 

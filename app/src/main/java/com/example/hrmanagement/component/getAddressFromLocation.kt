@@ -28,7 +28,7 @@ suspend fun getAddressFromLocation(
                         if (!addresses.isEmpty()) {
                             val address: Address = addresses[0]!!
                             val fullAddress = address.getAddressLine(0)
-                            response(fullAddress)
+                            response(address.locality)
                         } else {
                             response(null)
                         }
@@ -48,7 +48,7 @@ suspend fun getAddressFromLocation(
                     // You can format the address as needed
                     address.getAddressLine(0) // Full address
                     // Or use address.locality, address.adminArea, etc.
-                    response(address.toString())
+                    response(address.locality)
                 } else {
                     response(null)
                 }

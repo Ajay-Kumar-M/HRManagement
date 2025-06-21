@@ -1,6 +1,7 @@
 package com.example.hrmanagement.ui.more
 
 import android.app.Application
+import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -43,6 +44,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -168,7 +170,7 @@ fun SettingsScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable {
-                        navController.navigate("ThemeChangeScreen")
+//                        navController.navigate("ThemeChangeScreen")
                     },
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
@@ -183,6 +185,51 @@ fun SettingsScreen(
                     tint = Color.Unspecified
                 )
             }
+            Text(
+                "Privacy",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(20.dp, 25.dp, 0.dp, 5.dp),
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                "Privacy Policy",
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(20.dp, 10.dp, 0.dp, 15.dp)
+            )
+            Text(
+                "Terms of Service",
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(20.dp, 10.dp, 0.dp, 15.dp)
+            )
+            Text(
+                "About",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(20.dp, 25.dp, 0.dp, 5.dp),
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                "Version (1.0.0)",
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(20.dp, 10.dp, 0.dp, 15.dp)
+            )
+            Text(
+                "Feedback",
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(20.dp, 10.dp, 0.dp, 15.dp)
+                    .clickable{
+                        val intent = Intent(Intent.ACTION_SENDTO).apply {
+                            data = "mailto:${viewModel.userLoginData.email}".toUri()
+//                                    putExtra(Intent.EXTRA_SUBJECT, subject)
+//                                    putExtra(Intent.EXTRA_TEXT, body)
+                        }
+                        try {
+                            context.startActivity(Intent.createChooser(intent, "Send Email"))
+                        } catch (e: Exception) {
+                            // Handle exception if no email client is installed
+                            e.printStackTrace()
+                        }
+                    }
+            )
             Text(
                 "Others",
                 style = MaterialTheme.typography.titleMedium,

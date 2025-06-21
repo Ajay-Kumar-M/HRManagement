@@ -43,6 +43,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
@@ -58,6 +59,8 @@ import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -116,6 +119,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.hrmanagement.R
 import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
+import com.example.hrmanagement.Service.MyApplication.Companion.networkMonitor
 import com.example.hrmanagement.component.CircularProgressIndicatorComposable
 import com.example.hrmanagement.component.truncate
 import com.example.hrmanagement.data.AnnouncementList
@@ -123,7 +127,9 @@ import com.example.hrmanagement.data.FavoritePerson
 import com.example.hrmanagement.data.HolidayData
 import com.example.hrmanagement.data.LinkData
 import com.example.hrmanagement.data.UserLoginData
+import com.example.hrmanagement.misc.NetworkStatusMonitor
 import com.example.hrmanagement.ui.more.MoreScreen
+import com.example.hrmanagement.ui.requests.MyApprovalsScreen
 import com.example.hrmanagement.ui.requests.MyRequestsScreen
 import com.example.hrmanagement.ui.userinfo.getPropertyValue
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
@@ -166,6 +172,15 @@ fun MainScreen(
         Icons.Outlined.MoreVert
     )
     val addTaskShowBottomSheet = viewModel.addTaskShowBottomSheet.collectAsStateWithLifecycle()
+    val requestsTabs = listOf("My Requests","My Approvals")
+    var selectedRequestsItem by rememberSaveable { mutableIntStateOf(0) }
+    var requestsTabsExpanded by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+
+    LaunchedEffect(networkMonitor) {
+        if (networkMonitor.networkStatus.value == NetworkStatusMonitor.NetworkStatus.Disconnected)
+        Toast.makeText(context,"Network Offline - please check your connection", Toast.LENGTH_SHORT).show()
+    }
 
     Scaffold(
         topBar = {
@@ -201,17 +216,58 @@ fun MainScreen(
                                         .size(40.dp)
                                         .clip(RoundedCornerShape(10.dp))
                                         .singleClick{
-                                            navController.navigate("UserInfoScreen/${viewModel.userEmailUiState}")
+                                            navController.navigate("UserInfoScreen")
                                         }
                                 )
                             }
-
                             Spacer(modifier = Modifier.width(10.dp))
-                            Text(
-                                text = tabItems[selectedItem],
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.padding(10.dp, 5.dp, 0.dp, 0.dp)
-                            )
+                            if (selectedItem==3){
+                                Box(
+                                    modifier = Modifier
+                                        .clickable{
+                                            requestsTabsExpanded = !requestsTabsExpanded
+                                        }
+                                        .width(175.dp)
+                                ) {
+                                    Text(
+                                        text = requestsTabs[selectedRequestsItem],
+                                        modifier = Modifier.padding(10.dp, 5.dp, 0.dp, 0.dp)
+                                            .align(Alignment.CenterStart)
+                                    )
+                                    Icon(
+                                        imageVector = Icons.Default.ArrowDropDown,
+                                        contentDescription = "Toggle dropdown",
+                                        modifier = Modifier.align(Alignment.TopEnd)
+                                            .size(35.dp)
+                                    )
+                                    DropdownMenu(
+                                        expanded = requestsTabsExpanded,
+                                        onDismissRequest = { requestsTabsExpanded = false }
+                                    ) {
+                                        DropdownMenuItem(
+                                            text = { Text(requestsTabs[0]) },
+                                            onClick = {
+                                                selectedRequestsItem = 0
+                                                requestsTabsExpanded = false
+                                            }
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text(requestsTabs[1]) },
+                                            onClick = {
+                                                selectedRequestsItem = 1
+                                                requestsTabsExpanded = false
+                                            }
+                                        )
+                                    }
+                                }
+                            } else {
+                                Text(
+                                    text = tabItems[selectedItem],
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.padding(10.dp, 5.dp, 0.dp, 0.dp)
+                                        .align(Alignment.CenterVertically)
+                                )
+                            }
                         }
                         when(selectedItem) {
                             0,1 -> {
@@ -251,24 +307,24 @@ fun MainScreen(
                                 }
                             }
                             3 -> {
-                                IconButton(
-                                    onClick = {
-//                                        navController.navigate("ColleaguesScreen")
-                                    },
-                                    colors = IconButtonDefaults.iconButtonColors(
-                                        containerColor = Color(0xFFF2F2F2),
-                                        contentColor = Color.Black
-                                    ),
-                                    modifier = Modifier
-                                        .size(40.dp)
-                                        .padding(5.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = ImageVector.vectorResource(R.drawable.filter),
-                                        contentDescription = "Filter",
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
+//                                IconButton(
+//                                    onClick = {
+////                                        navController.navigate("ColleaguesScreen")
+//                                    },
+//                                    colors = IconButtonDefaults.iconButtonColors(
+//                                        containerColor = Color(0xFFF2F2F2),
+//                                        contentColor = Color.Black
+//                                    ),
+//                                    modifier = Modifier
+//                                        .size(40.dp)
+//                                        .padding(5.dp)
+//                                ) {
+//                                    Icon(
+//                                        imageVector = ImageVector.vectorResource(R.drawable.filter),
+//                                        contentDescription = "Filter",
+//                                        modifier = Modifier.size(18.dp)
+//                                    )
+//                                }
                             }
                             4 -> {
                                 IconButton(
@@ -366,7 +422,14 @@ fun MainScreen(
                         HomeScreen(outerPadding, navController, viewModel)
                     }
                     3 -> {
-                        MyRequestsScreen(outerPadding, navController)
+                        when(selectedRequestsItem){
+                            0 -> {
+                                MyRequestsScreen(outerPadding, navController)
+                            }
+                            1 -> {
+                                MyApprovalsScreen(outerPadding, navController)
+                            }
+                        }
                     }
 
                     4 -> {
@@ -1124,10 +1187,10 @@ fun HomeScreen(
                 ClickableText(
                     text = AnnotatedString("Show Snackbar"),
                     onClick = {
-//                        viewModel.addLeaveTrackerInitialData()
-                        scope.launch {
-                            snackbarHostState.showSnackbar("Custom Snackbar!")
-                        }
+//                        viewModel.addAttendanceInitialData()
+//                        scope.launch {
+//                            snackbarHostState.showSnackbar("Custom Snackbar!")
+//                        }
                     }
                 )
             }
@@ -1321,7 +1384,12 @@ fun SignInStatus(
             Spacer(Modifier.height(15.dp))
             Button(
                 onClick = {
-                    if (permissionState.status.isGranted) {
+                    if (networkMonitor.networkStatus.value == NetworkStatusMonitor.NetworkStatus.Disconnected){
+                        Toast.makeText(
+                            context, "Please check you internet connection.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    } else if (permissionState.status.isGranted) {
                         val fusedLocationClient =
                             LocationServices.getFusedLocationProviderClient(context)
                         @SuppressLint("MissingPermission")

@@ -8,20 +8,21 @@ data class LeaveTrackerData (
     val yearValue: Int = 0,
     val employeeID: Int = 0,
     var lastLeaveId: Int = 0,
-    var casualLeaveBalance: Int = 0,
+    var casualLeaveBalance: Float = 0.0f,
     val casualLeaveBooked: Int = 0,
-    var sickLeaveBalance: Int = 0,
+    var sickLeaveBalance: Float = 0.0f,
     val sickLeaveBooked: Int = 0,
-    var onDutyLeaveBalance: Int = 0,
+    var onDutyLeaveBalance: Float = 0.0f,
     val onDutyLeaveBooked: Int = 0,
-    var optionalLeaveBalance: Int = 0,
+    var optionalLeaveBalance: Float = 0.0f,
     val optionalLeaveBooked: Int = 0,
-    var compOffLeaveBalance: Int = 0,
-    val compOffLeaveBooked: Int = 0,
+    var compOffLeaveBalance: Float = 0.0f,
+    val compOffLeaveBooked: Float = 0.0f,
     val annualLeaveData: MutableMap<String,Map<String,String>> = mutableMapOf(),
     var status: String = "",
     val username: String = "",
-    val teamEmailId: String = ""
+    val teamEmailId: String = "",
+    val reportingTo: String = ""
 )
 
 @Serializable
@@ -31,7 +32,7 @@ data class LeaveData(
     val numberOfDays: Float = 0.0f,
     val startDate: Long = 0,
     val endDate: Long = 0,
-    val status: String = "",
+    var status: String = "",
     val emailId: String = "",
     val employeeId: String = "",
     val employeeName: String = "",
@@ -56,5 +57,6 @@ data class LeaveData(
     val comments: MutableMap<String,CommentsData> = mutableMapOf(),
     val isCommentsEnabled: Boolean = true,
     var lastCommentId: Int = 0,
-    var commentsCount: Int = 0
+    var commentsCount: Int = 0,
+    val reportingTo: String = ""
 )

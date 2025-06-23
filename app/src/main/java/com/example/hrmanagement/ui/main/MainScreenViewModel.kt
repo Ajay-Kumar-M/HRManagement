@@ -24,14 +24,16 @@ import com.example.hrmanagement.data.LeaveTrackerData
 import com.example.hrmanagement.data.LikeData
 import com.example.hrmanagement.data.UserLoginData
 import com.google.firebase.firestore.QuerySnapshot
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.Calendar
 
-class MainScreenViewModel(application: Application) : AndroidViewModel(application), DefaultLifecycleObserver {
+class MainScreenViewModel(application: Application) : AndroidViewModel(application) {
 
     val userImageUriUiState = appPreferenceDataStore.userImageURLFlow
         .stateIn(
@@ -40,8 +42,7 @@ class MainScreenViewModel(application: Application) : AndroidViewModel(applicati
             initialValue = null
         )
     var userEmailUiState: String?
-    private var _liveLeaveTrackerDetails: MutableStateFlow<LeaveTrackerData> =
-        MutableStateFlow(LeaveTrackerData())
+    private var _liveLeaveTrackerDetails: MutableStateFlow<LeaveTrackerData> = MutableStateFlow(LeaveTrackerData())
     val liveLeaveTrackerDetails = _liveLeaveTrackerDetails.asStateFlow()
     private var _liveUserDetails: MutableStateFlow<UserLoginData> =
         MutableStateFlow(UserLoginData())
@@ -66,6 +67,8 @@ class MainScreenViewModel(application: Application) : AndroidViewModel(applicati
     private var numberOfSignInProcess: Int = 0
     private var calendarYear: Int = 0
     private val myApplication = application as MyApplication
+    private val _toastEvent = MutableSharedFlow<String>(replay = 0)
+    val toastEvent = _toastEvent.asSharedFlow()
 
     init {
         toggleIsViewLoading()
@@ -104,7 +107,7 @@ class MainScreenViewModel(application: Application) : AndroidViewModel(applicati
 //            }
         } else {
             //handle errors
-            TODO()
+            triggerToast("User details not found. Contact Sysadmin!")
         }
         if ((isViewLoading.value) && (numberOfFetchProcess == 0)) {
             toggleIsViewLoading()
@@ -159,7 +162,7 @@ class MainScreenViewModel(application: Application) : AndroidViewModel(applicati
             Log.d("MainScreenViewModel", "updateSignInResponse called $response")
         } else {
             //handle errors
-            TODO()
+            triggerToast("Unable to update USER signin status, try again.")
         }
         fetchUserSignInStatus()
         if ((isSignInViewLoading.value == true) && (numberOfSignInProcess == 0))
@@ -192,7 +195,7 @@ class MainScreenViewModel(application: Application) : AndroidViewModel(applicati
             }
         } else {
             //handle errors
-            TODO()
+            triggerToast("Unable to fetch USER signin status, try again.")
         }
         if ((isSignInViewLoading.value == true) && (numberOfSignInProcess == 0))
             toggleIsSignInViewLoading()
@@ -218,7 +221,7 @@ class MainScreenViewModel(application: Application) : AndroidViewModel(applicati
             }
         } else {
             //handle errors
-            TODO()
+            triggerToast("Unable to fetch quick links, try again.")
         }
         if ((isViewLoading.value == true) && (numberOfFetchProcess == 0))
             toggleIsViewLoading()
@@ -247,7 +250,7 @@ class MainScreenViewModel(application: Application) : AndroidViewModel(applicati
             }
         } else {
             //handle errors
-            TODO()
+            triggerToast("Unable to fetch USER Favourites, try again.")
         }
         if ((isViewLoading.value == true) && (numberOfFetchProcess == 0))
             toggleIsViewLoading()
@@ -274,7 +277,7 @@ class MainScreenViewModel(application: Application) : AndroidViewModel(applicati
             }
         } else {
             //handle errors
-            TODO()
+            triggerToast("Unable to fetch USER Announcements, try again.")
         }
         if ((isViewLoading.value == true) && (numberOfFetchProcess == 0))
             toggleIsViewLoading()
@@ -299,7 +302,7 @@ class MainScreenViewModel(application: Application) : AndroidViewModel(applicati
             _liveLeaveTrackerDetails.value = leaveTrackerData
         } else {
             //handle errors
-            TODO()
+            triggerToast("Unable to fetch USER leave details, try again.")
         }
         if ((isViewLoading.value == true) && (numberOfFetchProcess == 0))
             toggleIsViewLoading()
@@ -318,7 +321,7 @@ class MainScreenViewModel(application: Application) : AndroidViewModel(applicati
             _holidaysData.value = holidays
         } else {
             //handle errors
-            TODO()
+            triggerToast("Unable to fetch Holidays, try again.")
         }
         if ((isViewLoading.value == true) && (numberOfFetchProcess == 0))
             toggleIsViewLoading()
@@ -334,6 +337,12 @@ class MainScreenViewModel(application: Application) : AndroidViewModel(applicati
 
     fun toggleIsSignInViewLoading() {
         _isSignInViewLoading.value = !_isSignInViewLoading.value
+    }
+
+    fun triggerToast(message: String) {
+        viewModelScope.launch {
+            _toastEvent.emit(message)
+        }
     }
 
     fun addUserToDB() {

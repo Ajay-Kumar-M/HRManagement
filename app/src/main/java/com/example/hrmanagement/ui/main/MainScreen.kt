@@ -182,6 +182,11 @@ fun MainScreen(
         if (networkMonitor.networkStatus.value == NetworkStatusMonitor.NetworkStatus.Disconnected)
         Toast.makeText(context,"Network Offline - please check your connection", Toast.LENGTH_SHORT).show()
     }
+    LaunchedEffect(viewModel.toastEvent) {
+        viewModel.toastEvent.collect { message ->
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -739,7 +744,8 @@ fun HomeScreen(
                     .padding(10.dp)
             ) {
                 Row(
-                    modifier = Modifier.padding(10.dp)
+                    modifier = Modifier.padding(10.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         imageVector = ImageVector.vectorResource(R.drawable.mic),
@@ -835,7 +841,8 @@ fun HomeScreen(
                     .padding(10.dp)
             ) {
                 Row(
-                    modifier = Modifier.padding(10.dp)
+                    modifier = Modifier.padding(10.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Image(
                         painter = painterResource(R.drawable.favorites_icon),
@@ -933,7 +940,8 @@ fun HomeScreen(
                     .padding(10.dp)
             ) {
                 Row(
-                    modifier = Modifier.padding(10.dp)
+                    modifier = Modifier.padding(10.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         imageVector = ImageVector.vectorResource(R.drawable.report),
@@ -1017,7 +1025,8 @@ fun HomeScreen(
                     .padding(10.dp)
             ) {
                 Row(
-                    modifier = Modifier.padding(10.dp)
+                    modifier = Modifier.padding(10.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         imageVector = ImageVector.vectorResource(R.drawable.link_header_icon),
@@ -1104,7 +1113,8 @@ fun HomeScreen(
                     .padding(10.dp)
             ) {
                 Row(
-                    modifier = Modifier.padding(10.dp)
+                    modifier = Modifier.padding(10.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         imageVector = ImageVector.vectorResource(R.drawable.umbrella),

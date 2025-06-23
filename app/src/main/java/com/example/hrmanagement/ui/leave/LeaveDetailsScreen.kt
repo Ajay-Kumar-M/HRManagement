@@ -365,7 +365,7 @@ fun LeaveDetailsScreen(
                 }
 
                 Text(
-                    "Reason for leave",
+                    "Reason",
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(20.dp, 15.dp, 5.dp, 2.dp)
                 )

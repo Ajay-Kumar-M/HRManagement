@@ -230,10 +230,17 @@ fun ApprovedListScreen(
                     Column(
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(
-                            "Leave - ${leaveData.leaveType}",
-                            style = MaterialTheme.typography.titleSmall,
-                        )
+                        if (leaveData.unit.isNotEmpty()){
+                            Text(
+                                "Leave - ${leaveData.leaveType} Request",
+                                style = MaterialTheme.typography.titleSmall,
+                            )
+                        } else {
+                            Text(
+                                "Leave - ${leaveData.leaveType}",
+                                style = MaterialTheme.typography.titleSmall,
+                            )
+                        }
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             leaveData.dateOfRequestString,
@@ -316,10 +323,17 @@ fun RejectedListScreen(
                     Column(
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(
-                            "Leave - ${leaveData.leaveType}",
-                            style = MaterialTheme.typography.titleSmall,
-                        )
+                        if (leaveData.unit.isNotEmpty()){
+                            Text(
+                                "Leave - ${leaveData.leaveType} Request",
+                                style = MaterialTheme.typography.titleSmall,
+                            )
+                        } else {
+                            Text(
+                                "Leave - ${leaveData.leaveType}",
+                                style = MaterialTheme.typography.titleSmall,
+                            )
+                        }
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             leaveData.dateOfRequestString,

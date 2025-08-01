@@ -9,8 +9,10 @@ import androidx.lifecycle.viewModelScope
 import com.example.hrmanagement.Service.MyApplication
 import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
 import com.example.hrmanagement.component.getAddressFromLocation
+import com.example.hrmanagement.data.UserSignInStatusRepository
 import com.google.firebase.firestore.QuerySnapshot
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -21,7 +23,10 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
-class AttendanceViewModel(application: Application): AndroidViewModel(application) {
+class AttendanceViewModel(
+    application: Application,
+    userSignInStatusRepository: UserSignInStatusRepository
+): AndroidViewModel(application) {
 
     private val _attendanceFilterShowBottomSheet: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val attendanceFilterShowBottomSheet = _attendanceFilterShowBottomSheet.asStateFlow()
@@ -53,6 +58,7 @@ class AttendanceViewModel(application: Application): AndroidViewModel(applicatio
     private var attendanceEndDateTimestamp: Long = 0
     private val myApplication = application as MyApplication
     val appUserData = myApplication.appUserDetails
+    val userSignInStatus: StateFlow<String> = userSignInStatusRepository.userSignInStatusFlow
 
     init {
         toggleIsViewLoading()
@@ -70,14 +76,14 @@ class AttendanceViewModel(application: Application): AndroidViewModel(applicatio
         val firstDayOfWeekMonth = getDayOfWeekOfMonth(attendanceSelectedYear.value,attendanceSelectedMonth.value, 1)
         _attendanceDayOfTheWeekIndex.value = daysOfWeek.indexOf(firstDayOfWeekMonth)
         attendanceStartDateTimestamp = getStartOfMonthTimestamp(attendanceSelectedYear.value,attendanceSelectedMonth.value)
-        attendanceEndDateTimestamp = getStartOfMonthTimestamp(attendanceSelectedYear.value,attendanceSelectedMonth.value+1)
+        attendanceEndDateTimestamp = getStartOfMonthTimestamp(attendanceSelectedYear.value,attendanceSelectedMonth.value+1)-10
     }
 
     fun getAttendanceDetails(){
         if (appUserData.email.isNotBlank() == true) {
             if (isViewLoading.value==false) toggleIsViewLoading()
             numberOfFetchProcess++
-            appDataManager.getFirebaseAttendanceData(attendanceStartDateTimestamp,attendanceEndDateTimestamp-10,appUserData.email,::updateAttendanceDetails)
+            appDataManager.getFirebaseAttendanceData(attendanceStartDateTimestamp,attendanceEndDateTimestamp,appUserData.email,::updateAttendanceDetails)
         }
     }
 
@@ -236,7 +242,7 @@ class AttendanceViewModel(application: Application): AndroidViewModel(applicatio
         }
         attendanceStartDateTimestamp = calendar.timeInMillis
         _attendanceStartDate.value = SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault()).format(Date(attendanceStartDateTimestamp))
-        calendar.add(Calendar.DAY_OF_WEEK, 7)
+        calendar.add(Calendar.DAY_OF_WEEK, 6)
         attendanceEndDateTimestamp = calendar.timeInMillis
         _attendanceEndDate.value = SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault()).format(Date(attendanceEndDateTimestamp))
     }

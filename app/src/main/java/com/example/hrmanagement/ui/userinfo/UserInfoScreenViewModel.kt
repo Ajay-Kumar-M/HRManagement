@@ -8,9 +8,11 @@ import com.example.hrmanagement.Service.MyApplication
 import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
 import com.example.hrmanagement.Service.MyApplication.Companion.appPreferenceDataStore
 import com.example.hrmanagement.data.UserLoginData
+import com.example.hrmanagement.data.UserSignInStatusRepository
 import com.google.firebase.firestore.QuerySnapshot
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import java.time.LocalDate
@@ -18,7 +20,10 @@ import java.time.format.TextStyle
 import java.util.Locale
 import kotlin.reflect.full.memberProperties
 
-class UserInfoScreenViewModel(application: Application): AndroidViewModel(application) {
+class UserInfoScreenViewModel(
+    application: Application,
+    userSignInStatusRepository: UserSignInStatusRepository
+): AndroidViewModel(application) {
 
     val userImageUriFlowState = appPreferenceDataStore.userImageURLFlow
         .stateIn(
@@ -37,6 +42,7 @@ class UserInfoScreenViewModel(application: Application): AndroidViewModel(applic
     var numberOfFetchProcess: Int = 0
     private val myApplication = application as MyApplication
     val appUserData = myApplication.appUserDetails
+    val userSignInStatus: StateFlow<String> = userSignInStatusRepository.userSignInStatusFlow
 
     init {
         toggleIsViewLoading()

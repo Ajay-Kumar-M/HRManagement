@@ -48,6 +48,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -106,7 +107,7 @@ fun StatusScreen(
     val focusManager = LocalFocusManager.current
     var expanded by remember { mutableStateOf(false) }
     var cursorOffset by remember { mutableStateOf(Offset.Zero) }
-    var cursorHeight by remember { mutableStateOf(0f) }
+    var cursorHeight by remember { mutableFloatStateOf(0f) }
     val navigateFeed = remember { mutableStateOf(false) }
     val density = LocalDensity.current
     var showExitDialog by remember { mutableStateOf(false) }
@@ -192,7 +193,7 @@ fun StatusScreen(
                 .fillMaxSize()
                 .background(Color.White)
                 .padding(innerPadding)
-                .imePadding()
+//                .imePadding()
         ) {
             if (isViewLoading.value){
                 Column(
@@ -481,7 +482,7 @@ fun DropdownBelowCursorInBasicTextField() {
     var textFieldValue by remember { mutableStateOf(TextFieldValue()) }
     var expanded by remember { mutableStateOf(false) }
     var cursorOffset by remember { mutableStateOf(Offset.Zero) }
-    var cursorHeight by remember { mutableStateOf(0f) }
+    var cursorHeight by remember { mutableFloatStateOf(0f) }
     val density = LocalDensity.current
 
     Column (

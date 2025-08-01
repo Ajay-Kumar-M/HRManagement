@@ -5,13 +5,18 @@ import android.content.Context
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import com.example.hrmanagement.data.AppDataManager
 import com.example.hrmanagement.data.AppPreferenceDataStore
 import com.example.hrmanagement.data.AppThemeMode
 import com.example.hrmanagement.data.UserLoginData
+import com.example.hrmanagement.data.UserSignInStatusRepository
 import com.example.hrmanagement.misc.NetworkStatusMonitor
 import com.google.firebase.FirebaseApp
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.runBlocking
 
 class MyApplication: Application() {
@@ -25,12 +30,12 @@ class MyApplication: Application() {
         FirebaseApp.initializeApp(this)
         appPreferenceDataStore = AppPreferenceDataStore(this)
         googleAuthenticationService = GoogleAuthenticationService()
-        networkMonitor = NetworkStatusMonitor(this).also { it.startMonitor() }
-        appDataManager = AppDataManager()
         runBlocking {
             appUserEmailId = appPreferenceDataStore.emailFlow.firstOrNull().toString()
         }
+        networkMonitor = NetworkStatusMonitor(this).also { it.startMonitor() }
         themeModeState = mutableStateOf(AppThemeMode.SYSTEM)
+        appDataManager = AppDataManager()
     }
 
     companion object {

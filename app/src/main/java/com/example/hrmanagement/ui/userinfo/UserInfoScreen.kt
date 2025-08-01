@@ -93,6 +93,10 @@ import com.example.hrmanagement.component.CircularProgressIndicatorComposable
 import com.example.hrmanagement.data.AttendanceData
 import com.example.hrmanagement.data.GoalData
 import com.example.hrmanagement.data.UserLoginData
+import com.example.hrmanagement.data.UserSignInStatusRepository
+import com.example.hrmanagement.provider.AttendanceViewModelFactory
+import com.example.hrmanagement.provider.MainScreenViewModelFactory
+import com.example.hrmanagement.provider.UserInfoScreenViewModelFactory
 import com.example.hrmanagement.ui.main.UserProfileImage
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
@@ -112,11 +116,14 @@ import kotlin.reflect.full.memberProperties
 fun UserInfoScreen(
     modifier: Modifier,
     navController: NavController,
-    viewModel: UserInfoScreenViewModel = viewModel(factory = ViewModelProvider.AndroidViewModelFactory(LocalContext.current.applicationContext as Application))
+    viewModel: UserInfoScreenViewModel = viewModel(factory = UserInfoScreenViewModelFactory (
+//        application = LocalContext.current.applicationContext as Application,
+    userRepository = UserSignInStatusRepository()
+    ))
 ) {
     val userImageUri = viewModel.userImageUriFlowState.collectAsStateWithLifecycle()
     val userLoginData = viewModel.userLoginData.collectAsStateWithLifecycle()
-    val userSignInStatus = appDataManager.liveUserSignInStatus.collectAsStateWithLifecycle()
+    val userSignInStatus = viewModel.userSignInStatus.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val tabs = listOf("Profile", "Team", "Leave Tracker", "Goals", "Attendance")
     var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
@@ -346,7 +353,10 @@ fun UserInfoScreen(
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun AttendanceComposable(
-    viewModel: AttendanceViewModel = viewModel(factory = ViewModelProvider.AndroidViewModelFactory(LocalContext.current.applicationContext as Application))
+    viewModel: AttendanceViewModel = viewModel(factory = AttendanceViewModelFactory (
+        application = LocalContext.current.applicationContext as Application,
+    userRepository = UserSignInStatusRepository()
+    ))
 ) {
     val isViewLoading = viewModel.isViewLoading.collectAsStateWithLifecycle()
     val attendanceFilterShowBottomSheet = viewModel.attendanceFilterShowBottomSheet.collectAsStateWithLifecycle()
@@ -360,7 +370,7 @@ fun AttendanceComposable(
     val attendanceSelectedYear = viewModel.attendanceSelectedYear.collectAsStateWithLifecycle()
     val attendanceSelectedMonth = viewModel.attendanceSelectedMonth.collectAsStateWithLifecycle()
     val attendanceModalSelectedDate = viewModel.attendanceModalSelectedDate.collectAsStateWithLifecycle()
-    val userSignInStatus = appDataManager.liveUserSignInStatus.collectAsStateWithLifecycle()
+    val userSignInStatus = viewModel.userSignInStatus.collectAsStateWithLifecycle()
     val leaveTypeColorMap: Map<String, Color> = mapOf(
         Pair("Casual Leave",Color(0xFFE08607)),
         Pair("Sick Leave",Color(0xFFE08607)),

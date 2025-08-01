@@ -23,27 +23,36 @@ import com.example.hrmanagement.data.LeaveData
 import com.example.hrmanagement.data.LeaveTrackerData
 import com.example.hrmanagement.data.LikeData
 import com.example.hrmanagement.data.UserLoginData
+import com.example.hrmanagement.data.UserSignInStatusRepository
 import com.google.firebase.firestore.QuerySnapshot
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.SharingStarted.Companion.WhileSubscribed
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.launch
 import java.util.Calendar
 
-class MainScreenViewModel(application: Application) : AndroidViewModel(application) {
+class MainScreenViewModel(application: Application,private val userSignInStatusRepository: UserSignInStatusRepository) : AndroidViewModel(application) {
 
     val userImageUriUiState = appPreferenceDataStore.userImageURLFlow
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
+            started = WhileSubscribed(5000),
             initialValue = null
         )
     var userEmailUiState: String?
     private var _liveLeaveTrackerDetails: MutableStateFlow<LeaveTrackerData> = MutableStateFlow(LeaveTrackerData())
-    val liveLeaveTrackerDetails = _liveLeaveTrackerDetails.asStateFlow()
+    val liveLeaveTrackerDetails = _liveLeaveTrackerDetails.asStateFlow().stateIn(
+        initialValue = LeaveTrackerData(),
+        scope = viewModelScope,
+        started =  WhileSubscribed(5000)
+    )
     private var _liveUserDetails: MutableStateFlow<UserLoginData> =
         MutableStateFlow(UserLoginData())
     val liveUserDetails = _liveUserDetails.asStateFlow()
@@ -69,6 +78,7 @@ class MainScreenViewModel(application: Application) : AndroidViewModel(applicati
     private val myApplication = application as MyApplication
     private val _toastEvent = MutableSharedFlow<String>(replay = 0)
     val toastEvent = _toastEvent.asSharedFlow()
+    val userSignInStatus: StateFlow<String> = userSignInStatusRepository.userSignInStatusFlow
 
     init {
         toggleIsViewLoading()
@@ -81,36 +91,34 @@ class MainScreenViewModel(application: Application) : AndroidViewModel(applicati
         getLeaveTrackerDetails()
         getHolidayDetails()
         fetchLimitedFavorites()
-        if (!userEmailUiState.isNullOrBlank()) {
-            appDataManager.listenForUserSignInStatusUpdates(userEmailUiState!!)
-        }
+//        if (!userEmailUiState.isNullOrBlank()) {
+//            appDataManager.listenForUserSignInStatusUpdates(userEmailUiState!!)
+//        }
     }
 
     fun fetchUserDetails() {
-        if (!_isViewLoading.value) {
-            toggleIsViewLoading()
-        }
-        numberOfFetchProcess++
         if (userEmailUiState != null) {
-            appDataManager.getFirebaseUser(userEmailUiState!!, ::updateUserDetails)
-        }
-    }
-
-    fun updateUserDetails(userDetails: UserLoginData?, response: String) {
-        numberOfFetchProcess--
-        Log.d("MainScreenViewModel", "updateUserDetails called $userDetails")
-        if ((response == "Success") && (userDetails != null)) {
-            _liveUserDetails.value = userDetails
-            myApplication.updateAppUserData(userDetails)
+            if (!_isViewLoading.value) {
+                toggleIsViewLoading()
+            }
+            numberOfFetchProcess++
+            appDataManager.getFirebaseUser(userEmailUiState!!){ userDetails, response ->
+                Log.d("MainScreenViewModel", "updateUserDetails called $userDetails")
+                if ((response == "Success") && (userDetails != null)) {
+                    _liveUserDetails.value = userDetails
+                    myApplication.updateAppUserData(userDetails)
 //            viewModelScope.launch {
 //                appPreferenceDataStore.updateUserDetails(UserLoginData.from(userDetails))
 //            }
-        } else {
-            //handle errors
-            triggerToast("User details not found. Contact Sysadmin!")
-        }
-        if ((isViewLoading.value) && (numberOfFetchProcess == 0)) {
-            toggleIsViewLoading()
+                } else {
+                    //handle errors
+                    triggerToast("User details not found. Contact Sysadmin!")
+                }
+                numberOfFetchProcess--
+                if ((isViewLoading.value) && (numberOfFetchProcess == 0)) {
+                    toggleIsViewLoading()
+                }
+            }
         }
     }
 

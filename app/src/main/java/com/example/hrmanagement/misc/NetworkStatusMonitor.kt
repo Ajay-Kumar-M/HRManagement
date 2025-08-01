@@ -5,8 +5,15 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
+import android.util.Log
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 class NetworkStatusMonitor(context: Context) {
     private var _networkStatus = MutableStateFlow<NetworkStatus>(NetworkStatus.Disconnected)
@@ -37,7 +44,6 @@ class NetworkStatusMonitor(context: Context) {
         val networkRequest = NetworkRequest.Builder()
             .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
             .build()
-
         connectivityManager.registerNetworkCallback(networkRequest, networkCallback)
     }
 

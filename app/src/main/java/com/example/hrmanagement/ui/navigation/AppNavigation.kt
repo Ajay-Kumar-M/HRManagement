@@ -6,11 +6,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.SavedStateViewModelFactory
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavDeepLinkBuilder
+import androidx.navigation.NavDeepLinkDslBuilder
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.navigation.navDeepLink
 import com.example.hrmanagement.Service.MyApplication
 import com.example.hrmanagement.data.AttendanceRegularisationData
 import com.example.hrmanagement.data.LeaveData
@@ -136,12 +139,17 @@ fun AppNavigation(modifier: Modifier = Modifier) {
             arguments = listOf(
                 navArgument("colleagueEmailId") { type = NavType.StringType },
                 navArgument("myEmailId") { type = NavType.StringType }
-            )
+            ),
+            deepLinks = listOf(navDeepLink {
+                uriPattern = "https://com.example.hrmanagement/ColleagueInfoScreen/{colleagueEmailId}/{myEmailId}"
+            })
         ) { backStackEntry ->
             val colleagueEmailId = backStackEntry.arguments?.getString("colleagueEmailId")
             val myEmailId = backStackEntry.arguments?.getString("myEmailId")
             if ((colleagueEmailId != null) && (myEmailId != null)) {
-                ColleagueInfoScreen(modifier, navController, colleagueEmailId, myEmailId)
+                ColleagueInfoScreen(modifier, colleagueEmailId, myEmailId, popbackStack = { navController.popBackStack() }) { colleagueEmailId, myEmailId ->
+                    navController.navigate(route = "ColleagueInfoScreen/${colleagueEmailId}/${myEmailId})")
+                }
             }
         }
 

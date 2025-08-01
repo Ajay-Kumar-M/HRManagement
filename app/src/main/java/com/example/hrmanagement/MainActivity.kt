@@ -1,6 +1,7 @@
 package com.example.hrmanagement
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -12,7 +13,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
 import com.example.hrmanagement.Service.MyApplication.Companion.appPreferenceDataStore
+import com.example.hrmanagement.Service.MyApplication.Companion.networkMonitor
 import com.example.hrmanagement.Service.MyApplication.Companion.themeModeState
+import com.example.hrmanagement.misc.NetworkStatusMonitor
 import com.example.hrmanagement.ui.navigation.AppNavigation
 import com.example.hrmanagement.ui.theme.HRManagementTheme
 import kotlinx.coroutines.launch
@@ -26,6 +29,14 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             appPreferenceDataStore.themeModeFlow.collect { mode ->
                 themeModeState.value = mode
+            }
+        }
+
+        lifecycleScope.launch {
+            networkMonitor.networkStatus.collect { status ->
+                if (status == NetworkStatusMonitor.NetworkStatus.Disconnected) {
+                    Toast.makeText(this@MainActivity, "Network Offline - please check your connection", Toast.LENGTH_SHORT).show()
+                }
             }
         }
 

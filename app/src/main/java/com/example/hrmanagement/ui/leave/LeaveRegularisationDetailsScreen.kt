@@ -164,7 +164,7 @@ fun LeaveRegularisationDetailsScreen(
                     .padding(innerPadding)
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
-                    .imePadding()
+//                    .imePadding()
             ) {
                 Text(
                     "Employee Mail",

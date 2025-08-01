@@ -191,7 +191,6 @@ fun ColleaguesScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .imePadding(),
                 ) {
                     PrimaryScrollableTabRow(
                         selectedTabIndex = selectedTabIndex,

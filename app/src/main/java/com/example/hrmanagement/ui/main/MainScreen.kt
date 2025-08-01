@@ -83,6 +83,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
@@ -128,7 +129,9 @@ import com.example.hrmanagement.data.FavoritePerson
 import com.example.hrmanagement.data.HolidayData
 import com.example.hrmanagement.data.LinkData
 import com.example.hrmanagement.data.UserLoginData
+import com.example.hrmanagement.data.UserSignInStatusRepository
 import com.example.hrmanagement.misc.NetworkStatusMonitor
+import com.example.hrmanagement.provider.MainScreenViewModelFactory
 import com.example.hrmanagement.ui.more.MoreScreen
 import com.example.hrmanagement.ui.requests.MyApprovalsScreen
 import com.example.hrmanagement.ui.requests.MyRequestsScreen
@@ -149,7 +152,10 @@ import java.util.Locale
 fun MainScreen(
     modifier: Modifier,
     navController: NavController,
-    viewModel: MainScreenViewModel = viewModel(factory = ViewModelProvider.AndroidViewModelFactory(LocalContext.current.applicationContext as Application))
+    viewModel: MainScreenViewModel = viewModel(factory = MainScreenViewModelFactory(
+        application = LocalContext.current.applicationContext as Application,
+        userRepository = UserSignInStatusRepository()
+    ))
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     val userImageUri = viewModel.userImageUriUiState.collectAsStateWithLifecycle()
@@ -178,11 +184,7 @@ fun MainScreen(
     var requestsTabsExpanded by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
-    LaunchedEffect(networkMonitor) {
-        if (networkMonitor.networkStatus.value == NetworkStatusMonitor.NetworkStatus.Disconnected)
-        Toast.makeText(context,"Network Offline - please check your connection", Toast.LENGTH_SHORT).show()
-    }
-    LaunchedEffect(viewModel.toastEvent) {
+    LaunchedEffect(Unit) {
         viewModel.toastEvent.collect { message ->
             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         }
@@ -423,7 +425,6 @@ fun MainScreen(
                     0 -> {
                         ServicesScreen(outerPadding, navController)
                     }
-
                     1 -> {
                         HomeScreen(outerPadding, navController, viewModel)
                     }
@@ -437,7 +438,6 @@ fun MainScreen(
                             }
                         }
                     }
-
                     4 -> {
                         MoreScreen(outerPadding, navController)
                     }
@@ -1214,7 +1214,7 @@ fun HomeScreen(
 fun SignInStatus(
     viewModel: MainScreenViewModel
 ) {
-    val userSignInStatus = appDataManager.liveUserSignInStatus.collectAsStateWithLifecycle()
+    val userSignInStatus = viewModel.userSignInStatus.collectAsStateWithLifecycle()
     val userAttendanceData = viewModel.userAttendanceData.collectAsStateWithLifecycle()
     val isSignInViewLoading = viewModel.isSignInViewLoading.collectAsStateWithLifecycle()
     var elapsedSignInTime by remember { mutableLongStateOf(0L) }

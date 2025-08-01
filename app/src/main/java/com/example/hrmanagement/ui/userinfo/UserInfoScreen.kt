@@ -1464,6 +1464,7 @@ fun TeamComposable(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable {
+                        if (teamMemberInfo.email != userLoginData.value.email)
                         navController.navigate("ColleagueInfoScreen/${teamMemberInfo.email}/${userLoginData.value.email}")
                     },
                 verticalAlignment = Alignment.CenterVertically

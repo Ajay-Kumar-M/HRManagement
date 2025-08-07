@@ -1184,26 +1184,26 @@ fun HomeScreen(
             }
             Spacer(Modifier.height(20.dp))
 
-            Column(
-                modifier = Modifier
-                    .clip(shape = RoundedCornerShape(15.dp))
-                    .fillMaxWidth()
-                    .background(Color.White)
-                    .height(100.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Spacer(Modifier.height(16.dp))
-
-                ClickableText(
-                    text = AnnotatedString("Show Snackbar"),
-                    onClick = {
-//                        viewModel.addAttendanceInitialData()
-//                        scope.launch {
-//                            snackbarHostState.showSnackbar("Custom Snackbar!")
-//                        }
-                    }
-                )
-            }
+//            Column(
+//                modifier = Modifier
+//                    .clip(shape = RoundedCornerShape(15.dp))
+//                    .fillMaxWidth()
+//                    .background(Color.White)
+//                    .height(100.dp),
+//                horizontalAlignment = Alignment.CenterHorizontally
+//            ) {
+//                Spacer(Modifier.height(16.dp))
+//
+//                ClickableText(
+//                    text = AnnotatedString("Show Snackbar"),
+//                    onClick = {
+////                        viewModel.addAttendanceInitialData()
+////                        scope.launch {
+////                            snackbarHostState.showSnackbar("Custom Snackbar!")
+////                        }
+//                    }
+//                )
+//            }
         }
     }
 

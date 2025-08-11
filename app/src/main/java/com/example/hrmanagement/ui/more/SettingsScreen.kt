@@ -258,6 +258,8 @@ fun SettingsScreen(
                         TextButton(onClick = {
                             val job = coroutineScope.launch {
                                 isLoading = true
+                                val application = context.applicationContext as MyApplication
+                                application.secureTokenManager?.clearAllSecureData()
                                 appPreferenceDataStore.updateToken(null)
                                 MyApplication.googleAuthenticationService.logout(context)
                                 isLoading = false

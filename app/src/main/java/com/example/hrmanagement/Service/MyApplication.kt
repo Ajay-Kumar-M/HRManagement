@@ -6,6 +6,7 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
+import com.example.hrmanagement.Service.SecureTokenManager
 import com.example.hrmanagement.data.AppDataManager
 import com.example.hrmanagement.data.AppPreferenceDataStore
 import com.example.hrmanagement.data.AppThemeMode
@@ -24,9 +25,11 @@ class MyApplication: Application() {
     private lateinit var _appUserDetails: UserLoginData
     val appUserDetails: UserLoginData
         get() = _appUserDetails
+    var secureTokenManager: SecureTokenManager? = null
 
     override fun onCreate() {
         super.onCreate()
+        secureTokenManager = SecureTokenManager.getInstance(this)
         FirebaseApp.initializeApp(this)
         appPreferenceDataStore = AppPreferenceDataStore(this)
         googleAuthenticationService = GoogleAuthenticationService()

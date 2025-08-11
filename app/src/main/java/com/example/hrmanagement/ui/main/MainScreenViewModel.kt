@@ -196,14 +196,18 @@ class MainScreenViewModel(application: Application,private val userSignInStatusR
     fun updateAttendanceDetails(attendanceData: QuerySnapshot?, response: String) {
         numberOfSignInProcess--
         if (response == "Success") {
-            Log.d("UserInfoScreenViewModel", "updateAttendanceDetails called $attendanceData")
-            val documentSnapshot = attendanceData?.first()
-            if (documentSnapshot?.exists() == true) {
-                _userAttendanceData.value = documentSnapshot.toObject(AttendanceData::class.java)
+            try {
+                Log.d("UserInfoScreenViewModel", "updateAttendanceDetails called $attendanceData")
+                val documentSnapshot = attendanceData?.first()
+                if (documentSnapshot?.exists() == true) {
+                    _userAttendanceData.value = documentSnapshot.toObject(AttendanceData::class.java)
+                }
+            } catch (e: Exception){
+                triggerToast("Unable to fetch USER Attendance details, try again.")
             }
         } else {
             //handle errors
-            triggerToast("Unable to fetch USER signin status, try again.")
+            triggerToast("Unable to fetch USER Attendance details, try again.")
         }
         if ((isSignInViewLoading.value == true) && (numberOfSignInProcess == 0))
             toggleIsSignInViewLoading()

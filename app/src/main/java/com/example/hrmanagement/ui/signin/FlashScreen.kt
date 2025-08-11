@@ -74,9 +74,11 @@ fun FlashScreen(modifier: Modifier,navController: NavController) {
                     scope.launch {
                         val result = MyApplication.googleAuthenticationService.signIn(context)
                         if((result!=null)&&(result.token.isNotEmpty())){ //&&(result.status=="Active")) {
+                            val application = context.applicationContext as MyApplication
 //                            Log.d("FlashScreen","${result.token} user token")
 //            MyApplication.appPreferenceDataStore.updateToken(result.token)
                             MyApplication.appPreferenceDataStore.updateGoogleAuthDetails(result)
+                            application.secureTokenManager?.storeToken(result.token)
                             MyApplication.appDataManager.addGoogleAuthUserData(result)
                             MyApplication.appDataManager.addDummyUserSignInStatus(
                                 result.email,

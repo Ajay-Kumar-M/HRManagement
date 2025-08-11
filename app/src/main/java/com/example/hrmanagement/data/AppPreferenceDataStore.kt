@@ -130,7 +130,7 @@ class AppPreferenceDataStore(context: Context) {
             if (userDetails.token.isBlank()) {
                 preferences.remove(TOKEN)
             } else {
-                preferences[TOKEN] = userDetails.token
+                preferences[TOKEN] = ""//userDetails.token
             }
             if (userDetails.mobileNumber.isBlank()) {
                 preferences.remove(MOBILE_NUMBER)

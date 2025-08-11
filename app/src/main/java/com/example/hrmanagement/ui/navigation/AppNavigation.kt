@@ -58,21 +58,21 @@ import kotlinx.serialization.json.Json
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 
-
 @Composable
 fun AppNavigation(modifier: Modifier = Modifier) {
     val navController = rememberNavController()
+    val context = LocalContext.current
+    val application = context.applicationContext as MyApplication
     val token = runBlocking {
-        MyApplication.appPreferenceDataStore.tokenFlow.firstOrNull()
+        application.secureTokenManager?.hasToken() == true
+//        MyApplication.appPreferenceDataStore.tokenFlow.firstOrNull()
     }
 
     NavHost(
         navController = navController,
-        startDestination = if (token == null) {
-            println("token - $token")
+        startDestination = if (token == false) {
             "FlashScreen"
         } else {
-            println("token - $token")
             "MainScreen"
         }
     ) {

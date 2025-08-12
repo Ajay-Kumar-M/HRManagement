@@ -8,7 +8,7 @@ Designed to help HR departments manage employee data, attendance, leave requests
 📅 Leave Management – Apply, approve, or reject leave requests</br>
 📈 Performance – Goals</br>
 🔐 Authentication – Secure login system using Google Auth</br>
-📲 Notifications – Get notified of leave status, announcements, etc.</br>
+📲 Notifications – Get notified of leave status, announcements, etc. (Upcoming)</br>
 🔄 Requests Workflow – Streamlined request approval process</br>
 📢 Announcements – Post and receive company-wide updates</br>
 📶 Status Updates – Track employee availability or remote/on-site status</br></br>

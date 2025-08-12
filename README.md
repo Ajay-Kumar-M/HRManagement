@@ -23,6 +23,6 @@ Networking: Kotlin Coroutines</br>
 Authentication: Firebase Auth</br></br>
 
 ## Screenshots</br>
-<a href="url"><img src="" align="left" height="500" width="260" ></a><br/>
-<a href="url"><img src="" align="left" height="500" width="260" ></a><br/>
-<a href="url"><img src="" align="left" height="500" width="260" ></a><br/>
+<a href="url"><img src="/Screenshots/Home.png" align="left" height="500" width="260" ></a><br/>
+<a href="url"><img src="/Screenshots/My_Approvals.png" align="left" height="500" width="260" ></a><br/>
+<a href="url"><img src="/Screenshots/Services.png" align="left" height="500" width="260" ></a><br/>

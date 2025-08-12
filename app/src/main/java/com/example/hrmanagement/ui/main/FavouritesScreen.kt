@@ -1,5 +1,6 @@
 package com.example.hrmanagement.ui.main
 
+import android.app.Application
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -33,11 +34,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -49,8 +52,7 @@ import com.example.hrmanagement.component.CircularProgressIndicatorComposable
 fun FavouritesScreen(
     modifier: Modifier,
     navController: NavController,
-    emailId: String,
-    viewModel: FavouritesViewModel = viewModel()
+    viewModel: FavouritesViewModel = viewModel(factory = ViewModelProvider.AndroidViewModelFactory(LocalContext.current.applicationContext as Application))
 ) {
 
     val favouritesData = viewModel.favouritesData.collectAsStateWithLifecycle()
@@ -80,6 +82,7 @@ fun FavouritesScreen(
                 modifier = Modifier
                     .statusBarsPadding()
                     .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
                     onClick = {
@@ -99,7 +102,7 @@ fun FavouritesScreen(
                     )
                 }
                 Text("Favourites",
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(20.dp,5.dp)
                 )
             }
@@ -122,17 +125,17 @@ fun FavouritesScreen(
                     CircularProgressIndicatorComposable()
                 }
             } else {
-                favouritesData.value.let { it ->
+                if (favouritesData.value.isNotEmpty()) {
                     LazyColumn(
                         modifier = Modifier.fillMaxWidth()
                             .padding(10.dp)
                     ) {
-                        items(it) { favouritePerson ->
+                        items(favouritesData.value) { favouritePerson ->
                             Row(
                                 modifier = Modifier
                                     .padding(10.dp)
                                     .clickable {
-                                        navController.navigate("ColleagueInfoScreen/${favouritePerson.email}/${emailId}")
+                                        navController.navigate("ColleagueInfoScreen/${favouritePerson.email}/${viewModel.appUserData.email}")
                                     },
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
@@ -170,6 +173,15 @@ fun FavouritesScreen(
                             }
                             Spacer(Modifier.width(10.dp))
                         }
+                    }
+                } else {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text("No Data Available")
                     }
                 }
             }

@@ -1,5 +1,6 @@
 package com.example.hrmanagement.ui.leave
 
+import android.app.Application
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -34,34 +35,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.vectorResource
-import androidx.compose.ui.text.LinkAnnotation
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.TextLinkStyles
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.withLink
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.hrmanagement.R
 import com.example.hrmanagement.component.CircularProgressIndicatorComposable
-import com.example.hrmanagement.data.LinkData
-import com.example.hrmanagement.data.UserLoginData
-import com.example.hrmanagement.ui.userinfo.LeaveTrackerShowModalSheet
-import com.example.hrmanagement.ui.userinfo.UserInfoScreenViewModel
 import com.example.hrmanagement.ui.userinfo.getPropertyValue
-import kotlinx.serialization.json.Json
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
 
 @Composable
 fun LeaveReportScreen(
     modifier: Modifier,
     navController: NavController,
-    userEmailID: String,
-    viewModel: LeaveReportViewModel = viewModel()
+    viewModel: LeaveReportViewModel = viewModel(factory = ViewModelProvider.AndroidViewModelFactory(LocalContext.current.applicationContext as Application))
 ) {
     val leaveTypes = listOf("Casual Leave", "Sick Leave", "On Duty", "Optional Holidays", "Comp Off")
     val leaveTypeIcons: Map<String, ImageVector> = mapOf(
@@ -112,7 +101,7 @@ fun LeaveReportScreen(
                     )
                 }
                 Text("Leave Report",
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(20.dp,5.dp)
                 )
             }
@@ -120,7 +109,7 @@ fun LeaveReportScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
-                    navController.navigate("ApplyLeaveScreen/${leaveTrackerDetails.value.emailId}/All")
+                    navController.navigate("ApplyLeaveScreen/All")
                 },
                 containerColor = Color(0xFF1976D2)
             ) {
@@ -155,7 +144,7 @@ fun LeaveReportScreen(
                         Row (
                             modifier = Modifier.padding(10.dp)
                                 .clickable{
-                                    navController.navigate("ApplyLeaveScreen/${leaveTrackerDetails.value.emailId}/${leaveType}")
+                                    navController.navigate("ApplyLeaveScreen/${leaveType}")
                                 },
                             verticalAlignment = Alignment.CenterVertically
                         ){

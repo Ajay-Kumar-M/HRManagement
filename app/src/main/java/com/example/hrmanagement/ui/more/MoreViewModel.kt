@@ -1,23 +1,19 @@
 package com.example.hrmanagement.ui.more
 
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.vectorResource
-import androidx.lifecycle.SavedStateHandle
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
-import com.example.hrmanagement.R
-import com.example.hrmanagement.Service.MyApplication.Companion.appUserEmailId
-import com.example.hrmanagement.data.MoreItemData
+import com.example.hrmanagement.Service.MyApplication
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class MoreViewModel(
-): ViewModel() {
+class MoreViewModel(application: Application): AndroidViewModel(application) {
 
     private var _isViewLoading: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val isViewLoading = _isViewLoading.asStateFlow()
     var numberOfFetchProcess: Int = 0
-//    var personEmailId: String = checkNotNull(savedStateHandle["personEmailId"])
-
+    private val myApplication = application as MyApplication
+    val appUserData = myApplication.appUserDetails
 
     fun toggleIsViewLoading(){
         _isViewLoading.value = !_isViewLoading.value

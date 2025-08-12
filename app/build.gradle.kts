@@ -3,7 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     kotlin("kapt")
-    id("com.google.dagger.hilt.android")
+//    id("com.google.dagger.hilt.android")
     id("com.google.gms.google-services")
     id("org.jetbrains.kotlin.plugin.serialization")
 
@@ -30,6 +30,11 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("debug")
+        }
+        debug {
+            isDebuggable = true
+            // other debug configurations
         }
     }
     compileOptions {
@@ -65,7 +70,10 @@ dependencies {
     //navigation
     implementation("androidx.navigation:navigation-compose:2.7.0")
 
-    //Dagger - hilt
+    //Kotlinx IO Exceptions
+    implementation("org.jetbrains.kotlinx:kotlinx-io-core:0.8.0")
+
+    //Dagger - hilt - Used in UserSignInStatusRepository.kt
     implementation("com.google.dagger:hilt-android:2.55")
     kapt("com.google.dagger:hilt-compiler:2.55")
     // Hilt for dependency injection
@@ -74,15 +82,15 @@ dependencies {
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
 
     // Retrofit
-    implementation("com.squareup.retrofit2:retrofit:2.9.0")
-    implementation("com.squareup.okhttp3:okhttp:5.0.0-alpha.3")
+//    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+//    implementation("com.squareup.okhttp3:okhttp:5.0.0-alpha.3")
 
     //ktor
-    implementation("io.ktor:ktor-client-core:3.1.3")
-    implementation("io.ktor:ktor-client-cio:3.1.3")
-    implementation("io.ktor:ktor-client-content-negotiation:3.1.3")
-    implementation("io.ktor:ktor-client-okhttp:3.1.3")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:3.1.3")
+//    implementation("io.ktor:ktor-client-core:3.1.3")
+//    implementation("io.ktor:ktor-client-cio:3.1.3")
+//    implementation("io.ktor:ktor-client-content-negotiation:3.1.3")
+//    implementation("io.ktor:ktor-client-okhttp:3.1.3")
+//    implementation("io.ktor:ktor-serialization-kotlinx-json:3.1.3")
 
     //firebase
     implementation("com.firebaseui:firebase-ui-auth:9.0.0")
@@ -117,5 +125,10 @@ dependencies {
     //to observeasstate
     implementation("androidx.compose.runtime:runtime-livedata:1.8.2")
 
+    //Accompanist Permissions
+    implementation("com.google.accompanist:accompanist-permissions:0.36.0")
+    implementation("com.google.android.gms:play-services-location:21.3.0")
 
+    //encryption
+    implementation("androidx.security:security-crypto:1.1.0")
 }

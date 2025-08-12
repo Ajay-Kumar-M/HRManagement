@@ -31,6 +31,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -99,6 +100,7 @@ fun AnnouncementsScreen(
                     .statusBarsPadding()
                     .background(Color.White)
                     .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
                     onClick = {
@@ -119,7 +121,7 @@ fun AnnouncementsScreen(
                 }
                 Text(
                     "Announcements",
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(20.dp, 5.dp)
                         .weight(1f,true)
                 )
@@ -167,7 +169,13 @@ fun AnnouncementsScreen(
                         modifier = Modifier.fillMaxWidth()
                             .padding(10.dp)
                     ) {
-                        items(it) { announcement ->
+                        items(
+                            it,
+                            key = { announcement ->
+                                announcement.announcementID
+                            }
+                        ) { announcement ->
+//                            key(announcement.announcementID) {
                                 Row (
                                     modifier = Modifier.padding(10.dp)
                                         .fillMaxWidth()
@@ -223,7 +231,7 @@ fun AnnouncementsScreen(
                                         style = MaterialTheme.typography.bodySmall
                                     )
                                 }
-
+//                            }
                             Spacer(Modifier.width(10.dp))
                         }
                     }

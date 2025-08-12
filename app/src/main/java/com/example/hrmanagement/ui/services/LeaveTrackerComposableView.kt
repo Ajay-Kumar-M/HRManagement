@@ -25,6 +25,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.unit.dp
@@ -33,7 +34,6 @@ import com.example.hrmanagement.ui.userinfo.LeaveTrackerComposable
 
 @Composable
 fun LeaveTrackerComposableView(
-    emailId: String,
     navController: NavController
 ) {
     Scaffold(
@@ -44,6 +44,7 @@ fun LeaveTrackerComposableView(
                 modifier = Modifier
                     .statusBarsPadding()
                     .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
                     onClick = {
@@ -74,7 +75,7 @@ fun LeaveTrackerComposableView(
                 text = { Text("Add") },
                 icon = { Icon(Icons.Filled.Add, contentDescription = "") },
                 onClick = {
-                    navController.navigate("ApplyLeaveScreen/${emailId}/All")
+                    navController.navigate("ApplyLeaveScreen/All")
                 }
             )
         }

@@ -1,5 +1,6 @@
 package com.example.hrmanagement.ui.announcement
 
+import android.content.ClipData
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -46,12 +47,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.vectorResource
@@ -67,6 +71,7 @@ import com.example.hrmanagement.component.CircularProgressIndicatorComposable
 import com.example.hrmanagement.ui.main.UserProfileImage
 import com.example.hrmanagement.ui.main.formatTimestamp
 import com.example.hrmanagement.ui.main.trimToLength
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
@@ -75,15 +80,15 @@ import java.nio.charset.StandardCharsets
 fun AnnouncementDetailScreen(
     modifier: Modifier,
     navController: NavController,
-    announcementId: Int,
-    viewModel: AnnouncementDetailViewModel = viewModel()
+    viewModel: AnnouncementDetailViewModel
 ) {
     val isViewLoading = viewModel.isViewLoading.collectAsStateWithLifecycle()
     val announcementData = viewModel.announcementData.collectAsStateWithLifecycle()
     val announcementComment = viewModel.announcementComment.collectAsStateWithLifecycle()
     var expanded by remember { mutableStateOf(false) }
-    val clipboardManager = LocalClipboardManager.current
+    val clipboardManager = LocalClipboard.current
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     Scaffold(
         modifier = Modifier.padding(5.dp),
@@ -131,8 +136,13 @@ fun AnnouncementDetailScreen(
                             DropdownMenuItem(
                                 text = { Text("Copy Post URL") },
                                 onClick = {
-                                    clipboardManager.setText(AnnotatedString(announcementData.value.announcementLink))
-                                    expanded = false
+                                    val job = scope.launch {
+                                        val clipData = ClipData.newPlainText("announcementLink", AnnotatedString(announcementData.value.announcementLink))
+                                        clipboardManager.setClipEntry(ClipEntry(clipData))
+                                    }
+                                    job.invokeOnCompletion {
+                                        expanded = false
+                                    }
                                 }
                             )
                         }
@@ -284,7 +294,7 @@ fun AnnouncementDetailScreen(
                         Row(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            val isAnnouncementLiked = announcement.likeUsers.values.any { it.emailId == viewModel.userEmailUiState }
+                            val isAnnouncementLiked = announcement.likeUsers.values.any { it.emailId == viewModel.appUserData.email }
                             Row(
                                 modifier = Modifier.clickable{
                                     viewModel.modifyLikeData(isAnnouncementLiked)
@@ -350,7 +360,7 @@ fun AnnouncementDetailScreen(
                                 modifier = Modifier.fillMaxWidth()
                                     .padding(15.dp,0.dp)
                             ) {
-                                val isCommentLiked = comment.value.likeUsers.values.any{ it.emailId == viewModel.userEmailUiState }
+                                val isCommentLiked = comment.value.likeUsers.values.any{ it.emailId == viewModel.appUserData.email }
                                 Text(
                                     text = if(isCommentLiked) {
                                         "Liked"

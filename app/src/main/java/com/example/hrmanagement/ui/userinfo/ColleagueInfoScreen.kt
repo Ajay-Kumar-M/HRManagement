@@ -84,10 +84,11 @@ import java.nio.charset.StandardCharsets
 @Composable
 fun ColleagueInfoScreen(
     modifier: Modifier,
-    navController: NavController,
     colleagueEmailId: String,
     myEmailId: String,
-    viewModel: ColleagueInfoScreenViewModel = viewModel()
+    viewModel: ColleagueInfoScreenViewModel = viewModel(),
+    popbackStack: () -> Unit,
+    navigateToFriendProfile: (colleagueEmailId: String, myEmailId: String) -> Unit
 ) {
     val departmentDetails = viewModel.liveDepartmentDetails.collectAsStateWithLifecycle()
     val liveColleagueDetails = viewModel.liveColleagueDetails.collectAsStateWithLifecycle()
@@ -153,7 +154,7 @@ fun ColleagueInfoScreen(
                         )
                     }
                     IconButton(
-                        onClick = { navController.popBackStack() },
+                        onClick = { popbackStack() },
                         colors = IconButtonDefaults.iconButtonColors(
                             containerColor = Color.White, // Your desired background color
                             contentColor = Color.Black          // Icon color
@@ -505,7 +506,9 @@ fun ColleagueInfoScreen(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clickable {
-                                            navController.navigate("ColleagueInfoScreen/${liveColleagueDetails.value.reportingTo.getValue("emailId")}/$myEmailId")
+//                                            navController.navigate("ColleagueInfoScreen/${liveColleagueDetails.value.reportingTo.getValue("emailId")}/$myEmailId")
+                                            Log.d("ColleagueInfoScreen", "${liveColleagueDetails.value.reportingTo.getValue("emailId")} --- $myEmailId")
+                                            navigateToFriendProfile(liveColleagueDetails.value.reportingTo.getValue("emailId"), myEmailId)
                                         },
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
@@ -536,7 +539,7 @@ fun ColleagueInfoScreen(
                                 }
                                 Spacer(modifier = Modifier.height(15.dp))
                                 getAllFieldsAndValues(liveColleagueDetails.value).forEach { value ->
-                                    if ((value.first != "token")||(value.first != "reportingTo")) {
+                                    if ((value.first != "token")&&(value.first != "reportingTo")&&(value.first != "imageUrl")) {
                                         Text(
                                             value.first,
                                             style = MaterialTheme.typography.bodyMedium
@@ -579,10 +582,11 @@ fun ColleagueInfoScreen(
                                 departmentDetails.value?.forEach { person ->
                                     val teamMemberInfo = person.toObject(UserLoginData::class.java)
                                     Row(
-                                        modifier = Modifier.clickable{
-                                            val userJson = Json.encodeToString(person)
-                                            val encodedUserJson = URLEncoder.encode(userJson, StandardCharsets.UTF_8.toString())
-                                            navController.navigate("ColleagueInfoScreen/${teamMemberInfo.email}/$myEmailId")
+                                        modifier = Modifier.fillMaxWidth()
+                                            .clickable{
+//                                            navController.navigate("ColleagueInfoScreen/${teamMemberInfo.email}/$myEmailId")
+                                                Log.d("ColleagueInfoScreen","${teamMemberInfo.email} --- $myEmailId")
+                                            navigateToFriendProfile(teamMemberInfo.email, myEmailId)
                                         }
                                     ) {
                                         UserProfileImage(teamMemberInfo.imageUrl)
@@ -593,8 +597,9 @@ fun ColleagueInfoScreen(
                                             )
                                             Row {
                                                 Icon(
-                                                    imageVector = Icons.Default.AccountBox,
-                                                    contentDescription = "ID"
+                                                    imageVector = ImageVector.vectorResource(R.drawable.id_card_svg),
+                                                    contentDescription = "ID",
+                                                    modifier = Modifier.size(20.dp)
                                                 )
                                                 Text(
                                                     teamMemberInfo.emp_Id,

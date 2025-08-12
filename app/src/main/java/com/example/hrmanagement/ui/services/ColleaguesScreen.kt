@@ -1,5 +1,6 @@
 package com.example.hrmanagement.ui.services
 
+import android.app.Application
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -55,6 +56,7 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -64,13 +66,13 @@ import com.example.hrmanagement.R
 import com.example.hrmanagement.component.CircularProgressIndicatorComposable
 import com.example.hrmanagement.component.truncate
 import com.example.hrmanagement.ui.main.UserProfileImage
+import javax.annotation.meta.When
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ColleaguesScreen(
     navController: NavController,
-    emailId: String,
-    viewModel: ColleaguesViewModel = viewModel()
+    viewModel: ColleaguesViewModel = viewModel(factory = ViewModelProvider.AndroidViewModelFactory(LocalContext.current.applicationContext as Application))
 ) {
     val isViewLoading = viewModel.isViewLoading.collectAsStateWithLifecycle()
     val isViewTypeList = viewModel.isViewTypeList.collectAsStateWithLifecycle()
@@ -111,7 +113,7 @@ fun ColleaguesScreen(
                         viewModel.colleagueSearchTextChanged(it)
                     },
                     singleLine = true,
-                    placeholder = { Text("Search Colleagues", fontSize = 14.sp) },
+                    placeholder = { Text("Search ${viewTabs[selectedTabIndex]}", fontSize = 14.sp) },
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Default.Search,
@@ -146,13 +148,14 @@ fun ColleaguesScreen(
             }
         },
         floatingActionButton = {
+            if(selectedTabIndex==1) {
                 FloatingActionButton(
                     onClick = {
                         viewModel.toggleIsViewType()
                     },
                     containerColor = Color(0xFF1976D2)
                 ) {
-                    if(isViewTypeList.value){
+                    if (isViewTypeList.value) {
                         Icon(
                             ImageVector.vectorResource(R.drawable.list),
                             contentDescription = "List",
@@ -166,7 +169,8 @@ fun ColleaguesScreen(
                         )
                     }
                 }
-            },
+            }
+        },
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -187,7 +191,6 @@ fun ColleaguesScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .imePadding(),
                 ) {
                     PrimaryScrollableTabRow(
                         selectedTabIndex = selectedTabIndex,
@@ -203,6 +206,7 @@ fun ColleaguesScreen(
                                     selectedTabIndex = index
                                     when (selectedTabIndex) {
                                         0 -> {
+                                            viewModel.fetchFavorites()
                                         }
                                         1 -> {
                                         }
@@ -216,18 +220,10 @@ fun ColleaguesScreen(
                     }
                     when (selectedTabIndex) {
                         0 -> {
-                            Column(
-                                modifier = Modifier
-                                    .padding(10.dp)
-                                    .fillMaxSize(),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
-                            ) {
-                                Text("No Data Available")
-                            }
+                            FavoritesListView(viewModel,viewModel.appUserData.email,navController)
                         }
                         1 -> {
-                            ColleaguesGridView(viewModel,emailId,navController)
+                            ColleaguesGridView(viewModel,viewModel.appUserData.email,navController)
                         }
                         2 -> {
                             Column(
@@ -244,6 +240,59 @@ fun ColleaguesScreen(
                 }
             }
             Spacer(Modifier.height(20.dp))
+        }
+    }
+}
+
+@Composable
+fun FavoritesListView(
+    viewModel: ColleaguesViewModel,
+    emailId: String,
+    navController: NavController
+){
+
+    val favouritesData = viewModel.favouritesData.collectAsStateWithLifecycle()
+
+    if (favouritesData.value.isNotEmpty()) {
+        LazyColumn(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            items(favouritesData.value) { favoriteUserData ->
+                Row(
+                    modifier = Modifier.fillMaxWidth()
+                        .padding(15.dp,10.dp)
+                        .clickable{
+                            if (favoriteUserData.email == emailId) {
+                                navController.navigate("UserInfoScreen")
+                            } else {
+                                navController.navigate("ColleagueInfoScreen/${favoriteUserData.email}/${emailId}")
+                            }
+                        }
+                ) {
+                    UserProfileImage(favoriteUserData.imageUrl)
+                    Spacer(Modifier.width(15.dp))
+                    Column{
+                        Text(
+                            favoriteUserData.username.truncate(15),
+                            fontSize = 12.sp,
+                        )
+                        Text(
+                            favoriteUserData.employeeId,
+                            fontSize = 12.sp,
+                        )
+                    }
+                }
+            }
+        }
+    } else {
+        Column(
+            modifier = Modifier
+                .padding(10.dp)
+                .fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text("No Data Available")
         }
     }
 }
@@ -273,9 +322,9 @@ fun ColleaguesGridView(
                         .height(140.dp)
                         .clickable {
                             if (userData.email == emailId) {
-                                navController.navigate("UserInfoScreen/${emailId}")
+                                navController.navigate("UserInfoScreen")
                             } else {
-                                navController.navigate("ColleagueInfoScreen/${emailId}/${userData.email}")
+                                navController.navigate("ColleagueInfoScreen/${userData.email}/${emailId}")
                             }
                         }
                 ) {
@@ -328,9 +377,9 @@ fun ColleaguesGridView(
                         .padding(15.dp,10.dp)
                         .clickable{
                             if (userData.email == emailId) {
-                                navController.navigate("UserInfoScreen/${emailId}")
+                                navController.navigate("UserInfoScreen")
                             } else {
-                                navController.navigate("ColleagueInfoScreen/${emailId}/${userData.email}")
+                                navController.navigate("ColleagueInfoScreen/${userData.email}/${emailId}")
                             }
                         }
                 ) {

@@ -1,14 +1,20 @@
 package com.example.hrmanagement.ui.userinfo
 
+import android.app.Application
+import android.content.Context
+import android.location.Location
 import android.util.Log
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.hrmanagement.Service.MyApplication
 import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
-import com.example.hrmanagement.Service.MyApplication.Companion.appPreferenceDataStore
+import com.example.hrmanagement.component.getAddressFromLocation
+import com.example.hrmanagement.data.UserSignInStatusRepository
 import com.google.firebase.firestore.QuerySnapshot
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.ZoneId
@@ -17,7 +23,10 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
-class AttendanceViewModel: ViewModel() {
+class AttendanceViewModel(
+    application: Application,
+    userSignInStatusRepository: UserSignInStatusRepository
+): AndroidViewModel(application) {
 
     private val _attendanceFilterShowBottomSheet: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val attendanceFilterShowBottomSheet = _attendanceFilterShowBottomSheet.asStateFlow()
@@ -43,17 +52,16 @@ class AttendanceViewModel: ViewModel() {
     val attendanceModalSelectedDate = _attendanceModalSelectedDate.asStateFlow()
     private var _isViewLoading: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val isViewLoading = _isViewLoading.asStateFlow()
-    var numberOfFeatchProcess: Int = 0
+    var numberOfFetchProcess: Int = 0
     val daysOfWeek: Array<String> = arrayOf("Mon","Tue","Wed","Thu","Fri","Sat","Sun")
     private var attendanceStartDateTimestamp: Long = 0
     private var attendanceEndDateTimestamp: Long = 0
-    var userEmailId: String? = ""
+    private val myApplication = application as MyApplication
+    val appUserData = myApplication.appUserDetails
+    val userSignInStatus: StateFlow<String> = userSignInStatusRepository.userSignInStatusFlow
 
     init {
         toggleIsViewLoading()
-        runBlocking {
-            userEmailId = appPreferenceDataStore.emailFlow.firstOrNull()
-        }
         _attendanceSelectedYear.value = Calendar.getInstance().get(Calendar.YEAR);
         _attendanceSelectedMonth.value = (Calendar.getInstance().get(Calendar.MONTH) + 1);
         if (attendanceSelectedViewType.value == "Week") {
@@ -68,21 +76,21 @@ class AttendanceViewModel: ViewModel() {
         val firstDayOfWeekMonth = getDayOfWeekOfMonth(attendanceSelectedYear.value,attendanceSelectedMonth.value, 1)
         _attendanceDayOfTheWeekIndex.value = daysOfWeek.indexOf(firstDayOfWeekMonth)
         attendanceStartDateTimestamp = getStartOfMonthTimestamp(attendanceSelectedYear.value,attendanceSelectedMonth.value)
-        attendanceEndDateTimestamp = getStartOfMonthTimestamp(attendanceSelectedYear.value,attendanceSelectedMonth.value+1)
+        attendanceEndDateTimestamp = getStartOfMonthTimestamp(attendanceSelectedYear.value,attendanceSelectedMonth.value+1)-10
     }
 
     fun getAttendanceDetails(){
-        if ((userEmailId!=null)&&((userEmailId?.isNotBlank())==true)) {
+        if (appUserData.email.isNotBlank() == true) {
             if (isViewLoading.value==false) toggleIsViewLoading()
-            numberOfFeatchProcess++
-            appDataManager.getFirebaseAttendanceData(attendanceStartDateTimestamp,attendanceEndDateTimestamp-10,userEmailId!!,::updateAttendanceDetails)
+            numberOfFetchProcess++
+            appDataManager.getFirebaseAttendanceData(attendanceStartDateTimestamp,attendanceEndDateTimestamp,appUserData.email,::updateAttendanceDetails)
         }
     }
 
     fun updateAttendanceDetails(attendanceData: QuerySnapshot?,response: String){
-        numberOfFeatchProcess--
+        numberOfFetchProcess--
         if(response == "Success"){
-            Log.d("UserInfoScreenViewModel","updateAttendanceDetails called $attendanceData")
+            Log.d("UserInfoScreenViewModel","updateAttendanceDetails called ${attendanceData?.size()}")
             var tempTotalHours = 0.0f
             attendanceData?.forEach { attendanceLog ->
                 tempTotalHours += attendanceLog.data.getValue("totalHours").toString().toFloat()
@@ -93,13 +101,14 @@ class AttendanceViewModel: ViewModel() {
             //handle errors
             TODO()
         }
-        if ((isViewLoading.value==true)&&(numberOfFeatchProcess==0))
+        if ((isViewLoading.value==true)&&(numberOfFetchProcess==0))
             toggleIsViewLoading()
     }
 
-    fun updateUserSignInStatus(){
-        if ((userEmailId!=null)&&((userEmailId?.isNotBlank())==true)) {
+    fun updateUserSignInStatus(location: Location?, context: Context) {
+        if (appUserData.email.isNotBlank() == true) {
             if (isViewLoading.value==false) toggleIsViewLoading()
+            var userLocation: String? = null
             val calendar = Calendar.getInstance()
             val startOfTheDay = Calendar.getInstance()
             startOfTheDay.apply {
@@ -108,13 +117,37 @@ class AttendanceViewModel: ViewModel() {
                 set(Calendar.SECOND, 0)       // Set seconds to 0
                 set(Calendar.MILLISECOND, 0)  // Set milliseconds to 0
             }
-            numberOfFeatchProcess++
-            appDataManager.addSignInStatus(userEmailId!!,calendar.timeInMillis,startOfTheDay.timeInMillis,::updateSignInResponse)
+            if (location != null) {
+                viewModelScope.launch {
+                    getAddressFromLocation(context, location.latitude, location.longitude) { address ->
+                        userLocation = address
+                        numberOfFetchProcess++
+                        appDataManager.addSignInStatus(
+                            appUserData.email,
+                            calendar.timeInMillis,
+                            startOfTheDay.timeInMillis,
+                            userLocation ?: "",
+                            appUserData.reportingTo.getValue("emailId"),
+                            ::updateSignInResponse
+                        )
+                    }
+                }
+            } else {
+                numberOfFetchProcess++
+                appDataManager.addSignInStatus(
+                    appUserData.email,
+                    calendar.timeInMillis,
+                    startOfTheDay.timeInMillis,
+                    "",
+                    appUserData.reportingTo.getValue("emailId"),
+                    ::updateSignInResponse
+                )
+            }
         }
     }
 
     fun updateSignInResponse(response: String,error: String) {
-        numberOfFeatchProcess--
+        numberOfFetchProcess--
         if(response == "Success"){
             Log.d("UserInfoScreenViewModel","updateSignInResponse called $response")
             getAttendanceDetails()
@@ -122,7 +155,7 @@ class AttendanceViewModel: ViewModel() {
             //handle errors
             TODO()
         }
-        if ((isViewLoading.value==true)&&(numberOfFeatchProcess==0))
+        if ((isViewLoading.value==true)&&(numberOfFetchProcess==0))
             toggleIsViewLoading()
     }
 

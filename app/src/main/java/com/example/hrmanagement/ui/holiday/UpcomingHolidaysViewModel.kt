@@ -11,7 +11,7 @@ class UpcomingHolidaysViewModel: ViewModel() {
 
     private var _isViewLoading: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val isViewLoading = _isViewLoading.asStateFlow()
-    private var numberOfFeatchProcess: Int = 0
+    private var numberOfFetchProcess: Int = 0
     private var _holidaysData: MutableStateFlow<QuerySnapshot?> = MutableStateFlow(null)
     val holidaysData = _holidaysData.asStateFlow()
 
@@ -25,20 +25,20 @@ class UpcomingHolidaysViewModel: ViewModel() {
 
     fun getHolidayDetails(){
         if (isViewLoading.value==false) toggleIsViewLoading()
-        numberOfFeatchProcess++
+        numberOfFetchProcess++
         appDataManager.getHolidays(::updateHolidayData)
     }
 
     fun updateHolidayData(holidays: QuerySnapshot?, response: String){
         Log.d("UpcomingHolidaysViewModel","updateHolidayData called $holidays")
-        numberOfFeatchProcess--
+        numberOfFetchProcess--
         if((response == "Success")&&(holidays!=null)){
             _holidaysData.value = holidays
         } else {
             //handle errors
             TODO()
         }
-        if ((isViewLoading.value==true)&&(numberOfFeatchProcess==0))
+        if ((isViewLoading.value==true)&&(numberOfFetchProcess==0))
             toggleIsViewLoading()
     }
 }

@@ -12,8 +12,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,7 +26,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.hrmanagement.R
@@ -36,8 +33,6 @@ import com.example.hrmanagement.Service.MyApplication
 import com.example.hrmanagement.component.CircularProgressIndicatorComposable
 import com.example.hrmanagement.data.UserSignInStatusData
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 
@@ -78,10 +73,12 @@ fun FlashScreen(modifier: Modifier,navController: NavController) {
 //                    signInWithGoogle(context, navController, scope)
                     scope.launch {
                         val result = MyApplication.googleAuthenticationService.signIn(context)
-                        if((result!=null)&&(result.token.isNotEmpty())&&(result.status=="Success")) {
+                        if((result!=null)&&(result.token.isNotEmpty())){ //&&(result.status=="Active")) {
+                            val application = context.applicationContext as MyApplication
 //                            Log.d("FlashScreen","${result.token} user token")
 //            MyApplication.appPreferenceDataStore.updateToken(result.token)
                             MyApplication.appPreferenceDataStore.updateGoogleAuthDetails(result)
+                            application.secureTokenManager?.storeToken(result.token)
                             MyApplication.appDataManager.addGoogleAuthUserData(result)
                             MyApplication.appDataManager.addDummyUserSignInStatus(
                                 result.email,
@@ -97,6 +94,7 @@ fun FlashScreen(modifier: Modifier,navController: NavController) {
                             }
                         } else {
                             Toast.makeText(context, "Error while authenticating user. Try again!", Toast.LENGTH_LONG).show()
+                            isViewLoading = false
                         }
                     }
                 },

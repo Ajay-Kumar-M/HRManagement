@@ -67,10 +67,7 @@ import java.nio.charset.StandardCharsets
 fun FeedDetailScreen(
     modifier: Modifier,
     navController: NavController,
-    userEmailId: String,
-    feedId: Int,
-    feedType: String,
-    viewModel: FeedDetailViewModel = viewModel()
+    viewModel: FeedDetailViewModel
 ) {
 
     val isViewLoading = viewModel.isViewLoading.collectAsStateWithLifecycle()
@@ -87,6 +84,7 @@ fun FeedDetailScreen(
                 modifier = Modifier
                     .statusBarsPadding()
                     .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
                     onClick = {
@@ -132,7 +130,7 @@ fun FeedDetailScreen(
                         .fillMaxSize()
                         .weight(1f)
                 ) {
-                    when (feedType) {
+                    when (viewModel.feedType) {
                         "LeaveRequest" -> {
                             Row(
                                 modifier = Modifier
@@ -154,7 +152,7 @@ fun FeedDetailScreen(
                                                             userJson,
                                                             StandardCharsets.UTF_8.toString()
                                                         )
-                                                    navController.navigate("LeaveDetailsScreen/${encodedUserJson}")
+                                                    navController.navigate("LeaveDetailsScreen/${encodedUserJson}/false")
                                                 }
                                             )
                                         ) {
@@ -219,7 +217,7 @@ fun FeedDetailScreen(
                                                             userJson,
                                                             StandardCharsets.UTF_8.toString()
                                                         )
-                                                    navController.navigate("LeaveDetailsScreen/${encodedUserJson}")
+                                                    navController.navigate("LeaveDetailsScreen/${encodedUserJson}/false")
                                                 }
                                         )
                                     }
@@ -304,7 +302,7 @@ fun FeedDetailScreen(
                                     modifier = Modifier.fillMaxWidth()
                                         .padding(15.dp,0.dp)
                                 ) {
-                                    val isCommentLiked = comment.value.likeUsers.values.any{ it.emailId == viewModel.userEmail }
+                                    val isCommentLiked = comment.value.likeUsers.values.any{ it.emailId == viewModel.appUserData.email }
                                     Text(
                                         text = if(isCommentLiked) {
                                             "Liked"
@@ -396,7 +394,7 @@ fun FeedDetailScreen(
                             }
 
                             Spacer(Modifier.height(20.dp))
-                            if (!feedRecord.value.isCommentEnabled) {
+                            if (!feedRecord.value.commentEnabled) {
                                 Row(
                                     modifier = Modifier.fillMaxWidth()
                                         .background(Color(0xFFFFD6D7)),
@@ -440,7 +438,7 @@ fun FeedDetailScreen(
                             Row(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                val isFeedLiked = feedRecord.value.likeUsers.values.any { it.emailId == viewModel.userEmail }
+                                val isFeedLiked = feedRecord.value.likeUsers.values.any { it.emailId == viewModel.appUserData.email }
                                 Row(
                                     modifier = Modifier.clickable{
                                         viewModel.modifyLikeData(isFeedLiked)
@@ -506,7 +504,7 @@ fun FeedDetailScreen(
                                     modifier = Modifier.fillMaxWidth()
                                         .padding(15.dp,0.dp)
                                 ) {
-                                    val isCommentLiked = comment.value.likeUsers.values.any{ it.emailId == viewModel.userEmail }
+                                    val isCommentLiked = comment.value.likeUsers.values.any{ it.emailId == viewModel.appUserData.email }
                                     Text(
                                         text = if(isCommentLiked) {
                                             "Liked"
@@ -549,9 +547,9 @@ fun FeedDetailScreen(
                     IconButton(
                         onClick = {
                             if (feedComment.value.isNotBlank()){
-                                if ((feedType == "LeaveRequest")&&(leaveRecord.value.isCommentsEnabled == true)) {
+                                if ((viewModel.feedType == "LeaveRequest")&&(leaveRecord.value.isCommentsEnabled == true)) {
                                     viewModel.addFeedComment()
-                                } else if ((feedType == "Status")&&(feedRecord.value.isCommentEnabled == true)) {
+                                } else if ((viewModel.feedType == "Status")&&(feedRecord.value.commentEnabled == true)) {
                                     viewModel.addFeedComment()
                                 } else {
                                     Toast.makeText(context,"Comments are disabled for this feed.",Toast.LENGTH_LONG).show()

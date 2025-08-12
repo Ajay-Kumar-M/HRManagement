@@ -1,46 +1,57 @@
 package com.example.hrmanagement.Service
 
 import android.app.Application
+import android.content.Context
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import com.example.hrmanagement.Service.SecureTokenManager
 import com.example.hrmanagement.data.AppDataManager
 import com.example.hrmanagement.data.AppPreferenceDataStore
 import com.example.hrmanagement.data.AppThemeMode
 import com.example.hrmanagement.data.UserLoginData
+import com.example.hrmanagement.data.UserSignInStatusRepository
 import com.example.hrmanagement.misc.NetworkStatusMonitor
-import com.google.firebase.Firebase
 import com.google.firebase.FirebaseApp
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.firestore
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.okhttp.OkHttp
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.runBlocking
-import java.security.AuthProvider
 
 class MyApplication: Application() {
 
+    private lateinit var _appUserDetails: UserLoginData
+    val appUserDetails: UserLoginData
+        get() = _appUserDetails
+    var secureTokenManager: SecureTokenManager? = null
+
     override fun onCreate() {
         super.onCreate()
+        secureTokenManager = SecureTokenManager.getInstance(this)
         FirebaseApp.initializeApp(this)
         appPreferenceDataStore = AppPreferenceDataStore(this)
         googleAuthenticationService = GoogleAuthenticationService()
-        networkMonitor = NetworkStatusMonitor(this).also { it.startMonitor() }
-        appDataManager = AppDataManager()
         runBlocking {
             appUserEmailId = appPreferenceDataStore.emailFlow.firstOrNull().toString()
         }
+        networkMonitor = NetworkStatusMonitor(this).also { it.startMonitor() }
         themeModeState = mutableStateOf(AppThemeMode.SYSTEM)
+        appDataManager = AppDataManager()
     }
 
     companion object {
         internal lateinit var appPreferenceDataStore: AppPreferenceDataStore
         internal lateinit var googleAuthenticationService: GoogleAuthenticationService
-        internal val apiService = ApiService(client = HttpClient(OkHttp))
+//        internal val apiService = ApiService(client = HttpClient(OkHttp))
         internal lateinit var networkMonitor: NetworkStatusMonitor
         internal lateinit var appDataManager: AppDataManager
         internal lateinit var appUserEmailId: String
-        internal lateinit var appUserDetails: UserLoginData
         internal lateinit var themeModeState: MutableState<AppThemeMode>
+    }
+
+    fun updateAppUserData(userLoginData: UserLoginData){
+        _appUserDetails = userLoginData
     }
 }

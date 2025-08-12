@@ -1,5 +1,7 @@
 package com.example.hrmanagement.ui.more
 
+import android.app.Application
+import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -32,30 +34,38 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.hrmanagement.R
+import com.example.hrmanagement.Service.MyApplication
+import com.example.hrmanagement.Service.MyApplication.Companion.appPreferenceDataStore
+import com.example.hrmanagement.component.CircularProgressIndicatorComposable
 import com.example.hrmanagement.ui.main.UserProfileImage
+import kotlinx.coroutines.launch
 
 @Composable
 fun SettingsScreen(
     modifier: Modifier,
     navController: NavController,
-    emailId: String,
-    username: String,
-    viewModel: SettingsViewModel = viewModel()
+    viewModel: SettingsViewModel = viewModel(factory = ViewModelProvider.AndroidViewModelFactory(LocalContext.current.applicationContext as Application))
 ) {
 
     var showExitDialog by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    var isLoading by remember { mutableStateOf(false) }
 
     Scaffold(
         modifier = Modifier.padding(5.dp),
@@ -65,6 +75,7 @@ fun SettingsScreen(
                 modifier = Modifier
                     .statusBarsPadding()
                     .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
                     onClick = {
@@ -82,7 +93,8 @@ fun SettingsScreen(
                 Text(
                     "Settings",
                     style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(20.dp, 5.dp)
+                    modifier = Modifier
+                        .padding(20.dp, 5.dp)
                         .weight(1f)
                 )
                 IconButton(
@@ -119,9 +131,9 @@ fun SettingsScreen(
             ) {
                 Spacer(modifier = Modifier.height(10.dp))
                 UserProfileImage(viewModel.userLoginData.imageUrl)
-                Column (
+                Column(
                     modifier = Modifier.fillMaxWidth()
-                ){
+                ) {
                     Text(
                         viewModel.userLoginData.username,
                         style = MaterialTheme.typography.titleMedium,
@@ -129,17 +141,18 @@ fun SettingsScreen(
                     )
                     Text(
                         viewModel.userLoginData.email,
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodyLarge,
                         modifier = Modifier.padding(20.dp, 5.dp)
                     )
                 }
             }
             Spacer(modifier = Modifier.height(20.dp))
             Box(
-                modifier = Modifier.fillMaxWidth()
-                    .background(Color.White,RoundedCornerShape(15.dp))
-                    .padding(20.dp,5.dp)
-            ){
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White, RoundedCornerShape(15.dp))
+                    .padding(20.dp, 5.dp)
+            ) {
                 Text(
                     "Organization Name",
                     style = MaterialTheme.typography.titleMedium,
@@ -150,20 +163,21 @@ fun SettingsScreen(
             Text(
                 "Theme",
                 style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(20.dp, 25.dp,0.dp,5.dp),
+                modifier = Modifier.padding(20.dp, 25.dp, 0.dp, 5.dp),
                 fontWeight = FontWeight.Bold
             )
-            Row (
-                modifier = Modifier.fillMaxWidth()
-                    .clickable{
-                        navController.navigate("ThemeChangeScreen")
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+//                        navController.navigate("ThemeChangeScreen")
                     },
                 horizontalArrangement = Arrangement.SpaceBetween
-            ){
+            ) {
                 Text(
                     "Light Mode",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(20.dp, 10.dp,0.dp,15.dp)
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.padding(20.dp, 10.dp, 0.dp, 15.dp)
                 )
                 Icon(
                     imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
@@ -172,16 +186,63 @@ fun SettingsScreen(
                 )
             }
             Text(
+                "Privacy",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(20.dp, 25.dp, 0.dp, 5.dp),
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                "Privacy Policy",
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.padding(20.dp, 10.dp, 0.dp, 15.dp)
+            )
+            Text(
+                "Terms of Service",
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.padding(20.dp, 10.dp, 0.dp, 15.dp)
+            )
+            Text(
+                "About",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(20.dp, 25.dp, 0.dp, 5.dp),
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                "Version (1.0.0)",
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.padding(20.dp, 10.dp, 0.dp, 15.dp)
+            )
+            Text(
+                "Feedback",
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.padding(20.dp, 10.dp, 0.dp, 15.dp)
+                    .fillMaxWidth()
+                    .clickable{
+                        val intent = Intent(Intent.ACTION_SENDTO).apply {
+                            data = "mailto:feedback@gmail.com".toUri()
+//                                    putExtra(Intent.EXTRA_SUBJECT, subject)
+//                                    putExtra(Intent.EXTRA_TEXT, body)
+                        }
+                        try {
+                            context.startActivity(Intent.createChooser(intent, "Send Email"))
+                        } catch (e: Exception) {
+                            // Handle exception if no email client is installed
+                            e.printStackTrace()
+                        }
+                    }
+            )
+            Text(
                 "Others",
                 style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(20.dp, 30.dp,0.dp,5.dp),
+                modifier = Modifier.padding(20.dp, 30.dp, 0.dp, 5.dp),
                 fontWeight = FontWeight.Bold
             )
             Text(
                 "Sign Out",
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(20.dp, 10.dp,0.dp,15.dp)
-                    .clickable{
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier
+                    .padding(20.dp, 10.dp, 0.dp, 15.dp)
+                    .clickable {
                         showExitDialog = true
                     },
                 color = Color.Red
@@ -195,12 +256,24 @@ fun SettingsScreen(
                     text = { Text("Are you sure you want to go logout of app?") },
                     confirmButton = {
                         TextButton(onClick = {
-                            showExitDialog = false
-                            viewModel.logoutCurrentUser()
-                            navController.navigate("FlashScreen"){
-                                popUpTo(0) { inclusive = true }
+                            val job = coroutineScope.launch {
+                                isLoading = true
+                                val application = context.applicationContext as MyApplication
+                                application.secureTokenManager?.clearAllSecureData()
+//                                appPreferenceDataStore.updateToken(null)
+                                MyApplication.googleAuthenticationService.logout(context)
+                                isLoading = false
+                            }
+                            job.invokeOnCompletion {
+                                showExitDialog = false
+                                navController.navigate("FlashScreen") {
+                                    popUpTo(0) { inclusive = true }
+                                }
                             }
                         }) {
+                            if (isLoading) {
+                                CircularProgressIndicatorComposable()
+                            }
                             Text("Yes")
                         }
                     },
@@ -213,5 +286,6 @@ fun SettingsScreen(
             }
             Spacer(Modifier.height(20.dp))
         }
+
     }
 }

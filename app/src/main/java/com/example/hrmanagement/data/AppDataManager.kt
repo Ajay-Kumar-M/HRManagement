@@ -1,12 +1,13 @@
 package com.example.hrmanagement.data
 
 import android.util.Log
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewModelScope
+import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
+import com.example.hrmanagement.Service.MyApplication.Companion.appUserEmailId
 import com.google.firebase.Firebase
-import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.DocumentChange
-import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FirebaseFirestore
@@ -14,28 +15,22 @@ import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.QuerySnapshot
 import com.google.firebase.firestore.firestore
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import java.text.SimpleDateFormat
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.stateIn
 import java.util.Calendar
-import java.util.Date
-import java.util.Locale
 
 const val TAG = "AppDataManager"
 
 class AppDataManager {
-    var firestoreDB: FirebaseFirestore
+    var firestoreDB: FirebaseFirestore = Firebase.firestore
     private var listenerRegistration: ListenerRegistration? = null
-    private var usersigninstatuslistenerRegistration: ListenerRegistration? = null
-    private val _announcementLiveData = MutableLiveData<List<String>>()
-    val announcementLiveData: LiveData<List<String>> = _announcementLiveData
-    private var _liveUserSignInStatus: MutableStateFlow<String> =
-        MutableStateFlow("Not populated yet!")
-    val liveUserSignInStatus = _liveUserSignInStatus.asStateFlow()
-
-    init {
-        firestoreDB = Firebase.firestore
-    }
+//    private var usersigninstatuslistenerRegistration: ListenerRegistration? = null
+    internal val userEventsFlow: Flow<String> = listenForUserSignInStatusUpdatesFlow(appUserEmailId)
 
     fun addGoogleAuthUserData(googleAuth: GoogleAuth) {
         val usersCollection = firestoreDB.collection("users")
@@ -69,6 +64,8 @@ class AppDataManager {
         emailId: String,
         checkInOrCheckOutTimestamp: Long,
         currentDayTimestamp: Long,
+        location: String,
+        reportingToEmailId: String,
         responseHandler: (String, String) -> Unit
     ) {
 
@@ -112,7 +109,8 @@ class AppDataManager {
                         calendar.get(Calendar.DAY_OF_MONTH),
                         calendar.get(Calendar.MONTH) + 1,
                         calendar.get(Calendar.YEAR),
-                        ""
+                        "",
+                        reportingToEmailId
                     )
                 }
                 userAttendanceLog?.let { attendanceLog ->
@@ -123,7 +121,7 @@ class AppDataManager {
                         userSignInStatus.checkouttimestamp = checkInOrCheckOutTimestamp
                         userSignInStatus.status = "Checked-Out"
                         attendanceLog.checkOutTime = checkInOrCheckOutTimestamp
-                        attendanceLog.checkOutLocation = "Chennai"
+                        attendanceLog.checkOutLocation = location
                         attendanceLog.totalHours = "$hours.$minutes".toFloat()
                     } else {
                         if (attendanceLog.checkInTime == 0L) { //will be executed when the user checks-in for the first time on a particular day
@@ -132,7 +130,7 @@ class AppDataManager {
                             attendanceLog.status = "Present"
                         }
                         userSignInStatus.status = "Checked-In"
-                        attendanceLog.checkInLocation = "Chennai"
+                        attendanceLog.checkInLocation = location
                     }
                     transaction.set(signInStatusDocumentRef, userSignInStatus)
                     transaction.set(attendanceDocumentCollectionRef, attendanceLog)
@@ -196,7 +194,7 @@ class AppDataManager {
             }
     }
 
-    fun addRegularisationAttendanceData(
+    fun addNRegularisationAttendanceData(
         emailId: String,
         attendanceData: List<AttendanceRegularisationData>,
         returnResponse: (String) -> Unit
@@ -217,6 +215,53 @@ class AppDataManager {
                 Log.w(TAG, "Error adding document", e)
                 returnResponse("Failure")
             }
+    }
+
+    fun addRegularisationAttendanceData(
+        attendanceData: AttendanceRegularisationData,
+        returnResponse: (String) -> Unit
+    ) {
+        val attendanceDocumentRef =
+            firestoreDB.collection("attendance").document(attendanceData.emailId)
+                .collection("attendanceRegularisationLogs").document("${attendanceData.date}")
+        attendanceDocumentRef
+            .set(attendanceData)
+            .addOnSuccessListener {
+                Log.d(
+                    TAG,
+                    "DocumentSnapshot added/updated with ID: ${attendanceData.emailId}"
+                )
+                returnResponse("Success")
+            }
+            .addOnFailureListener { e ->
+                Log.w(TAG, "Error adding document", e)
+                returnResponse("Failure")
+            }
+    }
+
+    fun removeAndAddAttendanceRegularizationData(
+        attendanceData: AttendanceRegularisationData,
+        returnResponse: (String) -> Unit
+    ) {
+        firestoreDB.runBatch { batch ->
+            val oldAttendanceDocumentRef =
+                firestoreDB.collection("attendance").document(attendanceData.emailId)
+                    .collection("attendanceRegularisationLogs").document("${attendanceData.date}")
+            batch.delete(oldAttendanceDocumentRef)
+            val newAttendanceDocumentRef =
+                firestoreDB.collection("attendance").document(attendanceData.emailId)
+                    .collection("attendanceLogs").document("${attendanceData.date}")
+            batch.set(newAttendanceDocumentRef, attendanceData)
+        }.addOnSuccessListener {
+            Log.d(
+                TAG,
+                "removeAndAddAttendanceRegularizationData record added/updated with ID: ${attendanceData.date}"
+            )
+            returnResponse("Success")
+        }.addOnFailureListener { e ->
+            Log.w(TAG, "removeAndAddAttendanceRegularizationData Error adding record", e)
+            returnResponse("Failure")
+        }
     }
 
     fun getFirebaseAttendanceData(
@@ -247,7 +292,7 @@ class AppDataManager {
         goalData: GoalData,
         lastGoalIndex: Int,
         updateLastGoalIndex: Boolean,
-        returnResponse: (String) -> Unit
+//        returnResponse: (String) -> Unit
     ) {
         firestoreDB.runBatch { batch ->
             val goalDocument =
@@ -261,10 +306,10 @@ class AppDataManager {
             }
         }.addOnSuccessListener {
             Log.d(TAG, "DocumentSnapshot goal added/updated with ID: goal$lastGoalIndex")
-            returnResponse("Success")
+//            returnResponse("Success")
         }.addOnFailureListener { e ->
             Log.w(TAG, "Error adding goal", e)
-            returnResponse("Failure")
+//            returnResponse("Failure")
         }
     }
 
@@ -338,14 +383,18 @@ class AppDataManager {
         returnResponse: (String) -> Unit
     ) {
         firestoreDB.runBatch { batch ->
-            val leaveTrackerDocumentRef = firestoreDB.collection("leavetrackers").document("${leaveTrackerData.emailId}$year")
-            batch.set(leaveTrackerDocumentRef,leaveTrackerData)
+            val leaveTrackerDocumentRef =
+                firestoreDB.collection("leavetrackers").document("${leaveTrackerData.emailId}$year")
+            batch.set(leaveTrackerDocumentRef, leaveTrackerData)
 
-            val leaveDataDocumentRef = firestoreDB.collection("leavelogs").document(leaveTrackerData.emailId)
+            val leaveDataDocumentRef =
+                firestoreDB.collection("leavelogs").document(leaveTrackerData.emailId)
             batch.update(leaveDataDocumentRef, "lastLeaveId", leaveData.leaveId)
 
-            val leaveRequestDocumentRef = firestoreDB.collection("leavelogs").document(leaveTrackerData.emailId).collection("leaveRequests").document("${leaveData.leaveId}")
-            batch.set(leaveRequestDocumentRef,leaveData)
+            val leaveRequestDocumentRef =
+                firestoreDB.collection("leavelogs").document(leaveTrackerData.emailId)
+                    .collection("leaveRequests").document("${leaveData.leaveId}")
+            batch.set(leaveRequestDocumentRef, leaveData)
         }.addOnSuccessListener {
             Log.d(TAG, "leave details added/updated with ID: ${leaveData.leaveId}")
             returnResponse("Success")
@@ -370,7 +419,21 @@ class AppDataManager {
             }
     }
 
-    fun fetchLastLeaveId(emailId: String, response: (Int?, String) -> Unit){
+    fun fetchReportingToLeaveRecords(emailId: String, response: (QuerySnapshot?, String) -> Unit) {
+        firestoreDB.collectionGroup("leaveRequests")
+            .whereEqualTo("reportingTo", emailId)
+            .get()
+            .addOnSuccessListener { querySnapshot ->
+                Log.d(TAG, "fetchReportingToLeaveRecords temp data ${querySnapshot.size()}")
+                response(querySnapshot, "Success")
+            }
+            .addOnFailureListener { exception ->
+                Log.e(TAG, "fetchReportingToLeaveRecords Error getting documents: ", exception)
+                response(null, "Failure")
+            }
+    }
+
+    fun fetchLastLeaveId(emailId: String, response: (Int?, String) -> Unit) {
         val docRef = firestoreDB.collection("leavelogs").document(emailId)
         docRef.get()
             .addOnSuccessListener { documentSnap ->
@@ -388,9 +451,16 @@ class AppDataManager {
             }
     }
 
-    fun fetchLeaveLogs(year: Int, emailId: String, id: Int, response: (QuerySnapshot?, String, DocumentSnapshot?) -> Unit) {
-        if ( id != 0 ) {
-            val leaveRequestsCollectionRef = firestoreDB.collection("leavelogs").document(emailId).collection("leaveRequests").document("$id")
+    fun fetchLeaveLogs(
+        year: Int,
+        emailId: String,
+        id: Int,
+        response: (QuerySnapshot?, String, DocumentSnapshot?) -> Unit
+    ) {
+        if (id != 0) {
+            val leaveRequestsCollectionRef =
+                firestoreDB.collection("leavelogs").document(emailId).collection("leaveRequests")
+                    .document("$id")
             leaveRequestsCollectionRef.get()
                 .addOnSuccessListener { documentSnap ->
                     if (documentSnap != null) {
@@ -405,9 +475,10 @@ class AppDataManager {
                     response(null, "Error Exception $exception", null)
                 }
         } else if (year != 0) {
-            val leaveRequestsCollectionRef = firestoreDB.collection("leavelogs").document(emailId).collection("leaveRequests")
-            leaveRequestsCollectionRef.orderBy("year",Query.Direction.DESCENDING)
-                .whereEqualTo("year",year)
+            val leaveRequestsCollectionRef =
+                firestoreDB.collection("leavelogs").document(emailId).collection("leaveRequests")
+            leaveRequestsCollectionRef.orderBy("year", Query.Direction.DESCENDING)
+                .whereEqualTo("year", year)
                 .get()
                 .addOnSuccessListener { querySnap ->
                     if (querySnap != null) {
@@ -423,7 +494,8 @@ class AppDataManager {
                     response(null, "Error Exception $exception", null)
                 }
         } else {
-            val leaveRequestsCollectionRef = firestoreDB.collection("leavelogs").document(emailId).collection("leaveRequests")
+            val leaveRequestsCollectionRef =
+                firestoreDB.collection("leavelogs").document(emailId).collection("leaveRequests")
             leaveRequestsCollectionRef.get()
                 .addOnSuccessListener { querySnap ->
                     if (querySnap != null) {
@@ -467,8 +539,36 @@ class AppDataManager {
             }
     }
 
-    fun getAttendanceRegularizationData(emailId: String, successResponse: (QuerySnapshot?, String) -> Unit) {
-        val attendanceCollectionReference = firestoreDB.collection("attendance").document(emailId).collection("attendanceRegularisationLogs")
+    fun getReportingToAttendanceRegularizationData(
+        emailId: String,
+        response: (QuerySnapshot?, String) -> Unit
+    ) {
+        firestoreDB.collectionGroup("attendanceRegularisationLogs")
+            .whereEqualTo("reportingTo", emailId)
+            .get()
+            .addOnSuccessListener { querySnapshot ->
+                Log.d(
+                    TAG,
+                    "getReportingToAttendanceRegularizationData temp data ${querySnapshot.size()}"
+                )
+                response(querySnapshot, "Success")
+            }
+            .addOnFailureListener { exception ->
+                Log.e(
+                    TAG,
+                    "getReportingToAttendanceRegularizationData Error getting documents: ",
+                    exception
+                )
+                response(null, "Failure")
+            }
+    }
+
+    fun getAttendanceRegularizationData(
+        emailId: String,
+        successResponse: (QuerySnapshot?, String) -> Unit
+    ) {
+        val attendanceCollectionReference = firestoreDB.collection("attendance").document(emailId)
+            .collection("attendanceRegularisationLogs")
         attendanceCollectionReference.get()
             .addOnSuccessListener { querySnapshot ->
                 if (querySnapshot != null) {
@@ -509,7 +609,8 @@ class AppDataManager {
     fun getUserFeeds(
         emailId: String, responseHandler: (QuerySnapshot?, String) -> Unit
     ) {
-        val usersCollection = firestoreDB.collection("feeds").document(emailId).collection("userfeeds")
+        val usersCollection =
+            firestoreDB.collection("feeds").document(emailId).collection("userfeeds")
         usersCollection.get()
             .addOnSuccessListener { result ->
                 responseHandler(result, "Success")
@@ -523,7 +624,9 @@ class AppDataManager {
     fun setUserFeed(
         feedData: FeedData, responseHandler: (String) -> Unit
     ) {
-        val feedDocumentRef = firestoreDB.collection("feeds").document(feedData.email).collection("userfeeds").document(feedData.feedID)
+        val feedDocumentRef =
+            firestoreDB.collection("feeds").document(feedData.email).collection("userfeeds")
+                .document(feedData.feedID)
         feedDocumentRef.set(feedData)
             .addOnSuccessListener {
                 responseHandler("Success")
@@ -537,7 +640,9 @@ class AppDataManager {
     fun getUserFeedID(
         emailId: String, id: Int, responseHandler: (DocumentSnapshot?, String) -> Unit
     ) {
-        val usersCollection = firestoreDB.collection("feeds").document(emailId).collection("userfeeds").document("$id")
+        val usersCollection =
+            firestoreDB.collection("feeds").document(emailId).collection("userfeeds")
+                .document("$id")
         usersCollection.get()
             .addOnSuccessListener { result ->
                 responseHandler(result, "Success")
@@ -601,7 +706,7 @@ class AppDataManager {
                 if (document != null) {
                     resultData = document.toObject(UserLoginData::class.java)
                     resultData?.let {
-                        Log.d(TAG, "getFirebaseUser temp data $it")
+                        Log.d(TAG, "getFirebaseUser temp data $it - $userid")
                         successResponse(it, "Success")
                     }
                 } else {
@@ -624,7 +729,7 @@ class AppDataManager {
         favoriteCollectionRef.get()
             .addOnSuccessListener { documents ->
                 if (documents != null) {
-                    Log.d(TAG, "getFirebaseUser temp data ${documents.size()}")
+                    Log.d(TAG, "getFirebaseUserFavorites temp data ${documents.size()}")
                     successResponse(documents, "Success")
                 } else {
                     Log.d(TAG, "No such document")
@@ -637,7 +742,8 @@ class AppDataManager {
             }
     }
 
-    fun getFirebaseUserLimitedFavorites( limit: Long,
+    fun getFirebaseUserLimitedFavorites(
+        limit: Long,
         userid: String,
         successResponse: (QuerySnapshot?, String) -> Unit
     ) {
@@ -650,7 +756,7 @@ class AppDataManager {
         limitedQuery.get()
             .addOnSuccessListener { documents ->
                 if (documents != null) {
-                    Log.d(TAG, "getFirebaseUser temp data ${documents.size()}")
+                    Log.d(TAG, "getFirebaseUserLimitedFavorites temp data ${documents.size()}")
                     successResponse(documents, "Success")
                 } else {
                     Log.d(TAG, "No such document")
@@ -663,8 +769,10 @@ class AppDataManager {
             }
     }
 
-    fun addUserFavorite(favoritePerson: FavoritePerson, response: (String) -> Unit ){
-        val favoriteCollectionDocumentRef = firestoreDB.collection("users").document(favoritePerson.favoriteBy).collection("favorites").document(favoritePerson.email)
+    fun addUserFavorite(favoritePerson: FavoritePerson, response: (String) -> Unit) {
+        val favoriteCollectionDocumentRef =
+            firestoreDB.collection("users").document(favoritePerson.favoriteBy)
+                .collection("favorites").document(favoritePerson.email)
         favoriteCollectionDocumentRef
             .set(favoritePerson)
             .addOnSuccessListener {
@@ -677,8 +785,14 @@ class AppDataManager {
             }
     }
 
-    fun removeUserFavorite(myEmailId: String, colleagueEmailId: String, response: (String) -> Unit ){
-        val favoriteCollectionDocumentRef = firestoreDB.collection("users").document(myEmailId).collection("favorites").document(colleagueEmailId)
+    fun removeUserFavorite(
+        myEmailId: String,
+        colleagueEmailId: String,
+        response: (String) -> Unit
+    ) {
+        val favoriteCollectionDocumentRef =
+            firestoreDB.collection("users").document(myEmailId).collection("favorites")
+                .document(colleagueEmailId)
         favoriteCollectionDocumentRef
             .delete()
             .addOnSuccessListener {
@@ -709,34 +823,63 @@ class AppDataManager {
             }
     }
 
-    fun listenForUserSignInStatusUpdates(userid: String) {
-        usersigninstatuslistenerRegistration =
-            firestoreDB.collection("signinstatus").document(userid)
-                .addSnapshotListener { snapshot, e ->
-                    if (e != null) {
-                        Log.w(TAG, "Listen failed.", e)
-                        return@addSnapshotListener
-                    }
-                    val source = if (snapshot != null && snapshot.metadata.hasPendingWrites()) {
-                        "Local"
-                    } else {
-                        "Server"
-                    }
-                    if (snapshot != null && snapshot.exists()) {
+//    fun listenForUserSignInStatusUpdates(userid: String) {
+//        usersigninstatuslistenerRegistration =
+//            firestoreDB.collection("signinstatus").document(userid)
+//                .addSnapshotListener { snapshot, e ->
+//                    if (e != null) {
+//                        Log.w(TAG, "Listen failed.", e)
+//                        return@addSnapshotListener
+//                    }
+//                    val source = if (snapshot != null && snapshot.metadata.hasPendingWrites()) {
+//                        "Local"
+//                    } else {
+//                        "Server"
+//                    }
+//                    if (snapshot != null && snapshot.exists()) {
+//                        Log.d(
+//                            TAG,
+//                            "listenForUserSignInStatusUpdates userid - $userid data ${snapshot.data}"
+//                        )
+//                        val temp = snapshot.toObject(UserSignInStatusData::class.java)
+//                        Log.d(TAG, "listenForUserSignInStatusUpdates temp data $temp")
+//                        if (!temp?.status.isNullOrBlank()) {
+//                            _liveUserSignInStatus.value = temp.status.toString()
+//                        }
+//                    } else {
+//                        Log.d(TAG, "$source data: null")
+//                    }
+//                }
+//    }
+
+    fun listenForUserSignInStatusUpdatesFlow(userid: String): Flow<String> = callbackFlow {
+        val registration = firestoreDB.collection("signinstatus").document(userid)
+            .addSnapshotListener { snapshot, e ->
+                if (e != null) {
+                    Log.w(TAG, "Listen failed.", e)
+                    close(e) // Close flow on error
+                    return@addSnapshotListener
+                }
+                val source = if (snapshot != null && snapshot.metadata.hasPendingWrites()) {
+                    "Local"
+                } else {
+                    "Server"
+                }
+                if (snapshot != null && snapshot.exists()) {
                         Log.d(
                             TAG,
                             "listenForUserSignInStatusUpdates userid - $userid data ${snapshot.data}"
                         )
-                        val temp = snapshot.toObject(UserSignInStatusData::class.java)
-                        Log.d(TAG, "listenForUserSignInStatusUpdates temp data $temp")
-                        if (!temp?.status.isNullOrBlank()) {
-                            _liveUserSignInStatus.value = temp.status.toString()
-                        }
-                    } else {
-                        Log.d(TAG, "$source data: null")
+                    val data = snapshot.toObject(UserSignInStatusData::class.java)
+                    val status = data?.status
+                    if (!status.isNullOrBlank()) {
+                        trySend(status).isSuccess
                     }
                 }
+            }
+        awaitClose { registration.remove() } // Remove listener when flow collection stops
     }
+
 
     fun listenForUserUpdates() {
         listenerRegistration = firestoreDB.collection("users")
@@ -755,6 +898,7 @@ class AppDataManager {
 
                             DocumentChange.Type.MODIFIED -> {
                                 // Handle modified document
+                                docChange.document
                             }
 
                             DocumentChange.Type.REMOVED -> {
@@ -928,7 +1072,8 @@ class AppDataManager {
 
     fun addLeaveData(leaveData: LeaveData, responseHandler: (String) -> Unit) {
         val document =
-            firestoreDB.collection("leavelogs").document(leaveData.emailId).collection("leaveRequests").document("${leaveData.leaveId}")
+            firestoreDB.collection("leavelogs").document(leaveData.emailId)
+                .collection("leaveRequests").document("${leaveData.leaveId}")
         document.set(leaveData)
             .addOnSuccessListener {
                 Log.d(
@@ -945,7 +1090,8 @@ class AppDataManager {
 
     fun addLeaveLogTemp(leavelog: LeaveData) {
         val document =
-            firestoreDB.collection("leavelogs").document("ajay.kumar0495@gmail.com").collection("leaveRequests").document("${leavelog.leaveId}")
+            firestoreDB.collection("leavelogs").document("ajay.kumar0495@gmail.com")
+                .collection("leaveRequests").document("${leavelog.leaveId}")
         document.set(leavelog)
             .addOnSuccessListener {
                 Log.d(
@@ -1003,6 +1149,23 @@ class AppDataManager {
                 Log.d(
                     TAG,
                     "DocumentSnapshot added/updated with ID: ${notificationData.notificationId}"
+                )
+            }
+            .addOnFailureListener { e ->
+                Log.w(TAG, "Error adding document", e)
+            }
+    }
+
+    fun addAttendanceData(attendanceData: AttendanceData) {
+        val notificationDocumentRef =
+            firestoreDB.collection("attendance").document(attendanceData.emailId)
+                .collection("attendanceLogs").document("${attendanceData.date}")
+        notificationDocumentRef
+            .set(attendanceData)
+            .addOnSuccessListener {
+                Log.d(
+                    TAG,
+                    "addAttendanceData DocumentSnapshot added/updated with ID: ${attendanceData.date}"
                 )
             }
             .addOnFailureListener { e ->

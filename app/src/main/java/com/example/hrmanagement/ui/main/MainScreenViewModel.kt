@@ -1,54 +1,63 @@
 package com.example.hrmanagement.ui.main
 
+import android.app.Application
+import android.content.Context
+import android.location.Location
+import android.os.Debug
 import android.util.Log
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.DefaultLifecycleObserver
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.hrmanagement.Service.MyApplication
 import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
 import com.example.hrmanagement.Service.MyApplication.Companion.appPreferenceDataStore
-import com.example.hrmanagement.Service.MyApplication.Companion.appUserDetails
 import com.example.hrmanagement.Service.MyApplication.Companion.appUserEmailId
+import com.example.hrmanagement.component.getAddressFromLocation
 import com.example.hrmanagement.component.startOfTheDayInMillis
 import com.example.hrmanagement.data.AnnouncementData
 import com.example.hrmanagement.data.AnnouncementList
 import com.example.hrmanagement.data.AttendanceData
 import com.example.hrmanagement.data.CommentsData
 import com.example.hrmanagement.data.DepartmentInfo
-import com.example.hrmanagement.data.GoogleAuth
+import com.example.hrmanagement.data.GoalData
 import com.example.hrmanagement.data.LeaveData
 import com.example.hrmanagement.data.LeaveTrackerData
 import com.example.hrmanagement.data.LikeData
-import com.example.hrmanagement.data.LinkData
-import com.example.hrmanagement.data.NotificationData
 import com.example.hrmanagement.data.UserLoginData
+import com.example.hrmanagement.data.UserSignInStatusRepository
 import com.google.firebase.firestore.QuerySnapshot
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.SharingStarted.Companion.WhileSubscribed
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import java.util.Calendar
 
-class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
+class MainScreenViewModel(application: Application,private val userSignInStatusRepository: UserSignInStatusRepository) : AndroidViewModel(application) {
 
     val userImageUriUiState = appPreferenceDataStore.userImageURLFlow
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
+            started = WhileSubscribed(5000),
             initialValue = null
         )
     var userEmailUiState: String?
-    private var _liveLeaveTrackerDetails: MutableStateFlow<LeaveTrackerData> =
-        MutableStateFlow(LeaveTrackerData())
-    val liveLeaveTrackerDetails = _liveLeaveTrackerDetails.asStateFlow()
+    private var _liveLeaveTrackerDetails: MutableStateFlow<LeaveTrackerData> = MutableStateFlow(LeaveTrackerData())
+    val liveLeaveTrackerDetails = _liveLeaveTrackerDetails.asStateFlow().stateIn(
+        initialValue = LeaveTrackerData(),
+        scope = viewModelScope,
+        started =  WhileSubscribed(5000)
+    )
     private var _liveUserDetails: MutableStateFlow<UserLoginData> =
         MutableStateFlow(UserLoginData())
     val liveUserDetails = _liveUserDetails.asStateFlow()
-    private var _userAttendanceData: MutableStateFlow<AttendanceData> =
-        MutableStateFlow(AttendanceData())
+    private var _userAttendanceData: MutableStateFlow<AttendanceData> = MutableStateFlow(AttendanceData())
     val userAttendanceData = _userAttendanceData.asStateFlow()
     private var _favouritesLimitedData: MutableStateFlow<QuerySnapshot?> = MutableStateFlow(null)
     val favouritesLimitedData = _favouritesLimitedData.asStateFlow()
@@ -58,12 +67,19 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
     val announcementsLimitedData = _announcementsLimitedData.asStateFlow()
     private var _holidaysData: MutableStateFlow<QuerySnapshot?> = MutableStateFlow(null)
     val holidaysData = _holidaysData.asStateFlow()
+    private var _isSignInViewLoading: MutableStateFlow<Boolean> = MutableStateFlow(false)
+    val isSignInViewLoading = _isSignInViewLoading.asStateFlow()
     private var _isViewLoading: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val isViewLoading = _isViewLoading.asStateFlow()
     private var _addTaskShowBottomSheet: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val addTaskShowBottomSheet = _addTaskShowBottomSheet.asStateFlow()
     private var numberOfFetchProcess: Int = 0
+    private var numberOfSignInProcess: Int = 0
     private var calendarYear: Int = 0
+    private val myApplication = application as MyApplication
+    private val _toastEvent = MutableSharedFlow<String>(replay = 0)
+    val toastEvent = _toastEvent.asSharedFlow()
+    val userSignInStatus: StateFlow<String> = userSignInStatusRepository.userSignInStatusFlow
 
     init {
         toggleIsViewLoading()
@@ -76,45 +92,41 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
         getLeaveTrackerDetails()
         getHolidayDetails()
         fetchLimitedFavorites()
-        if (!userEmailUiState.isNullOrBlank()) {
-            appDataManager.listenForUserSignInStatusUpdates(userEmailUiState!!)
-        }
-//        viewModelScope.launch {
-//
+//        if (!userEmailUiState.isNullOrBlank()) {
+//            appDataManager.listenForUserSignInStatusUpdates(userEmailUiState!!)
 //        }
     }
 
     fun fetchUserDetails() {
-        if (!_isViewLoading.value) {
-            toggleIsViewLoading()
-        }
-        numberOfFetchProcess++
         if (userEmailUiState != null) {
-            appDataManager.getFirebaseUser(userEmailUiState!!, ::updateUserDetails)
-        }
-    }
-
-    fun updateUserDetails(userDetails: UserLoginData?, response: String) {
-        numberOfFetchProcess--
-        Log.d("MainScreenViewModel", "updateUserDetails called $userDetails")
-        if ((response == "Success") && (userDetails != null)) {
-            _liveUserDetails.value = userDetails
-            appUserDetails = userDetails
+            if (!_isViewLoading.value) {
+                toggleIsViewLoading()
+            }
+            numberOfFetchProcess++
+            appDataManager.getFirebaseUser(userEmailUiState!!){ userDetails, response ->
+                Log.d("MainScreenViewModel", "updateUserDetails called $userDetails")
+                if ((response == "Success") && (userDetails != null)) {
+                    _liveUserDetails.value = userDetails
+                    myApplication.updateAppUserData(userDetails)
 //            viewModelScope.launch {
 //                appPreferenceDataStore.updateUserDetails(UserLoginData.from(userDetails))
 //            }
-        } else {
-            //handle errors
-            TODO()
-        }
-        if ((isViewLoading.value) && (numberOfFetchProcess == 0)) {
-            toggleIsViewLoading()
+                } else {
+                    //handle errors
+                    triggerToast("User details not found. Contact Sysadmin!")
+                }
+                numberOfFetchProcess--
+                if ((isViewLoading.value) && (numberOfFetchProcess == 0)) {
+                    toggleIsViewLoading()
+                }
+            }
         }
     }
 
-    fun updateUserSignInStatus() {
+    fun updateUserSignInStatus(location: Location?, context: Context) {
         if ((userEmailUiState != null) && ((userEmailUiState?.isNotBlank()) == true)) {
-            if (isViewLoading.value == false) toggleIsViewLoading()
+            if (isSignInViewLoading.value == false) toggleIsSignInViewLoading()
+            var userLocation: String? = null
             val calendar = Calendar.getInstance()
             val startOfTheDay = Calendar.getInstance()
             startOfTheDay.apply {
@@ -123,36 +135,56 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
                 set(Calendar.SECOND, 0)       // Set seconds to 0
                 set(Calendar.MILLISECOND, 0)  // Set milliseconds to 0
             }
-            numberOfFetchProcess++
-            appDataManager.addSignInStatus(
-                userEmailUiState!!,
-                calendar.timeInMillis,
-                startOfTheDay.timeInMillis,
-                ::updateSignInResponse
-            )
+            if (location != null) {
+                viewModelScope.launch {
+                    getAddressFromLocation(context, location.latitude, location.longitude) { address ->
+                        userLocation = address
+                        numberOfSignInProcess++
+                        appDataManager.addSignInStatus(
+                            userEmailUiState!!,
+                            calendar.timeInMillis,
+                            startOfTheDay.timeInMillis,
+                            userLocation ?: "",
+                            liveUserDetails.value.reportingTo.getValue("emailId"),
+                            ::updateSignInResponse
+                        )
+                    }
+                }
+            } else {
+                numberOfSignInProcess++
+                appDataManager.addSignInStatus(
+                    userEmailUiState!!,
+                    calendar.timeInMillis,
+                    startOfTheDay.timeInMillis,
+                    "",
+                    liveUserDetails.value.reportingTo.getValue("emailId"),
+                    ::updateSignInResponse
+                )
+            }
+
         }
     }
 
     fun updateSignInResponse(response: String, error: String) {
-        numberOfFetchProcess--
+        numberOfSignInProcess--
         if (response == "Success") {
             Log.d("MainScreenViewModel", "updateSignInResponse called $response")
         } else {
             //handle errors
-            TODO()
+            triggerToast("Unable to update USER signin status, try again.")
         }
         fetchUserSignInStatus()
-        if ((isViewLoading.value == true) && (numberOfFetchProcess == 0))
-            toggleIsViewLoading()
+        if ((isSignInViewLoading.value == true) && (numberOfSignInProcess == 0))
+            toggleIsSignInViewLoading()
     }
 
     fun fetchUserSignInStatus() {
         val startOfTheDayInMillis = startOfTheDayInMillis(Calendar.getInstance().timeInMillis)
         if (!userEmailUiState.isNullOrBlank()) {
-            if (!_isViewLoading.value) {
-                toggleIsViewLoading()
+            if (!isSignInViewLoading.value) {
+                toggleIsSignInViewLoading()
             }
-            numberOfFetchProcess++
+            numberOfSignInProcess++
             appDataManager.getFirebaseAttendanceData(
                 startOfTheDayInMillis,
                 startOfTheDayInMillis + 86399990,
@@ -163,19 +195,23 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
     }
 
     fun updateAttendanceDetails(attendanceData: QuerySnapshot?, response: String) {
-        numberOfFetchProcess--
+        numberOfSignInProcess--
         if (response == "Success") {
-            Log.d("UserInfoScreenViewModel", "updateAttendanceDetails called $attendanceData")
-            val documentSnapshot = attendanceData?.first()
-            if (documentSnapshot?.exists() == true) {
-                _userAttendanceData.value = documentSnapshot.toObject(AttendanceData::class.java)
+            try {
+                Log.d("UserInfoScreenViewModel", "updateAttendanceDetails called $attendanceData")
+                val documentSnapshot = attendanceData?.first()
+                if (documentSnapshot?.exists() == true) {
+                    _userAttendanceData.value = documentSnapshot.toObject(AttendanceData::class.java)
+                }
+            } catch (e: Exception){
+                triggerToast("Unable to fetch USER Attendance details, try again.")
             }
         } else {
             //handle errors
-            TODO()
+            triggerToast("Unable to fetch USER Attendance details, try again.")
         }
-        if ((isViewLoading.value == true) && (numberOfFetchProcess == 0))
-            toggleIsViewLoading()
+        if ((isSignInViewLoading.value == true) && (numberOfSignInProcess == 0))
+            toggleIsSignInViewLoading()
     }
 
     fun fetchLimitedQuickLinks() {
@@ -198,7 +234,7 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
             }
         } else {
             //handle errors
-            TODO()
+            triggerToast("Unable to fetch quick links, try again.")
         }
         if ((isViewLoading.value == true) && (numberOfFetchProcess == 0))
             toggleIsViewLoading()
@@ -221,11 +257,13 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
             favouritesData?.count()?.let {
                 if (it > 0) {
                     _favouritesLimitedData.value = favouritesData
+                } else {
+                    _favouritesLimitedData.value = null
                 }
             }
         } else {
             //handle errors
-            TODO()
+            triggerToast("Unable to fetch USER Favourites, try again.")
         }
         if ((isViewLoading.value == true) && (numberOfFetchProcess == 0))
             toggleIsViewLoading()
@@ -252,7 +290,7 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
             }
         } else {
             //handle errors
-            TODO()
+            triggerToast("Unable to fetch USER Announcements, try again.")
         }
         if ((isViewLoading.value == true) && (numberOfFetchProcess == 0))
             toggleIsViewLoading()
@@ -277,7 +315,7 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
             _liveLeaveTrackerDetails.value = leaveTrackerData
         } else {
             //handle errors
-            TODO()
+            triggerToast("Unable to fetch USER leave details, try again.")
         }
         if ((isViewLoading.value == true) && (numberOfFetchProcess == 0))
             toggleIsViewLoading()
@@ -296,7 +334,7 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
             _holidaysData.value = holidays
         } else {
             //handle errors
-            TODO()
+            triggerToast("Unable to fetch Holidays, try again.")
         }
         if ((isViewLoading.value == true) && (numberOfFetchProcess == 0))
             toggleIsViewLoading()
@@ -308,6 +346,16 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
 
     fun toggleIsViewLoading() {
         _isViewLoading.value = !_isViewLoading.value
+    }
+
+    fun toggleIsSignInViewLoading() {
+        _isSignInViewLoading.value = !_isSignInViewLoading.value
+    }
+
+    fun triggerToast(message: String) {
+        viewModelScope.launch {
+            _toastEvent.emit(message)
+        }
     }
 
     fun addUserToDB() {
@@ -426,12 +474,12 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
 //        ))
     }
 
-    fun tempupdatedb() {
+    fun tempUpdateDb() {
         viewModelScope.launch {
             appPreferenceDataStore.updateUserDetails(
                 UserLoginData(
                     "google.com",
-                    "eyJhbGciOiJSUzI1NiIsImtpZCI6ImZlNjVjY2I4ZWFkMGJhZWY1ZmQzNjE5NWQ2NTI4YTA1NGZiYjc2ZjMiLCJ0eXAiOiJKV1QifQ.eyJuYW1lIjoiQWpheSBrdW1hciIsInBpY3R1cmUiOiJodHRwczovL2xoMy5nb29nbGV1c2VyY29udGVudC5jb20vYS9BQ2c4b2NKVEdEN1hQdkxON0hHV3ZIN1ZCYnNzZ1IyRUFXYzVuN183RDVfNkZiZVpJX19aeGV1az1zOTYtYyIsImlzcyI6Imh0dHBzOi8vc2VjdXJldG9rZW4uZ29vZ2xlLmNvbS9ocm1hbmFnZW1lbnQtNjNjNmQiLCJhdWQiOiJocm1hbmFnZW1lbnQtNjNjNmQiLCJhdXRoX3RpbWUiOjE3NDgzMjY1NzIsInVzZXJfaWQiOiJFQ1JqZzhGUnA0YUpCM2huSnIwVVpaUnZJUmoyIiwic3ViIjoiRUNSamc4RlJwNGFKQjNobkpyMFVaWlJ2SVJqMiIsImlhdCI6MTc0ODMyNjU4MywiZXhwIjoxNzQ4MzMwMTgzLCJlbWFpbCI6ImFqYXkua3VtYXIwNDk1QGdtYWlsLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJmaXJlYmFzZSI6eyJpZGVudGl0aWVzIjp7Imdvb2dsZS5jb20iOlsiMTE4MjU3MTk3MTIwNjkxNTIyNzQ1Il0sImVtYWlsIjpbImFqYXkua3VtYXIwNDk1QGdtYWlsLmNvbSJdfSwic2lnbl9pbl9wcm92aWRlciI6Imdvb2dsZS5jb20ifX0.ZlVGFktq8Yf7CWzdv5jKN0UaNUgKFPlJXt2Z4xymtoa8LZRP4rSyjzFF33QJH0f5-L1aqiXLWUi71_gV-d2wsBoV6-ikdogI72NUYlj_Gp5p5WJ7ijWCLplwSxSRzIuSN8eLDVNIF1UpcGCM9ayuLDBxX3zEl_GwJ9M1ZcuViUGZy63Vzpa_kO6gvtZNnBfwtDxsJ4Ymj0G5sCa2GawWZ0LDqr6_zV4TEOMnOsDeQZSynvKYfhY-7JQGh9ZKPm9D32zIvSaH6D_b9RrzZc0_9uPhujgG6_qQ38YEvVw9qxDmhxbZETY9xRIbLbNyjGO2FGR6YMb0PTJEi0pLRmVTxA",
+                    "",
                     "Ajay Kumar",
                     "ajay.kumar0495@gmail.com",
                     "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c",
@@ -446,28 +494,124 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
         }
     }
 
-}
+    fun addAttendanceInitialData(){
+        val startofthemonth = Calendar.getInstance()
+        startofthemonth.apply {
+            set(Calendar.MONTH,4)
+            set(Calendar.DAY_OF_MONTH, 1) // Set to the first day of the month
+            set(Calendar.HOUR_OF_DAY, 0)  // Set hour to midnight
+            set(Calendar.MINUTE, 0)       // Set minutes to 0
+            set(Calendar.SECOND, 0)       // Set seconds to 0
+            set(Calendar.MILLISECOND, 0)  // Set milliseconds to 0
+        }
+        var startDate = startofthemonth.timeInMillis
+        val calendar = Calendar.getInstance()
 
-/*
-
-        for (i in 2..10) {
-
-            appDataManager.addAnnouncementTemp(
-                AnnouncementList(
-                    i,
-                    "Announcement Title $i",
-                    Calendar.getInstance().timeInMillis,
-                    "General Awarness",
-                    1,
-                    3,
-                    "ajay.kumar0495@gmail.com",
-                    "Ajay Kumar M",
-                    "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c",
-                    false,
-                    "Chennai"
+        for(i in 1..31) {
+            calendar.timeInMillis = startDate
+            val day = calendar.get(Calendar.DAY_OF_MONTH)
+            val month = calendar.get(Calendar.MONTH) + 1 // Months are 0-based
+            val year = calendar.get(Calendar.YEAR)
+            appDataManager.addAttendanceData(
+                AttendanceData(
+                    startDate,
+                    0,
+                    0,
+                    "",
+                    "",
+                    "",
+                    "",
+                    liveUserDetails.value.email,
+                    "",
+                    0.0f,
+                    day,
+                    month,
+                    year,
+                    "",
+                    liveUserDetails.value.reportingTo.getValue("emailId")
                 )
             )
+            startDate = startDate+86400000
+        }
+    }
 
+    fun addGoalInitialData(){
+
+        val startofthemonth = Calendar.getInstance()
+        startofthemonth.apply {
+            set(Calendar.MONTH,6)
+            set(Calendar.DAY_OF_MONTH, 1) // Set to the first day of the month
+            set(Calendar.HOUR_OF_DAY, 0)  // Set hour to midnight
+            set(Calendar.MINUTE, 0)       // Set minutes to 0
+            set(Calendar.SECOND, 0)       // Set seconds to 0
+            set(Calendar.MILLISECOND, 0)  // Set milliseconds to 0
+        }
+        var startDate = startofthemonth.timeInMillis
+        val calendar = Calendar.getInstance()
+
+        for (i in 1..30) {
+            appDataManager.addGoalData(
+                GoalData(
+                    "Project$i to be completed",
+                    "$startDate",
+                    "${startDate + 86400000}",
+                    "Low",
+                    "Project to be released before end of the year",
+                    i,
+                    "ajaym04021994@gmail.com",
+                    mapOf(
+                        Pair("1", "project comment1"),
+                        Pair("2", "project comment2"),
+                        Pair("3", "project comment3")
+                    )
+                ),
+                i,
+                true
+            )
+            startDate = startDate+604800000
+        }
+    }
+
+    fun addLeaveTrackerInitialData() {
+        for (i in 2026..2026) {
+            appDataManager.addLeaveTrackerDataTemp(
+                LeaveTrackerData(
+                    "ajay.kumar0495@gmail.com",
+                    i,
+                    1001,
+                    0,
+                    8.0f, 4, 8.0f, 4, 8.0f, 4, 8.0f, 4, 8.0f, 4.0f,
+                    mutableMapOf(),
+                    "",
+                    "Ajay Kumar M",
+                    "teamMailId@gmail.com",
+                    liveUserDetails.value.reportingTo.getValue("emailId")
+                ),
+                i
+            )
+        }
+    }
+
+    fun addAnnouncementListInitialData(){
+        appDataManager.addAnnouncementTemp(
+            AnnouncementList(
+                1,
+                "Announcement Title 1",
+                Calendar.getInstance().timeInMillis,
+                "General Awareness",
+                1,
+                3,
+                "ajay.kumar0495@gmail.com",
+                "Ajay Kumar M",
+                "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c",
+                false,
+                "Chennai"
+            )
+        )
+    }
+
+    fun addAnnouncementInitialData(){
+        for (i in 1..5) {
             appDataManager.addAnnouncementDataTemp(
                 AnnouncementData(
                     i,
@@ -572,6 +716,99 @@ class MainScreenViewModel : ViewModel(), DefaultLifecycleObserver {
                 )
             )
         }
+    }
+
+    fun addDepartmentInitialData(){
+        for (i in 1..5) {
+            appDataManager.addDepartmentData(
+                DepartmentInfo(
+                    "Sub1Sub1Department${i}",
+                    "5",
+                    "Active",
+                    mapOf(
+                        Pair(
+                            "Person1", mapOf(
+                                Pair("Name", "Sub1Sub1Department${i}Person1"),
+                                Pair("Designation", "Employee"),
+                                Pair("Employee ID", "${i}1001"),
+                                Pair("Email ID", "Sub1Sub1Department${i}Person1@company.com"),
+                                Pair("Mobile Number", "1234"),
+                                Pair(
+                                    "Profile Image",
+                                    "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c"
+                                ),
+                                Pair("Profile URL", "www.google.com"),
+                                Pair("Department", "Sub1Sub1Department${i}")
+                            )
+                        ),
+                        Pair(
+                            "Person2", mapOf(
+                                Pair("Name", "Sub1Sub1Department${i}Person2"),
+                                Pair("Designation", "Employee"),
+                                Pair("Employee ID", "${i}1001"),
+                                Pair("Email ID", "Sub1Sub1Department${i}Person2@company.com"),
+                                Pair("Mobile Number", "1234"),
+                                Pair(
+                                    "Profile Image",
+                                    "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c"
+                                ),
+                                Pair("Profile URL", "www.google.com"),
+                                Pair("Department", "Sub1Sub1Department${i}")
+                            )
+                        ),
+                        Pair(
+                            "Person3", mapOf(
+                                Pair("Name", "Sub1Sub1Department${i}Person3"),
+                                Pair("Designation", "Employee"),
+                                Pair("Employee ID", "${i}1001"),
+                                Pair("Email ID", "Sub1Sub1Department${i}Person3@company.com"),
+                                Pair("Mobile Number", "1234"),
+                                Pair(
+                                    "Profile Image",
+                                    "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c"
+                                ),
+                                Pair("Profile URL", "www.google.com"),
+                                Pair("Department", "Sub1Sub1Department${i}")
+                            )
+                        ),
+                        Pair(
+                            "Person4", mapOf(
+                                Pair("Name", "Sub1Sub1Department${i}Person4"),
+                                Pair("Designation", "Employee"),
+                                Pair("Employee ID", "${i}1001"),
+                                Pair("Email ID", "Sub1Sub1Department${i}Person4@company.com"),
+                                Pair("Mobile Number", "1234"),
+                                Pair(
+                                    "Profile Image",
+                                    "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c"
+                                ),
+                                Pair("Profile URL", "www.google.com"),
+                                Pair("Department", "Sub1Sub1Department${i}")
+                            )
+                        ),
+                        Pair(
+                            "Person5", mapOf(
+                                Pair("Name", "Sub1Sub1Department${i}Person5"),
+                                Pair("Designation", "Employee"),
+                                Pair("Employee ID", "${i}1001"),
+                                Pair("Email ID", "Sub1Sub1Department${i}Person5@company.com"),
+                                Pair("Mobile Number", "1234"),
+                                Pair(
+                                    "Profile Image",
+                                    "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c"
+                                ),
+                                Pair("Profile URL", "www.google.com"),
+                                Pair("Department", "Sub1Sub1Department${i}")
+                            )
+                        ),
+                    )
+                )
+            )
+        }
+    }
+}
+
+/*
 
 fun search() {
         toggleCircularProgressIndicator()
@@ -617,91 +854,6 @@ fun search() {
 //                "Department1")
 //            )
 
-//            appDataManager.addDepartmentData(
-//                DepartmentInfo(
-//                    "Sub1Sub1Department${i}",
-//                    "5",
-//                    "Active",
-//                    mapOf(
-//                        Pair(
-//                            "Person1", mapOf(
-//                                Pair("Name", "Sub1Sub1Department${i}Person1"),
-//                                Pair("Designation", "Employee"),
-//                                Pair("Employee ID", "${i}1001"),
-//                                Pair("Email ID", "Sub1Sub1Department${i}Person1@company.com"),
-//                                Pair("Mobile Number", "1234"),
-//                                Pair(
-//                                    "Profile Image",
-//                                    "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c"
-//                                ),
-//                                Pair("Profile URL", "www.google.com"),
-//                                Pair("Department", "Sub1Sub1Department${i}")
-//                            )
-//                        ),
-//                        Pair(
-//                            "Person2", mapOf(
-//                                Pair("Name", "Sub1Sub1Department${i}Person2"),
-//                                Pair("Designation", "Employee"),
-//                                Pair("Employee ID", "${i}1001"),
-//                                Pair("Email ID", "Sub1Sub1Department${i}Person2@company.com"),
-//                                Pair("Mobile Number", "1234"),
-//                                Pair(
-//                                    "Profile Image",
-//                                    "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c"
-//                                ),
-//                                Pair("Profile URL", "www.google.com"),
-//                                Pair("Department", "Sub1Sub1Department${i}")
-//                            )
-//                        ),
-//                        Pair(
-//                            "Person3", mapOf(
-//                                Pair("Name", "Sub1Sub1Department${i}Person3"),
-//                                Pair("Designation", "Employee"),
-//                                Pair("Employee ID", "${i}1001"),
-//                                Pair("Email ID", "Sub1Sub1Department${i}Person3@company.com"),
-//                                Pair("Mobile Number", "1234"),
-//                                Pair(
-//                                    "Profile Image",
-//                                    "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c"
-//                                ),
-//                                Pair("Profile URL", "www.google.com"),
-//                                Pair("Department", "Sub1Sub1Department${i}")
-//                            )
-//                        ),
-//                        Pair(
-//                            "Person4", mapOf(
-//                                Pair("Name", "Sub1Sub1Department${i}Person4"),
-//                                Pair("Designation", "Employee"),
-//                                Pair("Employee ID", "${i}1001"),
-//                                Pair("Email ID", "Sub1Sub1Department${i}Person4@company.com"),
-//                                Pair("Mobile Number", "1234"),
-//                                Pair(
-//                                    "Profile Image",
-//                                    "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c"
-//                                ),
-//                                Pair("Profile URL", "www.google.com"),
-//                                Pair("Department", "Sub1Sub1Department${i}")
-//                            )
-//                        ),
-//                        Pair(
-//                            "Person5", mapOf(
-//                                Pair("Name", "Sub1Sub1Department${i}Person5"),
-//                                Pair("Designation", "Employee"),
-//                                Pair("Employee ID", "${i}1001"),
-//                                Pair("Email ID", "Sub1Sub1Department${i}Person5@company.com"),
-//                                Pair("Mobile Number", "1234"),
-//                                Pair(
-//                                    "Profile Image",
-//                                    "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c"
-//                                ),
-//                                Pair("Profile URL", "www.google.com"),
-//                                Pair("Department", "Sub1Sub1Department${i}")
-//                            )
-//                        ),
-//                    )
-//                )
-//            )
-
 ======================
 
 //        appDataManager.addUserSignInStatusTemp("ajay.kumar0495@gmail.com", UserSignInStatusData(
@@ -718,42 +870,6 @@ fun search() {
 //                0
 //            )
 //        )
-//        val startofthemonth = Calendar.getInstance()
-//        startofthemonth.apply {
-//            set(Calendar.DAY_OF_MONTH, 1) // Set to the first day of the month
-//            set(Calendar.HOUR_OF_DAY, 0)  // Set hour to midnight
-//            set(Calendar.MINUTE, 0)       // Set minutes to 0
-//            set(Calendar.SECOND, 0)       // Set seconds to 0
-//            set(Calendar.MILLISECOND, 0)  // Set milliseconds to 0
-//        }
-//        var startDate = startofthemonth.timeInMillis
-//
-//        for(i in 1..28) {
-//            val calendar = Calendar.getInstance()
-//            calendar.timeInMillis = startDate
-//            val day = calendar.get(Calendar.DAY_OF_MONTH)
-//            val month = calendar.get(Calendar.MONTH) + 1 // Months are 0-based
-//            val year = calendar.get(Calendar.YEAR)
-//            appDataManager.addAttendanceData(
-//                AttendanceData(
-//                    startDate,
-//                    (startDate+21600000),
-//                    (startDate+64800000),
-//                    "Chennai",
-//                    "Chennai",
-//                    "Check-in note",
-//                    "Check-out note",
-//                    "ajay.kumar0495@gmail.com",
-//                    "Present",
-//                    12.30,
-//                    day,
-//                    month,
-//                    year,
-//                    ""
-//                )
-//            )
-//            startDate = startDate+86400000
-//        }
 
 = appPreferenceDataStore.emailFlow
         .stateIn(
@@ -771,201 +887,4 @@ fun search() {
             "Success",
             "www.google.com"))
 
-appDataManager.addDepartmentData(
-                DepartmentInfo(
-                    "Department$i",
-                    "50",
-                    "",
-                    mapOf(
-                        Pair(
-                            "Person1", mapOf(
-                                Pair("Name", "Person1"),
-                                Pair("Designation", "Employee"),
-                                Pair("Employee ID", "1001"),
-                                Pair("Email ID", "person1@company.com"),
-                                Pair("Mobile Number", "1234"),
-                                Pair(
-                                    "Profile Image",
-                                    "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c"
-                                ),
-                                Pair("Profile URL", "www.google.com")
-                            )
-                        ),
-                        Pair(
-                            "Person2", mapOf(
-                                Pair("Name", "Person2"),
-                                Pair("Designation", "Employee"),
-                                Pair("Employee ID", "1002"),
-                                Pair("Email ID", "person2@company.com"),
-                                Pair("Mobile Number", "1234"),
-                                Pair(
-                                    "Profile Image",
-                                    "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c"
-                                ),
-                                Pair("Profile URL", "www.google.com")
-                            )
-                        ),
-                        Pair(
-                            "Person3", mapOf(
-                                Pair("Name", "Person3"),
-                                Pair("Designation", "Employee"),
-                                Pair("Employee ID", "1003"),
-                                Pair("Email ID", "person3@company.com"),
-                                Pair("Mobile Number", "1234"),
-                                Pair(
-                                    "Profile Image",
-                                    "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c"
-                                ),
-                                Pair("Profile URL", "www.google.com")
-                            )
-                        ),
-                        Pair(
-                            "Person4", mapOf(
-                                Pair("Name", "Person4"),
-                                Pair("Designation", "Employee"),
-                                Pair("Employee ID", "1004"),
-                                Pair("Email ID", "person4@company.com"),
-                                Pair("Mobile Number", "1234"),
-                                Pair(
-                                    "Profile Image",
-                                    "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c"
-                                ),
-                                Pair("Profile URL", "www.google.com")
-                            )
-                        ),
-                        Pair(
-                            "Person5", mapOf(
-                                Pair("Name", "Person5"),
-                                Pair("Designation", "Employee"),
-                                Pair("Employee ID", "1005"),
-                                Pair("Email ID", "person5@company.com"),
-                                Pair("Mobile Number", "1234"),
-                                Pair(
-                                    "Profile Image",
-                                    "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c"
-                                ),
-                                Pair("Profile URL", "www.google.com")
-                            )
-                        )
-                    )
-                )
-            )
-
-
-
-            appDataManager.addLeaveTrackerDataTemp(
-                LeaveTrackerData(
-                    "ajay.kumar0495@gmail.com",
-                    2025,
-                    1001,
-                    5,
-                    8,4,8,4,8,4,8,4,8,4,
-                    mutableMapOf(
-                        Pair("1001_1",
-                            mapOf(
-                                Pair("Leave ID","1"),
-                                Pair("Leave Type","Casual Leave"),
-                                Pair("Number Of Days","1"),
-                                Pair("Start Date","23-Jan-2025"),
-                                Pair("End Date","23-Jan-2025"),
-                                Pair("Status","Approved"),
-                                Pair("Email","ajay.kumar0495@gmail.com"),
-                                Pair("Employee ID","1001"),
-                                Pair("Employee Name","Ajay Kumar M"),
-                                Pair("Team Email Id","team@gmail.com"),
-                                Pair("Date Of Request","20-Jan-2025"),
-                                Pair("Reason For Leave","Reason")
-                            )
-                        ),
-                        Pair("1001_2",
-                            mapOf(
-                                Pair("Leave ID","2"),
-                                Pair("Leave Type","Sick Leave"),
-                                Pair("Number Of Days","2"),
-                                Pair("Start Date","23-Feb-2025"),
-                                Pair("End Date","24-Feb-2025"),
-                                Pair("Status","Approved"),
-                                Pair("Email","ajay.kumar0495@gmail.com"),
-                                Pair("Employee ID","1001"),
-                                Pair("Employee Name","Ajay Kumar M"),
-                                Pair("Team Email Id","team@gmail.com"),
-                                Pair("Date Of Request","20-Feb-2025"),
-                                Pair("Reason For Leave","Reason")
-                            )
-                        ),
-                        Pair("1001_3",
-                            mapOf(
-                                Pair("Leave ID","3"),
-                                Pair("Leave Type","On Duty"),
-                                Pair("Number Of Days","1"),
-                                Pair("Start Date","23-Mar-2025"),
-                                Pair("End Date","23-Mar-2025"),
-                                Pair("Status","Approved"),
-                                Pair("Email","ajay.kumar0495@gmail.com"),
-                                Pair("Employee ID","1001"),
-                                Pair("Employee Name","Ajay Kumar M"),
-                                Pair("Team Email Id","team@gmail.com"),
-                                Pair("Date Of Request","20-Mar-2025"),
-                                Pair("Reason For Leave","Reason")
-                            )
-                        ),
-                        Pair("1001_4",
-                            mapOf(
-                                Pair("Leave ID","4"),
-                                Pair("Leave Type","Optional Holiday"),
-                                Pair("Number Of Days","1"),
-                                Pair("Start Date","23-Apr-2025"),
-                                Pair("End Date","23-Apr-2025"),
-                                Pair("Status","Approved"),
-                                Pair("Email","ajay.kumar0495@gmail.com"),
-                                Pair("Employee ID","1001"),
-                                Pair("Employee Name","Ajay Kumar M"),
-                                Pair("Team Email Id","team@gmail.com"),
-                                Pair("Date Of Request","20-Mar-2025"),
-                                Pair("Reason For Leave","Reason")
-                            )
-                        ),
-                        Pair("1001_5",
-                            mapOf(
-                                Pair("Leave ID","5"),
-                                Pair("Leave Type","Comp Off"),
-                                Pair("Number Of Days","1"),
-                                Pair("Start Date","23-May-2025"),
-                                Pair("End Date","23-May-2025"),
-                                Pair("Status","Not Approved"),
-                                Pair("Email","ajay.kumar0495@gmail.com"),
-                                Pair("Employee ID","1001"),
-                                Pair("Employee Name","Ajay Kumar M"),
-                                Pair("Team Email Id","team@gmail.com"),
-                                Pair("Date Of Request","20-May-2025"),
-                                Pair("Reason For Leave","Reason")
-                            )
-                        )
-                    ),
-                    ""
-                ),
-                i
-            )
-
-
-appDataManager.addGoalData(
-                GoalData(
-                    "Goal$i",
-                    "${Calendar.getInstance().timeInMillis}",
-                    "${Calendar.getInstance().timeInMillis+86400000}",
-                    "Low",
-                    "goal description",
-                    15,
-                    "ajay.kumar0495@gmail.com",
-                    mapOf(
-                        Pair("1", "comment1"),
-                        Pair("2", "comment2"),
-                        Pair("3", "comment3")
-                    )
-                ),
-                i,
-                true
-            )
-
-
- */
+*/

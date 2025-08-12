@@ -1,9 +1,12 @@
 package com.example.hrmanagement.ui.main
 
+import android.app.Application
 import android.util.Log
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
+import com.example.hrmanagement.Service.MyApplication
 import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
 import com.example.hrmanagement.data.FeedData
 import com.example.hrmanagement.data.FeedMetadata
@@ -13,7 +16,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.util.Calendar
 
-class StatusViewModel: ViewModel() {
+class StatusViewModel(application: Application): AndroidViewModel(application) {
 
     private var _isSearchDropdownExpanded: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val isSearchDropdownExpanded = _isSearchDropdownExpanded.asStateFlow()
@@ -21,17 +24,18 @@ class StatusViewModel: ViewModel() {
     val isSuccessDialogVisible = _isSuccessDialogVisible.asStateFlow()
     private var _isViewLoading: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val isViewLoading = _isViewLoading.asStateFlow()
-    private var _allUsersData: MutableStateFlow<List<UserLoginData>> = MutableStateFlow(listOf(UserLoginData()))
-    val allUsersData = _allUsersData.asStateFlow()
+    private var allUsersData: List<UserLoginData> = listOf()
     private var _filteredUsersData: MutableStateFlow<MutableList<UserLoginData>> = MutableStateFlow(mutableListOf(UserLoginData()))
     val filteredUsersData = _filteredUsersData.asStateFlow()
     private var _statusData: MutableStateFlow<TextFieldValue> = MutableStateFlow(TextFieldValue(""))
     val statusData = _statusData.asStateFlow()
-    private var _dollorEmailMapData = mutableMapOf<Int,String>()
-    private var _dollorMapData: MutableStateFlow<MutableMap<Int,String>> = MutableStateFlow(mutableMapOf())
-    val dollorMapData = _dollorMapData.asStateFlow()
-    private var numberOfFeatchProcess: Int = 0
+    private var _dollarEmailMapData = mutableMapOf<Int,String>()
+    private var _dollarMapData: MutableStateFlow<MutableMap<Int,String>> = MutableStateFlow(mutableMapOf())
+    val dollarMapData = _dollarMapData.asStateFlow()
+    private var numberOfFetchProcess: Int = 0
     private var searchStringData: String = ""
+    private val myApplication = application as MyApplication
+    val userData = myApplication.appUserDetails
 
     init {
         fetchAllUsers()
@@ -41,7 +45,7 @@ class StatusViewModel: ViewModel() {
         if (!_isViewLoading.value) {
             toggleIsViewLoading()
         }
-        numberOfFeatchProcess++
+        numberOfFetchProcess++
         appDataManager.getUserLastFeedData(emailId,::updateFeedMetadata)
     }
 
@@ -50,7 +54,7 @@ class StatusViewModel: ViewModel() {
             Log.d("StatusViewModel","updateUserDetails called $feedMetadata")
             val builder = StringBuilder()
             var current = 0
-            val sortedReplacements = _dollorEmailMapData.toSortedMap()
+            val sortedReplacements = _dollarEmailMapData.toSortedMap()
             for ((index, replacement) in sortedReplacements) {
                 builder.append(statusData.value.text.substring(current, index))
                 builder.append(replacement)
@@ -61,7 +65,7 @@ class StatusViewModel: ViewModel() {
             }
             val result = builder.toString()
 //            var stringWithEmail = statusData.value.text
-//            _dollorEmailMapData.entries.sortedByDescending { it.key }.forEach { (index, email) ->
+//            _dollarEmailMapData.entries.sortedByDescending { it.key }.forEach { (index, email) ->
 //                stringWithEmail = stringWithEmail.replaceRange(index, index + 1, email)
 //            }
             val feedData = FeedData(
@@ -83,15 +87,15 @@ class StatusViewModel: ViewModel() {
             appDataManager.addUserStatusData(feedData,true,feedMetadata.feedCount+1,::updateStatusResponse)
         } else {
             //handle errors
-            numberOfFeatchProcess--
-            if((isViewLoading.value)&&(numberOfFeatchProcess==0)) {
+            numberOfFetchProcess--
+            if((isViewLoading.value)&&(numberOfFetchProcess==0)) {
                 toggleIsViewLoading()
             }
         }
     }
 
     fun updateStatusResponse(response: String){
-        numberOfFeatchProcess--
+        numberOfFetchProcess--
         if(response == "Success"){
             Log.d("StatusViewModel","updateStatusResponse called $response")
             _statusData.value = TextFieldValue("")
@@ -100,7 +104,7 @@ class StatusViewModel: ViewModel() {
             //handle errors
             TODO()
         }
-        if((isViewLoading.value)&&(numberOfFeatchProcess==0)) {
+        if((isViewLoading.value)&&(numberOfFetchProcess==0)) {
             toggleIsViewLoading()
         }
     }
@@ -109,20 +113,20 @@ class StatusViewModel: ViewModel() {
         if (!_isViewLoading.value) {
             toggleIsViewLoading()
         }
-        numberOfFeatchProcess++
+        numberOfFetchProcess++
         appDataManager.getAllFirebaseUsers(::updateUserDetails)
     }
 
     fun updateUserDetails(userDetails: QuerySnapshot?, response: String){
-        numberOfFeatchProcess--
+        numberOfFetchProcess--
         if((response == "Success")&&(userDetails!=null)){
             Log.d("StatusViewModel","updateUserDetails called $userDetails")
-            _allUsersData.value = userDetails.toObjects(UserLoginData::class.java)
+            allUsersData = userDetails.toObjects(UserLoginData::class.java)
         } else {
             //handle errors
             TODO()
         }
-        if((isViewLoading.value)&&(numberOfFeatchProcess==0)) {
+        if((isViewLoading.value)&&(numberOfFetchProcess==0)) {
             toggleIsViewLoading()
         }
     }
@@ -130,7 +134,7 @@ class StatusViewModel: ViewModel() {
     fun filterUsers(searchString: String){
         _filteredUsersData.value.clear()
         searchStringData = searchString
-        _filteredUsersData.value.addAll(allUsersData.value.filter {
+        _filteredUsersData.value.addAll(allUsersData.filter {
             it.username.contains(searchString, ignoreCase = true)
         })
         if (filteredUsersData.value.isNotEmpty()){
@@ -150,7 +154,7 @@ class StatusViewModel: ViewModel() {
     fun onMentionSelection(user: UserLoginData){
         // Example: Replace "@old" with "@new"
         val oldText = statusData.value.text
-        addDollorMap(oldText.indexOf("@${searchStringData}"), user.username, user.email)
+        addDollarMap(oldText.indexOf("@${searchStringData}"), user.username, user.email)
         val newText = oldText.replace("@${searchStringData}", "$") // Replace as needed
         val newSelection = TextRange(newText.length) // Or set cursor as needed
 
@@ -161,14 +165,14 @@ class StatusViewModel: ViewModel() {
         onStatusChange(newValue)
     }
 
-    fun removeDollorMap(index: Int) {
-        _dollorMapData.value.remove(index)
-        _dollorEmailMapData.remove(index)
+    fun removeDollarMap(index: Int) {
+        _dollarMapData.value.remove(index)
+        _dollarEmailMapData.remove(index)
     }
 
-    fun addDollorMap(index: Int, username: String, email: String) {
-        _dollorMapData.value.put(index,username)
-        _dollorEmailMapData.put(index, email)
+    fun addDollarMap(index: Int, username: String, email: String) {
+        _dollarMapData.value.put(index,username)
+        _dollarEmailMapData.put(index, email)
     }
 
     fun onStatusChange(newText: TextFieldValue) {

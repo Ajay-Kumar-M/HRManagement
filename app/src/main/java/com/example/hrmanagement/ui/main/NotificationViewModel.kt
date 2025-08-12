@@ -14,7 +14,7 @@ class NotificationViewModel: ViewModel() {
     val notificationData = _notificationData.asStateFlow()
     private var _isViewLoading: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val isViewLoading = _isViewLoading.asStateFlow()
-    private var numberOfFeatchProcess: Int = 0
+    private var numberOfFetchProcess: Int = 0
 
     init {
         fetchNotification()
@@ -24,7 +24,7 @@ class NotificationViewModel: ViewModel() {
         if (!_isViewLoading.value) {
             toggleIsViewLoading()
         }
-        numberOfFeatchProcess++
+        numberOfFetchProcess++
         appDataManager.getNotificationData(::updateNotificationData)
     }
 
@@ -40,8 +40,8 @@ class NotificationViewModel: ViewModel() {
             //handle errors
             TODO()
         }
-        numberOfFeatchProcess--
-        if ((isViewLoading.value==true)&&(numberOfFeatchProcess==0))
+        numberOfFetchProcess--
+        if ((isViewLoading.value==true)&&(numberOfFetchProcess==0))
             toggleIsViewLoading()
     }
 

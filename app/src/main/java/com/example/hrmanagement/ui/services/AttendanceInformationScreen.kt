@@ -1,5 +1,6 @@
 package com.example.hrmanagement.ui.services
 
+import android.app.Application
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -31,17 +32,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 
 @Composable
 fun AttendanceInformationScreen(
     navController: NavController,
-    userEmailId: String,
-    username: String,
-    userEmployeeId: String?,
-    viewModel: AttendanceInformationViewModel = viewModel()
+    viewModel: AttendanceInformationViewModel = viewModel(factory = ViewModelProvider.AndroidViewModelFactory(LocalContext.current.applicationContext as Application))
 ) {
     val listOfActions: List<Pair<String,String>> = listOf(
         "View" to "AttendanceComposableView",
@@ -58,6 +58,7 @@ fun AttendanceInformationScreen(
                     .statusBarsPadding()
                     .background(Color.White)
                     .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
                     onClick = {
@@ -102,7 +103,7 @@ fun AttendanceInformationScreen(
                                     navController.navigate(action.second)
                                 }
                                 "Regularization" -> {
-                                    navController.navigate("${action.second}/${userEmailId}/${username}/${userEmployeeId?:""}")
+                                    navController.navigate(action.second)
                                 }
                             }
                         }

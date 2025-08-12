@@ -15,7 +15,7 @@ class AnnouncementsViewModel(): ViewModel() {
     val filteredAnnouncementsData = _filteredAnnouncementsData.asStateFlow()
     private var _isViewLoading: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val isViewLoading = _isViewLoading.asStateFlow()
-    private var numberOfFeatchProcess: Int = 0
+    private var numberOfFetchProcess: Int = 0
 
     init {
         fetchAnnouncements()
@@ -25,7 +25,7 @@ class AnnouncementsViewModel(): ViewModel() {
         if (!_isViewLoading.value) {
             toggleIsViewLoading()
         }
-        numberOfFeatchProcess++
+        numberOfFetchProcess++
         appDataManager.getAnnouncements(::updateAnnouncementsData)
     }
 
@@ -41,8 +41,8 @@ class AnnouncementsViewModel(): ViewModel() {
             //handle errors
             TODO()
         }
-        numberOfFeatchProcess--
-        if ((isViewLoading.value == true) && (numberOfFeatchProcess == 0))
+        numberOfFetchProcess--
+        if ((isViewLoading.value == true) && (numberOfFetchProcess == 0))
             toggleIsViewLoading()
     }
 

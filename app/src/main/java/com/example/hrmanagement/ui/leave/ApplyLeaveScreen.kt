@@ -70,9 +70,7 @@ import kotlin.time.Duration.Companion.milliseconds
 fun ApplyLeaveScreen(
     modifier: Modifier,
     navController: NavController,
-    personEmailId: String,
-    leaveType: String,
-    viewModel: ApplyLeaveViewModel = viewModel()
+    viewModel: ApplyLeaveViewModel
 ) {
     val leaveTypes = listOf("Casual Leave", "Sick Leave", "On Duty", "Optional Holidays", "Comp Off")
     val leaveReason = viewModel.leaveReason.collectAsStateWithLifecycle()
@@ -106,6 +104,7 @@ fun ApplyLeaveScreen(
                 modifier = Modifier
                     .statusBarsPadding()
                     .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
                     onClick = {
@@ -125,7 +124,7 @@ fun ApplyLeaveScreen(
                     )
                 }
                 Text("Apply Leave",
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(20.dp,5.dp)
                 )
             }
@@ -161,7 +160,9 @@ fun ApplyLeaveScreen(
                             val durationDiff = toDateViewModel.value.minus(fromDateViewModel.value)
                             val differenceInDays = durationDiff.milliseconds.inWholeDays.toInt() + 1
                             if ((differenceInDays>0)&&(leaveTypeSelected.value!="Select Leave Type from Dropdown")){
-                                viewModel.addAnnualLeaveData(personEmailId)
+                                viewModel.appUserData.email.let {
+                                    viewModel.addAnnualLeaveData(it)
+                                }
                             } else {
                                 if (differenceInDays <= 0) {
                                     Toast.makeText(context, "End date should not be lesser than start date!", Toast.LENGTH_LONG).show()
@@ -213,7 +214,7 @@ fun ApplyLeaveScreen(
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    personEmailId,
+                    viewModel.appUserData.email,
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(20.dp, 2.dp, 5.dp, 15.dp)
                 )

@@ -36,7 +36,6 @@ import androidx.navigation.NavController
 
 @Composable
 fun LeaveTrackerInformationScreen (
-    emailId: String,
     navController: NavController
 ){
     val listOfActions: List<Pair<String,String>> = listOf(
@@ -55,6 +54,7 @@ fun LeaveTrackerInformationScreen (
                     .statusBarsPadding()
                     .background(Color.White)
                     .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
                     onClick = {
@@ -95,11 +95,8 @@ fun LeaveTrackerInformationScreen (
                         .padding(15.dp)
                         .clickable{
                             when(action.first) {
-                                "Holidays" -> {
+                                "View","Compensatory Request","Holidays" -> {
                                     navController.navigate(action.second)
-                                }
-                                "View","Compensatory Request" -> {
-                                    navController.navigate("${action.second}/${emailId}")
                                 }
                             }
                         }

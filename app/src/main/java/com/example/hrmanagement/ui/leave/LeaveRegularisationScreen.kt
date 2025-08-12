@@ -1,5 +1,6 @@
 package com.example.hrmanagement.ui.leave
 
+import android.app.Application
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -74,6 +75,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -101,10 +103,7 @@ import java.util.Locale
 fun LeaveRegularisationScreen(
     modifier: Modifier,
     navController: NavController,
-    userEmailId: String,
-    username: String?,
-    userEmployeeId: String?,
-    viewModel: LeaveRegularisationViewModel = viewModel()
+    viewModel: LeaveRegularisationViewModel = viewModel(factory = ViewModelProvider.AndroidViewModelFactory(LocalContext.current.applicationContext as Application))
 ) {
 
     val isViewLoading = viewModel.isViewLoading.collectAsStateWithLifecycle()
@@ -151,6 +150,7 @@ fun LeaveRegularisationScreen(
                 modifier = Modifier
                     .statusBarsPadding()
                     .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
                     onClick = {
@@ -170,7 +170,7 @@ fun LeaveRegularisationScreen(
                     )
                 }
                 Text("Add Record",
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(20.dp,5.dp)
                 )
             }
@@ -205,7 +205,7 @@ fun LeaveRegularisationScreen(
                     }
                     FilledIconButton(
                         onClick = {
-                            viewModel.addRegularisationAttendanceDetails(userEmailId)
+                            viewModel.addRegularisationAttendanceDetails(viewModel.appUserData.email)
                         },
                         shape = RoundedCornerShape(16.dp), // Apply rounded corners
                         colors = IconButtonDefaults.iconButtonColors(
@@ -249,7 +249,7 @@ fun LeaveRegularisationScreen(
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    username.toString(),
+                    viewModel.appUserData.username,
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(20.dp, 2.dp, 5.dp, 15.dp)
                 )
@@ -260,7 +260,7 @@ fun LeaveRegularisationScreen(
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    userEmployeeId.toString(),
+                    viewModel.appUserData.emp_Id.toString(),
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(20.dp, 2.dp, 5.dp, 15.dp)
                 )

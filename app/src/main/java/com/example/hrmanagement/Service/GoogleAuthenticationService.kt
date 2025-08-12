@@ -1,12 +1,12 @@
 package com.example.hrmanagement.Service
 
 import android.content.Context
+import android.util.Log
 import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import com.example.hrmanagement.R
 import com.example.hrmanagement.data.GoogleAuth
-import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.Firebase
@@ -15,8 +15,6 @@ import com.google.firebase.auth.auth
 import kotlinx.coroutines.tasks.await
 
 class GoogleAuthenticationService {
-
-    lateinit var credentialManager: CredentialManager
 
     suspend fun signIn(context: Context): GoogleAuth? {
 
@@ -29,7 +27,7 @@ class GoogleAuthenticationService {
                 .addCredentialOption(signInWithGoogleOption)
                 .build()
 
-            credentialManager = CredentialManager.create(context)
+            val credentialManager = CredentialManager.create(context)
 
             val credResult = credentialManager.getCredential(
                 request = request,
@@ -47,6 +45,9 @@ class GoogleAuthenticationService {
             val photoUrl = authResult.user?.photoUrl
             val mobileNumber = authResult.user?.phoneNumber
 
+            Log.d("GAuthService","$token user token gauth")
+            Log.d("GAuthService","$userName user name gauth")
+
             return GoogleAuth(
                 provider.orEmpty(),
                 token = token.orEmpty(),
@@ -59,9 +60,9 @@ class GoogleAuthenticationService {
                 "Department1",
                 mapOf(
                     ("username" to "Dummy User 1"),
-                    ("imageUrl" to "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c"),
+                    ("imageUrl" to "https://cdn-icons-png.freepik.com/256/11154/11154662.png?ga=GA1.1.425318414.1748428764&semt=ais_hybrid"),
                     ("employeeId" to "3456"),
-                    ("emailId" to "dummyuser1@gmail.com"),
+                    ("emailId" to "dummayuser1@gmail.com"),
                     ("designation" to "Employee"),
                 )
             )
@@ -71,7 +72,8 @@ class GoogleAuthenticationService {
 
     }
 
-    suspend fun logout() {
+    suspend fun logout(context: Context) {
+        val credentialManager = CredentialManager.create(context)
         credentialManager.clearCredentialState(ClearCredentialStateRequest())
         Firebase.auth.signOut()
     }

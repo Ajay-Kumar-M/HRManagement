@@ -1,5 +1,6 @@
 package com.example.hrmanagement.ui.requests
 
+import android.app.Application
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -28,7 +29,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -42,8 +45,7 @@ import java.nio.charset.StandardCharsets
 fun MyRequestsScreen(
     modifierPaddingValues: PaddingValues,
     navController: NavController,
-    emailId: String,
-    viewModel: MyRequestsViewModel = viewModel()
+    viewModel: MyRequestsViewModel = viewModel(factory = ViewModelProvider.AndroidViewModelFactory(LocalContext.current.applicationContext as Application))
 ) {
     val tabs = listOf("Pending", "Approved", "Rejected")
     var selectedTabIndex by rememberSaveable { mutableIntStateOf(1) }
@@ -92,13 +94,13 @@ fun MyRequestsScreen(
                 }
                 when (selectedTabIndex) {
                     0 -> {
-                        PendingListScreen(navController, emailId, viewModel)
+                        PendingListScreen(navController, viewModel)
                     }
                     1 -> {
-                        ApprovedListScreen(navController, emailId, viewModel)
+                        ApprovedListScreen(navController, viewModel)
                     }
                     2 -> {
-                        RejectedListScreen(navController, emailId, viewModel)
+                        RejectedListScreen(navController, viewModel)
                     }
                 }
             }
@@ -109,16 +111,15 @@ fun MyRequestsScreen(
 @Composable
 fun PendingListScreen(
     navController: NavController,
-    emailId: String,
     viewModel: MyRequestsViewModel
 ) {
     var leaveRequestData = viewModel.pendingLeaveRequests.collectAsStateWithLifecycle()
-    val attendanceRegularizationRequests = viewModel.attendanceRegularizationRequests.collectAsStateWithLifecycle()
+    val pendingAttendanceRequests = viewModel.pendingAttendanceRequests.collectAsStateWithLifecycle()
 
     LazyColumn(
         modifier = Modifier.fillMaxWidth()
     ) {
-        if ((leaveRequestData.value.isNotEmpty())&&(attendanceRegularizationRequests.value.isNotEmpty())) {
+        if ((leaveRequestData.value.isNotEmpty())||(pendingAttendanceRequests.value.isNotEmpty())) {
             items(leaveRequestData.value) { leaveData ->
                 Row(
                     modifier = Modifier
@@ -128,7 +129,7 @@ fun PendingListScreen(
                             val userJson = Json.encodeToString(leaveData)
                             val encodedUserJson =
                                 URLEncoder.encode(userJson, StandardCharsets.UTF_8.toString())
-                            navController.navigate("LeaveDetailsScreen/${encodedUserJson}")
+                            navController.navigate("LeaveDetailsScreen/${encodedUserJson}/false")
                         }
                 ) {
                     Column(
@@ -154,6 +155,34 @@ fun PendingListScreen(
                 }
 //                    Spacer(modifier = Modifier.height(10.dp))
             }
+            items(pendingAttendanceRequests.value) { attendanceData ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp)
+                        .clickable {
+                            val attendanceJson = Json.encodeToString(attendanceData)
+                            val encodedAttendanceJson =
+                                URLEncoder.encode(attendanceJson, StandardCharsets.UTF_8.toString())
+                            navController.navigate("LeaveRegularisationDetailsScreen/${encodedAttendanceJson}/false")
+                        }
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            "Attendance Regularization Request",
+                            style = MaterialTheme.typography.titleSmall,
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            "${attendanceData.friendlyDateValue}-${attendanceData.friendlyMonthValue}-${attendanceData.friendlyYearValue}",
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                }
+//                    Spacer(modifier = Modifier.height(10.dp))
+            }
         } else {
             item {
                 Column(
@@ -171,49 +200,21 @@ fun PendingListScreen(
             }
         }
 
-        items(attendanceRegularizationRequests.value) { attendanceData ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp)
-                    .clickable {
-//                            val userJson = Json.encodeToString(leaveData)
-//                            val encodedUserJson =
-//                                URLEncoder.encode(userJson, StandardCharsets.UTF_8.toString())
-//                            navController.navigate("LeaveDetailsScreen/${encodedUserJson}")
-                    }
-            ) {
-                Column(
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        "Attendance Regularization Request",
-                        style = MaterialTheme.typography.titleSmall,
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        "${attendanceData.friendlyDateValue}-${attendanceData.friendlyMonthValue}-${attendanceData.friendlyYearValue}",
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                }
-            }
-//                    Spacer(modifier = Modifier.height(10.dp))
-        }
     }
 }
 
 @Composable
 fun ApprovedListScreen(
     navController: NavController,
-    emailId: String,
     viewModel: MyRequestsViewModel
 ) {
     var approvedLeaveRequests = viewModel.approvedLeaveRequests.collectAsStateWithLifecycle()
+    val approvedAttendanceRequests = viewModel.approvedAttendanceRequests.collectAsStateWithLifecycle()
 
     LazyColumn(
         modifier = Modifier.fillMaxWidth()
     ) {
-        if (approvedLeaveRequests.value.isNotEmpty()) {
+        if ((approvedLeaveRequests.value.isNotEmpty())||(approvedAttendanceRequests.value.isNotEmpty())) {
             items(approvedLeaveRequests.value) { leaveData ->
                 Row(
                     modifier = Modifier
@@ -223,16 +224,23 @@ fun ApprovedListScreen(
                             val userJson = Json.encodeToString(leaveData)
                             val encodedUserJson =
                                 URLEncoder.encode(userJson, StandardCharsets.UTF_8.toString())
-                            navController.navigate("LeaveDetailsScreen/${encodedUserJson}")
+                            navController.navigate("LeaveDetailsScreen/${encodedUserJson}/false")
                         }
                 ) {
                     Column(
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(
-                            "Leave - ${leaveData.leaveType}",
-                            style = MaterialTheme.typography.titleSmall,
-                        )
+                        if (leaveData.unit.isNotEmpty()){
+                            Text(
+                                "Leave - ${leaveData.leaveType} Request",
+                                style = MaterialTheme.typography.titleSmall,
+                            )
+                        } else {
+                            Text(
+                                "Leave - ${leaveData.leaveType}",
+                                style = MaterialTheme.typography.titleSmall,
+                            )
+                        }
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             leaveData.dateOfRequestString,
@@ -240,6 +248,34 @@ fun ApprovedListScreen(
                         )
                     }
                 }
+            }
+            items(approvedAttendanceRequests.value) { attendanceData ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp)
+                        .clickable {
+                            val attendanceJson = Json.encodeToString(attendanceData)
+                            val encodedAttendanceJson =
+                                URLEncoder.encode(attendanceJson, StandardCharsets.UTF_8.toString())
+                            navController.navigate("LeaveRegularisationDetailsScreen/${encodedAttendanceJson}/false")
+                        }
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            "Attendance Regularization Request",
+                            style = MaterialTheme.typography.titleSmall,
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            "${attendanceData.friendlyDateValue}-${attendanceData.friendlyMonthValue}-${attendanceData.friendlyYearValue}",
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                }
+//                    Spacer(modifier = Modifier.height(10.dp))
             }
         } else {
             item {
@@ -263,15 +299,15 @@ fun ApprovedListScreen(
 @Composable
 fun RejectedListScreen(
     navController: NavController,
-    emailId: String,
     viewModel: MyRequestsViewModel
 ) {
     var rejectedLeaveRequests = viewModel.rejectedLeaveRequests.collectAsStateWithLifecycle()
+    val rejectedAttendanceRequests = viewModel.rejectedAttendanceRequests.collectAsStateWithLifecycle()
 
     LazyColumn(
         modifier = Modifier.fillMaxWidth()
     ) {
-        if (rejectedLeaveRequests.value.isNotEmpty()) {
+        if ((rejectedLeaveRequests.value.isNotEmpty())||(rejectedAttendanceRequests.value.isNotEmpty())) {
             items(rejectedLeaveRequests.value) { leaveData ->
                 Row(
                     modifier = Modifier
@@ -281,19 +317,54 @@ fun RejectedListScreen(
                             val userJson = Json.encodeToString(leaveData)
                             val encodedUserJson =
                                 URLEncoder.encode(userJson, StandardCharsets.UTF_8.toString())
-                            navController.navigate("LeaveDetailsScreen/${encodedUserJson}")
+                            navController.navigate("LeaveDetailsScreen/${encodedUserJson}/false")
+                        }
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        if (leaveData.unit.isNotEmpty()){
+                            Text(
+                                "Leave - ${leaveData.leaveType} Request",
+                                style = MaterialTheme.typography.titleSmall,
+                            )
+                        } else {
+                            Text(
+                                "Leave - ${leaveData.leaveType}",
+                                style = MaterialTheme.typography.titleSmall,
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            leaveData.dateOfRequestString,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                }
+//                    Spacer(modifier = Modifier.height(10.dp))
+            }
+            items(rejectedAttendanceRequests.value) { attendanceData ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp)
+                        .clickable {
+                            val attendanceJson = Json.encodeToString(attendanceData)
+                            val encodedAttendanceJson =
+                                URLEncoder.encode(attendanceJson, StandardCharsets.UTF_8.toString())
+                            navController.navigate("LeaveRegularisationDetailsScreen/${encodedAttendanceJson}/false")
                         }
                 ) {
                     Column(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
-                            "Leave - ${leaveData.leaveType}",
+                            "Attendance Regularization Request",
                             style = MaterialTheme.typography.titleSmall,
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            leaveData.dateOfRequestString,
+                            "${attendanceData.friendlyDateValue}-${attendanceData.friendlyMonthValue}-${attendanceData.friendlyYearValue}",
                             style = MaterialTheme.typography.bodySmall,
                         )
                     }
@@ -318,7 +389,3 @@ fun RejectedListScreen(
         }
     }
 }
-
-
-
-

@@ -43,12 +43,12 @@ class ColleagueInfoScreenViewModel(
         }
         numberOfFeatchProcess++
         if(colleagueEmailId.isNotBlank()) {
-            appDataManager.getFirebaseUserFavorites(myEmailId,::updateUserDetails)
+            appDataManager.getFirebaseUserFavorites(myEmailId,::updateUserFavoritesDetails)
         }
     }
 
-    fun updateUserDetails(userFavoriteDetails: QuerySnapshot?, response: String){
-        Log.d("ColleagueInfoScreenViewModel","updateUserDetails called $userFavoriteDetails")
+    fun updateUserFavoritesDetails(userFavoriteDetails: QuerySnapshot?, response: String){
+        Log.d("ColleagueInfoScreenViewModel","updateUserFavoritesDetails called $userFavoriteDetails")
         if((response == "Success")&&(userFavoriteDetails!=null)){
             _liveUserFavoriteDetails.value = userFavoriteDetails.toObjects(FavoritePerson::class.java)
         } else {
@@ -73,7 +73,7 @@ class ColleagueInfoScreenViewModel(
     }
 
     fun updateColleagueDetails(userDetails: UserLoginData?, response: String){
-        Log.d("ColleagueInfoScreenViewModel","updateUserDetails called $userDetails")
+        Log.d("ColleagueInfoScreenViewModel","updateColleagueDetails called $userDetails")
         if((response == "Success")&&(userDetails!=null)){
             _liveColleagueDetails.value = userDetails
         } else {

@@ -1,20 +1,16 @@
 package com.example.hrmanagement.ui.more
 
+import android.app.Application
+import android.content.Context
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.example.hrmanagement.Service.MyApplication
-import com.example.hrmanagement.Service.MyApplication.Companion.appPreferenceDataStore
-import com.example.hrmanagement.Service.MyApplication.Companion.appUserDetails
-import kotlinx.coroutines.launch
 
-class SettingsViewModel: ViewModel() {
+class SettingsViewModel(application: Application): AndroidViewModel(application) {
 
-    var userLoginData = appUserDetails
+    private val myApplication = application as MyApplication
+    val userLoginData = myApplication.appUserDetails
 
-    fun logoutCurrentUser() {
-        viewModelScope.launch {
-            MyApplication.googleAuthenticationService.logout()
-            appPreferenceDataStore.updateToken("")
-        }
+    fun logoutCurrentUser(context: Context) {
     }
 }

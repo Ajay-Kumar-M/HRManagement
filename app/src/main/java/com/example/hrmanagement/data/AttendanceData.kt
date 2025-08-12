@@ -1,5 +1,7 @@
 package com.example.hrmanagement.data
 
+import kotlinx.serialization.Serializable
+
 data class AttendanceData(
     val date: Long = 0L,
     var checkInTime: Long = 0L,
@@ -14,9 +16,11 @@ data class AttendanceData(
     val friendlyDateValue: Int = 0,
     val friendlyMonthValue: Int = 0,
     val friendlyYearValue: Int = 0,
-    var leaveType: String = ""
+    var leaveType: String = "",
+    val reportingTo: String = ""
 )
 
+@Serializable
 data class AttendanceRegularisationData(
     val date: Long = 0L,
     var checkInTime: Long = 0L,
@@ -35,5 +39,6 @@ data class AttendanceRegularisationData(
     var regularisedCheckInTime: Long = 0L,
     var regularisedCheckOutTime: Long = 0L,
     var regularisedTotalHours: Float = 0.0f,
-    var regularisedDescription: String = ""
+    var regularisedDescription: String = "",
+    val reportingTo: String = ""
 )

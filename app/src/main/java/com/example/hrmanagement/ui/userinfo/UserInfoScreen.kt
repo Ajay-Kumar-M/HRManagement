@@ -1,6 +1,11 @@
 package com.example.hrmanagement.ui.userinfo
 
+import android.Manifest
+import android.annotation.SuppressLint
+import android.app.Application
 import android.content.Intent
+import android.location.Location
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -23,7 +28,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -36,7 +40,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -53,6 +56,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -76,6 +81,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -86,11 +92,17 @@ import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
 import com.example.hrmanagement.component.CircularProgressIndicatorComposable
 import com.example.hrmanagement.data.AttendanceData
 import com.example.hrmanagement.data.GoalData
-import com.example.hrmanagement.data.LeaveTrackerData
 import com.example.hrmanagement.data.UserLoginData
+import com.example.hrmanagement.data.UserSignInStatusRepository
+import com.example.hrmanagement.provider.AttendanceViewModelFactory
+import com.example.hrmanagement.provider.MainScreenViewModelFactory
+import com.example.hrmanagement.provider.UserInfoScreenViewModelFactory
 import com.example.hrmanagement.ui.main.UserProfileImage
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
+import com.google.android.gms.location.LocationServices
 import com.google.firebase.firestore.QuerySnapshot
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import java.net.URLEncoder
@@ -104,12 +116,14 @@ import kotlin.reflect.full.memberProperties
 fun UserInfoScreen(
     modifier: Modifier,
     navController: NavController,
-    emailId: String,
-    viewModel: UserInfoScreenViewModel = viewModel()
+    viewModel: UserInfoScreenViewModel = viewModel(factory = UserInfoScreenViewModelFactory (
+//        application = LocalContext.current.applicationContext as Application,
+    userRepository = UserSignInStatusRepository()
+    ))
 ) {
     val userImageUri = viewModel.userImageUriFlowState.collectAsStateWithLifecycle()
     val userLoginData = viewModel.userLoginData.collectAsStateWithLifecycle()
-    val userSignInStatus = appDataManager.liveUserSignInStatus.collectAsStateWithLifecycle()
+    val userSignInStatus = viewModel.userSignInStatus.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val tabs = listOf("Profile", "Team", "Leave Tracker", "Goals", "Attendance")
     var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
@@ -124,7 +138,7 @@ fun UserInfoScreen(
                     onClick = {
                         when(selectedTabIndex) {
                             2 -> {
-                                navController.navigate("ApplyLeaveScreen/${userLoginData.value.email}/All")
+                                navController.navigate("ApplyLeaveScreen/All")
                             }
                             3 -> {
 
@@ -336,10 +350,14 @@ fun UserInfoScreen(
 }
 
 
+@OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun AttendanceComposable(
-    viewModel: AttendanceViewModel = viewModel()
-){
+    viewModel: AttendanceViewModel = viewModel(factory = AttendanceViewModelFactory (
+        application = LocalContext.current.applicationContext as Application,
+    userRepository = UserSignInStatusRepository()
+    ))
+) {
     val isViewLoading = viewModel.isViewLoading.collectAsStateWithLifecycle()
     val attendanceFilterShowBottomSheet = viewModel.attendanceFilterShowBottomSheet.collectAsStateWithLifecycle()
     val attendanceMonthShowModal = viewModel.attendanceMonthShowModal.collectAsStateWithLifecycle()
@@ -352,7 +370,7 @@ fun AttendanceComposable(
     val attendanceSelectedYear = viewModel.attendanceSelectedYear.collectAsStateWithLifecycle()
     val attendanceSelectedMonth = viewModel.attendanceSelectedMonth.collectAsStateWithLifecycle()
     val attendanceModalSelectedDate = viewModel.attendanceModalSelectedDate.collectAsStateWithLifecycle()
-    val userSignInStatus = appDataManager.liveUserSignInStatus.collectAsStateWithLifecycle()
+    val userSignInStatus = viewModel.userSignInStatus.collectAsStateWithLifecycle()
     val leaveTypeColorMap: Map<String, Color> = mapOf(
         Pair("Casual Leave",Color(0xFFE08607)),
         Pair("Sick Leave",Color(0xFFE08607)),
@@ -369,6 +387,9 @@ fun AttendanceComposable(
         Pair(1,"Jan"),Pair(2,"Feb"),Pair(3,"Mar"),Pair(4,"Arp"),Pair(5,"May"),Pair(6,"Jun"),Pair(7,"Jul"),Pair(8,"Aug"),Pair(9,"Sept"),Pair(10,"Oct"),Pair(11,"Nov"),Pair(12,"Dec")
     )
     val dotRadius = 8f
+    val permissionState = rememberPermissionState(Manifest.permission.ACCESS_COARSE_LOCATION)
+    var location by remember { mutableStateOf<Location?>(null) }
+    val context = LocalContext.current
 
     if (isViewLoading.value) {
         Column(
@@ -774,12 +795,25 @@ fun AttendanceComposable(
             }
             Button(
                 onClick = {
-                    viewModel.updateUserSignInStatus()
+                    if (permissionState.status.isGranted) {
+                        val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
+                        @SuppressLint("MissingPermission")
+                        fusedLocationClient.lastLocation.addOnSuccessListener { loc ->
+                            location = loc
+                            viewModel.updateUserSignInStatus(location, context)
+                        }
+                    } else {
+                        Toast.makeText(context,"Location permission is required for Check-in / Check-out",
+                            Toast.LENGTH_SHORT).show()
+                        permissionState.launchPermissionRequest()
+                    }
                 },
                 modifier = Modifier
                     .align(Alignment.CenterHorizontally),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF0E7305),
+                    containerColor =
+                        if (userSignInStatus.value == "Checked-In") Color(0xFFD2042D)
+                        else Color(0xFF0E7305),
                 ),
             ) {
                 Text(
@@ -863,8 +897,8 @@ fun AttendanceMonthInfoModal(
                         Row(
                             horizontalArrangement = Arrangement.SpaceEvenly,
                             modifier = Modifier.fillMaxWidth()
-                                .padding(5.dp)
                                 .background(shape = RoundedCornerShape(16.dp), color = Color(0xFFE1E3E3))
+                                .padding(5.dp,10.dp)
                         ) {
                             Column {
                                 Text(
@@ -1021,8 +1055,8 @@ fun AttendanceFilterShowModalSheet(
 }
 
 @Composable
-fun GoalsComposable(viewModel: GoalsViewModel = viewModel())
-{
+fun GoalsComposable(viewModel: GoalsViewModel = viewModel(factory = ViewModelProvider.AndroidViewModelFactory(LocalContext.current.applicationContext as Application))
+) {
     val goalsList = listOf("Low", "Medium", "High", "Highest", "None")
     val goalTypeColor: Map<String, Color> = mapOf(
         Pair("Low", Color.Green),
@@ -1103,7 +1137,7 @@ fun GoalsComposable(viewModel: GoalsViewModel = viewModel())
 //                        val userJson = Json.encodeToString(allLeaves.value)
 //                        val encodedUserJson =
 //                            URLEncoder.encode(userJson, StandardCharsets.UTF_8.toString())
-//                        navController.navigate("LeaveDetailsScreen/${encodedUserJson}")
+//                        navController.navigate("LeaveDetailsScreen/${encodedUserJson}/false")
                     }
             ) {
                 Row(
@@ -1184,8 +1218,8 @@ fun GoalsComposable(viewModel: GoalsViewModel = viewModel())
 @Composable
 fun LeaveTrackerComposable(
     navController: NavController,
-    viewModel: LeaveTrackerViewModel = viewModel()
-){
+    viewModel: LeaveTrackerViewModel = viewModel(factory = ViewModelProvider.AndroidViewModelFactory(LocalContext.current.applicationContext as Application))
+) {
     val isViewLoading = viewModel.isViewLoading.collectAsStateWithLifecycle()
     val leaveRequests = viewModel.leaveRequests.collectAsStateWithLifecycle()
     val calendarYear = viewModel.calendarYear.collectAsStateWithLifecycle()
@@ -1366,7 +1400,7 @@ fun LeaveTrackerComposable(
                             val userJson = Json.encodeToString(leaveRequest)
                             val encodedUserJson =
                                 URLEncoder.encode(userJson, StandardCharsets.UTF_8.toString())
-                            navController.navigate("LeaveDetailsScreen/${encodedUserJson}")
+                            navController.navigate("LeaveDetailsScreen/${encodedUserJson}/false")
                         }
                 ) {
                     Text(
@@ -1430,6 +1464,7 @@ fun TeamComposable(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable {
+                        if (teamMemberInfo.email != userLoginData.value.email)
                         navController.navigate("ColleagueInfoScreen/${teamMemberInfo.email}/${userLoginData.value.email}")
                     },
                 verticalAlignment = Alignment.CenterVertically
@@ -1632,7 +1667,7 @@ fun ProfileComposable(
         }
         Spacer(modifier = Modifier.height(15.dp))
         getAllFieldsAndValues(userLoginData).forEach { value ->
-            if ((value.first != "token")&&(value.first != "reportingTo")) {
+            if ((value.first != "token")&&(value.first != "reportingTo")&&(value.first != "imageUrl")) {
                 Text(
                     value.first,
                     style = MaterialTheme.typography.bodyMedium

@@ -1,17 +1,18 @@
 package com.example.hrmanagement.ui.announcement
 
+import android.app.Application
 import android.util.Log
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
+import com.example.hrmanagement.Service.MyApplication
 import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
 import com.example.hrmanagement.Service.MyApplication.Companion.appPreferenceDataStore
 import com.example.hrmanagement.data.AnnouncementData
-import com.example.hrmanagement.data.AnnouncementList
 import com.example.hrmanagement.data.CommentsData
 import com.example.hrmanagement.data.LikeData
 import com.example.hrmanagement.data.UserLoginData
 import com.google.firebase.firestore.DocumentSnapshot
-import com.google.firebase.firestore.QuerySnapshot
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.firstOrNull
@@ -19,8 +20,9 @@ import kotlinx.coroutines.runBlocking
 import java.util.Calendar
 
 class AnnouncementDetailViewModel(
+    application: Application,
     savedStateHandle: SavedStateHandle
-): ViewModel() {
+): AndroidViewModel(application) {
 
     private var _announcementComment: MutableStateFlow<String> = MutableStateFlow("")
     val announcementComment = _announcementComment.asStateFlow()
@@ -30,13 +32,11 @@ class AnnouncementDetailViewModel(
     val isViewLoading = _isViewLoading.asStateFlow()
     val announcementId: Int = checkNotNull(savedStateHandle["announcementId"])
     private var numberOfFetchProcess: Int = 0
-    var userEmailUiState: String? = ""
     var liveCommentID: Int = 0
+    private val myApplication = application as MyApplication
+    val appUserData = myApplication.appUserDetails
 
     init {
-        runBlocking {
-            userEmailUiState = appPreferenceDataStore.emailFlow.firstOrNull()
-        }
         fetchAnnouncementData(announcementId)
     }
 
@@ -64,18 +64,18 @@ class AnnouncementDetailViewModel(
     }
 
     fun modifyLikeData(isAnnouncementLiked: Boolean){
-        if ((userEmailUiState!=null)&&(userEmailUiState!!.isNotBlank())){
+        if (appUserData.email.isNotBlank()){
             if (!_isViewLoading.value) {
                 toggleIsViewLoading()
             }
             numberOfFetchProcess++
             if (isAnnouncementLiked) {
                 val currentData = _announcementData.value
-                currentData.likeUsers.remove(currentData.likeUsers.filter { (_, value) -> value.emailId == userEmailUiState }.keys.first())
+                currentData.likeUsers.remove(currentData.likeUsers.filter { (_, value) -> value.emailId == appUserData.email }.keys.first())
                 currentData.likesCount = currentData.likesCount-1
                 appDataManager.modifyAnnouncementData(currentData,::modifyLikeDataResponse)
             } else {
-                appDataManager.getFirebaseUser(userEmailUiState!!,::addLikeData)
+                appDataManager.getFirebaseUser(appUserData.email,::addLikeData)
             }
         }
     }
@@ -99,7 +99,7 @@ class AnnouncementDetailViewModel(
             val currentData = _announcementData.value
             currentData.likeUsers.put("${(currentData.lastLikeId)+1}", LikeData(
                 userDetails.username,
-                userEmailUiState!!,
+                appUserData.email,
                 userDetails.imageUrl
                 ))
             currentData.likesCount = currentData.likesCount+1
@@ -115,20 +115,20 @@ class AnnouncementDetailViewModel(
     }
 
     fun modifyCommentLikeData(isCommentLiked: Boolean,commentID: Int){
-        if ((userEmailUiState!=null)&&(userEmailUiState!!.isNotBlank())){
+        if (appUserData.email.isNotBlank()){
             if (!_isViewLoading.value) {
                 toggleIsViewLoading()
             }
             numberOfFetchProcess++
             if (isCommentLiked) {
                 var commentData = _announcementData.value.comments
-//                currentData.likeUsers.remove(currentData.likeUsers.filter { (_, value) -> value.emailId == userEmailUiState }.keys.first())
-                commentData.getValue(commentID.toString()).likeUsers.remove(commentData.getValue(commentID.toString()).likeUsers.filter { (_, value) -> value.emailId == userEmailUiState }.keys.first())
+//                currentData.likeUsers.remove(currentData.likeUsers.filter { (_, value) -> value.emailId == appUserData.email }.keys.first())
+                commentData.getValue(commentID.toString()).likeUsers.remove(commentData.getValue(commentID.toString()).likeUsers.filter { (_, value) -> value.emailId == appUserData.email }.keys.first())
                 commentData.getValue(commentID.toString()).likeCount = commentData.getValue(commentID.toString()).likeCount-1
                 appDataManager.addAnnouncementCommentLikeData(commentData,_announcementData.value.announcementID,::modifyCommentLikeDataResponse)
             } else {
                 liveCommentID = commentID
-                appDataManager.getFirebaseUser(userEmailUiState!!,::addCommentLikeData)
+                appDataManager.getFirebaseUser(appUserData.email,::addCommentLikeData)
             }
         }
     }
@@ -155,7 +155,7 @@ class AnnouncementDetailViewModel(
                     "${it.lastLikeId.plus(1)}",
                     LikeData(
                         userDetails.username,
-                        userEmailUiState!!,
+                        appUserData.email,
                         userDetails.imageUrl
                     )
                 )
@@ -174,12 +174,12 @@ class AnnouncementDetailViewModel(
     }
 
     fun addAnnouncementCommentTrigger(){
-        if ((userEmailUiState!=null)&&(userEmailUiState!!.isNotBlank())) {
+        if (appUserData.email.isNotBlank()) {
             if (!_isViewLoading.value) {
                 toggleIsViewLoading()
             }
             numberOfFetchProcess++
-            appDataManager.getFirebaseUser(userEmailUiState!!, ::addAnnouncementComment)
+            appDataManager.getFirebaseUser(appUserData.email, ::addAnnouncementComment)
         }
     }
 

@@ -1,39 +1,37 @@
 package com.example.hrmanagement.ui.requests
 
+import android.app.Application
 import android.util.Log
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
+import com.example.hrmanagement.Service.MyApplication
 import com.example.hrmanagement.Service.MyApplication.Companion.appDataManager
-import com.example.hrmanagement.Service.MyApplication.Companion.appPreferenceDataStore
 import com.example.hrmanagement.data.AttendanceRegularisationData
 import com.example.hrmanagement.data.LeaveData
-import com.example.hrmanagement.data.LeaveTrackerData
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.runBlocking
 
-class MyRequestsViewModel: ViewModel() {
+class MyRequestsViewModel(application: Application): AndroidViewModel(application) {
 
-    private var _leaveTrackerDocuments: List<LeaveTrackerData> = listOf()
     private var _isViewLoading: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val isViewLoading = _isViewLoading.asStateFlow()
     var numberOfFetchProcess: Int = 0
-    var userEmail: String?
     private var _pendingLeaveRequests: MutableStateFlow<List<LeaveData>> = MutableStateFlow(listOf())
     val pendingLeaveRequests = _pendingLeaveRequests.asStateFlow()
     private var _rejectedLeaveRequests: MutableStateFlow<List<LeaveData>> = MutableStateFlow(listOf())
     val rejectedLeaveRequests = _rejectedLeaveRequests.asStateFlow()
     private var _approvedLeaveRequests: MutableStateFlow<List<LeaveData>> = MutableStateFlow(listOf())
     val approvedLeaveRequests = _approvedLeaveRequests.asStateFlow()
-    private var _attendanceRegularizationRequests: MutableStateFlow<List<AttendanceRegularisationData>> = MutableStateFlow(listOf())
-    val attendanceRegularizationRequests = _attendanceRegularizationRequests.asStateFlow()
+    private var _pendingAttendanceRequests: MutableStateFlow<List<AttendanceRegularisationData>> = MutableStateFlow(listOf())
+    val pendingAttendanceRequests = _pendingAttendanceRequests.asStateFlow()
+    private var _rejectedAttendanceRequests: MutableStateFlow<List<AttendanceRegularisationData>> = MutableStateFlow(listOf())
+    val rejectedAttendanceRequests = _rejectedAttendanceRequests.asStateFlow()
+    private var _approvedAttendanceRequests: MutableStateFlow<List<AttendanceRegularisationData>> = MutableStateFlow(listOf())
+    val approvedAttendanceRequests = _approvedAttendanceRequests.asStateFlow()
+    private val myApplication = application as MyApplication
+    val appUserData = myApplication.appUserDetails
 
     init {
-        Log.d("MyRequestsViewModel", "init")
         toggleIsViewLoading()
-        runBlocking {
-        userEmail = appPreferenceDataStore.emailFlow.firstOrNull()
-        }
         fetchLeaveRequestsData()
         fetchAttendanceRegularizationData()
     }
@@ -43,9 +41,9 @@ class MyRequestsViewModel: ViewModel() {
             toggleIsViewLoading()
         }
         numberOfFetchProcess++
-        if (userEmail != null) {
-            appDataManager.fetchLeaveLogs(0,userEmail!!,0) { querySnapshot, response, documentSnapshot ->
-                Log.d("MyRequestsViewModel", "response called $userEmail")
+        if (appUserData.email.isNotBlank()) {
+            appDataManager.fetchLeaveLogs(0,appUserData.email,0) { querySnapshot, response, documentSnapshot ->
+                Log.d("MyRequestsViewModel", "response called ${appUserData.email}")
                 if ((response == "Success")&&(querySnapshot!=null)) {
                     val tempPendingLeaveRequest: MutableList<LeaveData> = mutableListOf()
                     val tempApprovedLeaveRequest: MutableList<LeaveData> = mutableListOf()
@@ -83,13 +81,32 @@ class MyRequestsViewModel: ViewModel() {
             toggleIsViewLoading()
         }
         numberOfFetchProcess++
-        if (userEmail != null) {
-            Log.d("MyRequestsViewModel", "fetchLeaveRequestsData called $userEmail")
-            appDataManager.getAttendanceRegularizationData(userEmail!!) { querySnapshot, response ->
-                Log.d("MyRequestsViewModel", "response called $userEmail")
+        if (appUserData.email.isNotBlank()) {
+            Log.d("MyRequestsViewModel", "fetchLeaveRequestsData called ${appUserData.email}")
+            appDataManager.getAttendanceRegularizationData(appUserData.email) { querySnapshot, response ->
+                Log.d("MyRequestsViewModel", "response called ${appUserData.email}")
                 if ((response == "Success")&&(querySnapshot!=null)) {
-                    _attendanceRegularizationRequests.value = querySnapshot.toObjects(
-                        AttendanceRegularisationData::class.java)
+                    val tempPendingAttendanceRequest: MutableList<AttendanceRegularisationData> = mutableListOf()
+                    val tempApprovedAttendanceRequest: MutableList<AttendanceRegularisationData> = mutableListOf()
+                    val tempRejectedAttendanceRequest: MutableList<AttendanceRegularisationData> = mutableListOf()
+                    querySnapshot.forEach { attendanceRequestDoc ->
+                        attendanceRequestDoc.toObject(AttendanceRegularisationData::class.java).let { attendanceData ->
+                            when(attendanceData.status) {
+                                "Approved" -> {
+                                    tempApprovedAttendanceRequest.add(attendanceData)
+                                }
+                                "Pending" -> {
+                                    tempPendingAttendanceRequest.add(attendanceData)
+                                }
+                                "Rejected" -> {
+                                    tempRejectedAttendanceRequest.add(attendanceData)
+                                }
+                            }
+                        }
+                    }
+                    _rejectedAttendanceRequests.value = tempRejectedAttendanceRequest
+                    _pendingAttendanceRequests.value = tempPendingAttendanceRequest
+                    _approvedAttendanceRequests.value = tempApprovedAttendanceRequest
                 } else {
 
                 }

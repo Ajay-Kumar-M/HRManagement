@@ -1,5 +1,6 @@
 package com.example.hrmanagement.ui.more
 
+import android.app.Application
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -39,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
@@ -48,6 +50,7 @@ import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -68,8 +71,7 @@ import java.nio.charset.StandardCharsets
 fun FeedsScreen(
     modifier: Modifier,
     navController: NavController,
-    userEmailId: String,
-    viewModel: FeedsViewModel = viewModel()
+    viewModel: FeedsViewModel = viewModel(factory = ViewModelProvider.AndroidViewModelFactory(LocalContext.current.applicationContext as Application))
 ) {
 
     val isViewLoading = viewModel.isViewLoading.collectAsStateWithLifecycle()
@@ -83,6 +85,7 @@ fun FeedsScreen(
                 modifier = Modifier
                     .statusBarsPadding()
                     .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
                     onClick = {
@@ -106,7 +109,7 @@ fun FeedsScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
-                    navController.navigate("StatusScreen/${userEmailId}")
+                    navController.navigate("StatusScreen")
                 }
             ){
                 Icon(Icons.Filled.Add, contentDescription = "Add status")
@@ -144,7 +147,7 @@ fun FeedsScreen(
                                             .padding(5.dp)
                                             .background(Color.White,RoundedCornerShape(20.dp))
                                             .clickable{
-                                                navController.navigate("FeedDetailScreen/{$userEmailId}/${(record.value as FeedData).feedID}/Status")
+                                                navController.navigate("FeedDetailScreen/${(record.value as FeedData).feedID}/Status")
                                             }
                                     ) {
                                         Row(
@@ -213,7 +216,7 @@ fun FeedsScreen(
                                             .padding(5.dp)
                                             .background(Color.White,RoundedCornerShape(20.dp))
                                             .clickable{
-                                                navController.navigate("FeedDetailScreen/{$userEmailId}/${(record.value as LeaveData).leaveId}/LeaveRequest")
+                                                navController.navigate("FeedDetailScreen/${(record.value as LeaveData).leaveId}/LeaveRequest")
                                             }
                                     ) {
                                         Row(
@@ -231,7 +234,7 @@ fun FeedsScreen(
                                                                 val userJson = Json.encodeToString(record.value as LeaveData)
                                                                 val encodedUserJson =
                                                                     URLEncoder.encode(userJson, StandardCharsets.UTF_8.toString())
-                                                                navController.navigate("LeaveDetailsScreen/${encodedUserJson}")
+                                                                navController.navigate("LeaveDetailsScreen/${encodedUserJson}/false")
                                                             }
                                                         )
                                                     ) {
@@ -285,7 +288,7 @@ fun FeedsScreen(
                                                                 val userJson = Json.encodeToString(record.value as LeaveData)
                                                                 val encodedUserJson =
                                                                     URLEncoder.encode(userJson, StandardCharsets.UTF_8.toString())
-                                                                navController.navigate("LeaveDetailsScreen/${encodedUserJson}")
+                                                                navController.navigate("LeaveDetailsScreen/${encodedUserJson}/false")
                                                             }
                                                     )
                                                 }

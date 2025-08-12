@@ -41,7 +41,6 @@ import java.util.Locale
 fun NotificationScreen(
     modifier: Modifier,
     navController: NavController,
-    emailId: String,
     viewModel: NotificationViewModel = viewModel()
 ) {
 
@@ -56,6 +55,7 @@ fun NotificationScreen(
                 modifier = Modifier
                     .statusBarsPadding()
                     .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
                     onClick = {

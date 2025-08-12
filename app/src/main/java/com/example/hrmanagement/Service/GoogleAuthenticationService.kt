@@ -60,9 +60,9 @@ class GoogleAuthenticationService {
                 "Department1",
                 mapOf(
                     ("username" to "Dummy User 1"),
-                    ("imageUrl" to "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c"),
+                    ("imageUrl" to "https://cdn-icons-png.freepik.com/256/11154/11154662.png?ga=GA1.1.425318414.1748428764&semt=ais_hybrid"),
                     ("employeeId" to "3456"),
-                    ("emailId" to "dummyuser1@gmail.com"),
+                    ("emailId" to "dummayuser1@gmail.com"),
                     ("designation" to "Employee"),
                 )
             )

@@ -260,7 +260,7 @@ fun SettingsScreen(
                                 isLoading = true
                                 val application = context.applicationContext as MyApplication
                                 application.secureTokenManager?.clearAllSecureData()
-                                appPreferenceDataStore.updateToken(null)
+//                                appPreferenceDataStore.updateToken(null)
                                 MyApplication.googleAuthenticationService.logout(context)
                                 isLoading = false
                             }

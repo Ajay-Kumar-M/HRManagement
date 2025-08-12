@@ -43,6 +43,7 @@
                 <action android:name="android.intent.action.VIEW" />
             </intent-filter>
         </activity>
+<!--        <profileable android:shell="true" />-->
     </application>
 
     <queries>

@@ -3,6 +3,7 @@ package com.example.hrmanagement.ui.main
 import android.app.Application
 import android.content.Context
 import android.location.Location
+import android.os.Debug
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.DefaultLifecycleObserver
@@ -478,7 +479,7 @@ class MainScreenViewModel(application: Application,private val userSignInStatusR
             appPreferenceDataStore.updateUserDetails(
                 UserLoginData(
                     "google.com",
-                    "eyJhbGciOiJSUzI1NiIsImtpZCI6ImZlNjVjY2I4ZWFkMGJhZWY1ZmQzNjE5NWQ2NTI4YTA1NGZiYjc2ZjMiLCJ0eXAiOiJKV1QifQ.eyJuYW1lIjoiQWpheSBrdW1hciIsInBpY3R1cmUiOiJodHRwczovL2xoMy5nb29nbGV1c2VyY29udGVudC5jb20vYS9BQ2c4b2NKVEdEN1hQdkxON0hHV3ZIN1ZCYnNzZ1IyRUFXYzVuN183RDVfNkZiZVpJX19aeGV1az1zOTYtYyIsImlzcyI6Imh0dHBzOi8vc2VjdXJldG9rZW4uZ29vZ2xlLmNvbS9ocm1hbmFnZW1lbnQtNjNjNmQiLCJhdWQiOiJocm1hbmFnZW1lbnQtNjNjNmQiLCJhdXRoX3RpbWUiOjE3NDgzMjY1NzIsInVzZXJfaWQiOiJFQ1JqZzhGUnA0YUpCM2huSnIwVVpaUnZJUmoyIiwic3ViIjoiRUNSamc4RlJwNGFKQjNobkpyMFVaWlJ2SVJqMiIsImlhdCI6MTc0ODMyNjU4MywiZXhwIjoxNzQ4MzMwMTgzLCJlbWFpbCI6ImFqYXkua3VtYXIwNDk1QGdtYWlsLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJmaXJlYmFzZSI6eyJpZGVudGl0aWVzIjp7Imdvb2dsZS5jb20iOlsiMTE4MjU3MTk3MTIwNjkxNTIyNzQ1Il0sImVtYWlsIjpbImFqYXkua3VtYXIwNDk1QGdtYWlsLmNvbSJdfSwic2lnbl9pbl9wcm92aWRlciI6Imdvb2dsZS5jb20ifX0.ZlVGFktq8Yf7CWzdv5jKN0UaNUgKFPlJXt2Z4xymtoa8LZRP4rSyjzFF33QJH0f5-L1aqiXLWUi71_gV-d2wsBoV6-ikdogI72NUYlj_Gp5p5WJ7ijWCLplwSxSRzIuSN8eLDVNIF1UpcGCM9ayuLDBxX3zEl_GwJ9M1ZcuViUGZy63Vzpa_kO6gvtZNnBfwtDxsJ4Ymj0G5sCa2GawWZ0LDqr6_zV4TEOMnOsDeQZSynvKYfhY-7JQGh9ZKPm9D32zIvSaH6D_b9RrzZc0_9uPhujgG6_qQ38YEvVw9qxDmhxbZETY9xRIbLbNyjGO2FGR6YMb0PTJEi0pLRmVTxA",
+                    "",
                     "Ajay Kumar",
                     "ajay.kumar0495@gmail.com",
                     "https://lh3.googleusercontent.com/a/ACg8ocJTGD7XPvLN7HGWvH7VBbssgR2EAWc5n7_7D5_6FbeZI__Zxeuk=s96-c",
